@@ -167,10 +167,15 @@ $files = Get-ChildItem $out -File
 
 # Ask the build what it calls itself, rather than printing what we asked for. This is the one thing worth
 # checking on every publish: for the whole of 0.1.0 the answer was the same for every build ever made, so an
-# update check had nothing to compare. A Windows build can answer here; a cross-published one cannot.
+# update check had nothing to compare. A Windows build can answer here; a cross-published one cannot, and nor can
+# one for a processor this machine does not run -- an x64 Windows cannot start an ARM64 program.
 $exe = Join-Path $out "DeskPair.exe"
 if (($Rid -like "win-*") -and (Test-Path $exe)) {
-    "version: {0}" -f (& $exe --version)
+    try {
+        "version: {0}" -f (& $exe --version)
+    } catch {
+        "version: this machine cannot run a $Rid program; run '<app> --version' on one that can"
+    }
 } else {
     "version: run '<app> --version' on the target to confirm it"
 }
