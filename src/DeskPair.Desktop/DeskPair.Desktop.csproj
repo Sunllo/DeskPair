@@ -54,6 +54,9 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="DeskPair.Desktop.Tests" />
+    <!-- Builds the windows with sample data for the README's pictures: HostLink.Deliver and the parts constructor
+         of MainWindowViewModel. -->
+    <InternalsVisibleTo Include="DeskPair.Tools.Screenshots" />
   </ItemGroup>
 
   <ItemGroup>

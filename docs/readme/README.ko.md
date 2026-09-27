@@ -22,6 +22,54 @@ C# / .NET 10으로 작성한 크로스 플랫폼(Windows／macOS／Linux) 원격
 종단 간 AES-256-GCM, ECDSA P-256 신원)을 사용합니다. 자세한 내용은 `docs/architecture.md`를 보십시오.
 `docs/` 아래의 문서는 번체 중국어로 작성되어 있습니다.
 
+## 스크린샷
+
+Windows용 데스크톱 앱입니다. 이미지는 `tools/DeskPair.Tools.Screenshots`가 앱 자체의 창을 그려서 만든 것이며,
+이미지 속 컴퓨터, 사람, 주소는 모두 가상입니다.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/remote-session.png" width="100%" alt="원격 세션"><br>
+      다른 컴퓨터를 제어하는 화면. 연결된 컴퓨터마다 탭이 따로 있습니다.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/file-transfer.png" width="100%" alt="파일 전송"><br>
+      파일 전송. 왼쪽이 이 컴퓨터, 오른쪽이 상대 컴퓨터입니다.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/home.png" width="100%" alt="기본 창"><br>
+      이 컴퓨터의 ID와 일회용 비밀번호, 최근에 연결한 컴퓨터.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/devices.png" width="100%" alt="기기"><br>
+      그룹으로 정리해 저장한 기기와 온라인 여부.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/terminal.png" width="100%" alt="원격 터미널"><br>
+      다른 컴퓨터의 셸. 위쪽에 표시된 계정으로 실행됩니다.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/incoming-request.png" width="100%" alt="연결 요청"><br>
+      누군가 연결을 요청하면 이 컴퓨터 앞의 사람이 수락하거나 거부하고, 허용할 권한을 고릅니다.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/history.png" width="100%" alt="연결 기록"><br>
+      이 컴퓨터에 누가 접속했고 무엇이 허용되었는지.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/settings-security.png" width="100%" alt="보안 설정"><br>
+      보안 설정. 누가 연결할 수 있는지, 어떻게 자신을 증명하는지.
+    </td>
+  </tr>
+</table>
+
 ## 다운로드
 
 모든 릴리스는 [릴리스 페이지](https://github.com/Sunllo/DeskPair/releases/latest)와

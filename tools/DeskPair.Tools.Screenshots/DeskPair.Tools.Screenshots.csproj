@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Renders the desktop app's windows to PNG with made-up data, for the README. The windows are the product's
+       own (its XAML, styles and view models); only the data is a sample, so nothing from the machine running this
+       (its ID, devices, account or files) can end up in a picture. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <!-- The mock desktop's pixels are copied out of a bitmap through a pointer. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Desktop\DeskPair.Desktop.csproj" />
+  </ItemGroup>
+
+</Project>

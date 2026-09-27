@@ -22,6 +22,54 @@ Die Architektur orientiert sich an [RustDesk](https://github.com/rustdesk/rustde
 Protokoll (Protobuf-Nachrichten, Ende-zu-Ende-AES-256-GCM, Identitäten mit ECDSA P-256). Siehe
 `docs/architecture.md`; die Dokumente unter `docs/` sind auf Traditionellem Chinesisch verfasst.
 
+## Screenshots
+
+Die Desktop-App unter Windows. Die Bilder zeichnet `tools/DeskPair.Tools.Screenshots` aus den eigenen Fenstern der
+App; die Computer, Personen und Adressen darin sind erfunden.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/remote-session.png" width="100%" alt="Eine Fernsitzung"><br>
+      Ein anderer Computer wird gesteuert; jeder verbundene Computer hat einen eigenen Tab.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/file-transfer.png" width="100%" alt="Dateiübertragung"><br>
+      Dateiübertragung: links dieser Computer, rechts der andere.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/home.png" width="100%" alt="Das Hauptfenster"><br>
+      Die ID und das Einmalpasswort dieses Computers und die zuletzt verbundenen Computer.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/devices.png" width="100%" alt="Geräte"><br>
+      Gespeicherte Geräte in Gruppen, mit ihrem Online-Status.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/terminal.png" width="100%" alt="Ein entferntes Terminal"><br>
+      Eine Shell auf einem anderen Computer, ausgeführt unter dem oben genannten Konto.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/incoming-request.png" width="100%" alt="Eine Verbindungsanfrage"><br>
+      Jemand möchte sich verbinden: Die Person an diesem Computer nimmt an oder lehnt ab und wählt, was erlaubt ist.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/history.png" width="100%" alt="Verbindungsverlauf"><br>
+      Wer sich mit diesem Computer verbunden hat und was erlaubt war.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/settings-security.png" width="100%" alt="Sicherheitseinstellungen"><br>
+      Sicherheitseinstellungen: wer sich verbinden darf und wie man sich dabei ausweist.
+    </td>
+  </tr>
+</table>
+
 ## Download
 
 Jede Version steht auf der [Release-Seite](https://github.com/Sunllo/DeskPair/releases/latest) und unter

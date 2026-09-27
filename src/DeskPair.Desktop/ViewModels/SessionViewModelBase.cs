@@ -126,8 +126,19 @@ public abstract partial class SessionViewModelBase : ObservableObject, IControll
 
     protected virtual Task OnAuthorizedAsync() => Task.CompletedTask;
 
+    /// <summary>
+    /// False only in the screenshot tool, whose windows show a session that was never dialled: opening one must not
+    /// reach for a server, a portal or a peer, nor save the sample settings over the user's own.
+    /// </summary>
+    internal static bool Dials { get; set; } = true;
+
     public async Task StartAsync()
     {
+        if (!Dials)
+        {
+            return;
+        }
+
         string serverKey = PeerSettings.CleanBase64(_config.ServerPublicKeyBase64);
         if (serverKey.Length == 0 && _config.RendezvousServer.Length > 0 && !PeerConnector.IsDirectTarget(Target))
         {

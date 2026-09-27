@@ -18,7 +18,8 @@ not in git). Not wire-compatible with RustDesk. Full design: `docs/architecture.
   (`Engine/LinuxService`, `--service`) that reads the scanout through DRM/KMS and injects through uinput, with
   the engine as the fixed `deskpair` account. See `docs/unattended-windows.md` and `docs/unattended-linux.md`.
 - `src/DeskPair.Rendezvous`, `src/DeskPair.Relay` — servers; reference `Protocol` + `Server.Shared`, never `Core`.
-- `tools/` — `PeerCli` (headless peer for E2E), `KeyGen`, `PlatformHarness`. `tests/` — xunit + Shouldly + NSubstitute.
+- `tools/` — `PeerCli` (headless peer for E2E), `KeyGen`, `PlatformHarness`, `Screenshots` (the README's pictures).
+  `tests/` — xunit + Shouldly + NSubstitute.
 - `packaging/linux/` — the .deb/.rpm/Arch package description (`nfpm.yaml`) and its install/remove scripts;
   `tools/package.ps1` builds all three per Linux RID with nfpm (`tools/fetch-nfpm.ps1`).
 
@@ -72,3 +73,8 @@ not in git). Not wire-compatible with RustDesk. Full design: `docs/architecture.
   Main window = navigation rail + `HomeView`/`SettingsView`; each settings tab is a `ViewModels/Settings/*SettingsViewModel`
   implementing `ISettingsSection` (Load/Validate/Apply/AfterSaveAsync) with its view under `Views/Settings/`. Controller
   settings persist in `DesktopConfig`, host settings in `HostConfig` over IPC; both read stored values over their defaults.
+- The README's pictures (`docs/images/screenshots/`) come from `tools/DeskPair.Tools.Screenshots`: the app's own windows,
+  drawn headless by Skia around made-up data (`Samples.cs`), never a capture of a real desk. Run it again after a visible
+  UI change (`dotnet run --project tools/DeskPair.Tools.Screenshots`). The internal seams it needs
+  (`DesktopConfig.PathOverride`, `SessionViewModelBase.Dials`, `HostLink.Deliver`, `MainWindowViewModel`'s parts
+  constructor) are for it alone.

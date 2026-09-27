@@ -22,6 +22,54 @@
 (сообщения protobuf, сквозное шифрование AES-256-GCM, идентификация по ECDSA P-256). См. `docs/architecture.md`;
 документы в `docs/` написаны на традиционном китайском.
 
+## Снимки экрана
+
+Настольное приложение в Windows. Изображения нарисованы из собственных окон приложения программой
+`tools/DeskPair.Tools.Screenshots`; компьютеры, люди и адреса на них вымышлены.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/remote-session.png" width="100%" alt="Удалённый сеанс"><br>
+      Управление другим компьютером; у каждого подключённого компьютера своя вкладка.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/file-transfer.png" width="100%" alt="Передача файлов"><br>
+      Передача файлов: слева этот компьютер, справа другой.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/home.png" width="100%" alt="Главное окно"><br>
+      ID и одноразовый пароль этого компьютера и компьютеры, к которым недавно подключались.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/devices.png" width="100%" alt="Устройства"><br>
+      Сохранённые устройства по группам и то, какие из них в сети.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/terminal.png" width="100%" alt="Удалённый терминал"><br>
+      Оболочка на другом компьютере, запущенная от имени учётной записи, указанной вверху.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/incoming-request.png" width="100%" alt="Запрос на подключение"><br>
+      Кто-то просит подключиться: человек за этим компьютером принимает или отклоняет запрос и выбирает, что разрешить.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/history.png" width="100%" alt="Журнал подключений"><br>
+      Кто подключался к этому компьютеру и что ему было разрешено.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/settings-security.png" width="100%" alt="Настройки безопасности"><br>
+      Настройки безопасности: кто может подключаться и как это доказать.
+    </td>
+  </tr>
+</table>
+
 ## Загрузка
 
 Каждый выпуск есть на [странице выпусков](https://github.com/Sunllo/DeskPair/releases/latest) и на

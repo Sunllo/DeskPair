@@ -259,6 +259,12 @@ public sealed class HostLink : IAsyncDisposable
         PasswordStateChanged?.Invoke(PasswordState);
     }
 
+    /// <summary>
+    /// Takes <paramref name="message"/> as though the engine had pushed it, with no engine: for the screenshot tool
+    /// and tests, which bring the id, password and configuration a picture or an assertion needs.
+    /// </summary>
+    internal void Deliver(IpcMessage message) => OnPushed(message);
+
     private void OnPushed(IpcMessage message)
     {
         switch (message.UnionCase)

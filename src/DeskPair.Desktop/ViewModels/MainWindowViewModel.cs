@@ -16,14 +16,14 @@ public partial class MainWindowViewModel : ObservableObject
     public Services.Toasts Toasts => Services.Toasts.Current;
 
     public MainWindowViewModel(HostLink host)
+        : this(
+            new HomeViewModel(host),
+            new DeviceListViewModel(),
+            new IncomingConnectionsViewModel(host),
+            new ConnectionHistoryViewModel(host),
+            new SettingsViewModel(host),
+            new UpdateNoticeViewModel())
     {
-        Home = new HomeViewModel(host);
-        Devices = new DeviceListViewModel();
-        Incoming = new IncomingConnectionsViewModel(host);
-        History = new ConnectionHistoryViewModel(host);
-        Settings = new SettingsViewModel(host);
-        Update = new UpdateNoticeViewModel();
-
         // The device list is the account's list: it lives in the portal's database, folders and all, and
         // follows the person to whatever else they sign in on. So the page asks once, and hears about it
         // when the answer changes on the settings screen rather than only when the window is reopened.
@@ -42,6 +42,27 @@ public partial class MainWindowViewModel : ObservableObject
             Update.Show(updates.Current);
             updates.Changed += state => Avalonia.Threading.Dispatcher.UIThread.Post(() => Update.Show(state));
         }
+    }
+
+    /// <summary>
+    /// The window from parts somebody else built: the screenshot tool, which must not read this machine's device list,
+    /// account or settings, and so does not ask the account either -- the rail shows nobody signed in.
+    /// </summary>
+    internal MainWindowViewModel(
+        HomeViewModel home,
+        DeviceListViewModel devices,
+        IncomingConnectionsViewModel incoming,
+        ConnectionHistoryViewModel history,
+        SettingsViewModel settings,
+        UpdateNoticeViewModel update)
+    {
+        Home = home;
+        Devices = devices;
+        Incoming = incoming;
+        History = history;
+        Settings = settings;
+        Update = update;
+        AccountLine = Strings.Get("nav.account.signIn");
     }
 
     private async Task RefreshAccountAsync()

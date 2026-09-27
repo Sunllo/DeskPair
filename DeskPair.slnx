@@ -33,6 +33,7 @@
     <Project Path="tools/DeskPair.Tools.LinuxHarness/DeskPair.Tools.LinuxHarness.csproj" />
     <Project Path="tools/DeskPair.Tools.PeerCli/DeskPair.Tools.PeerCli.csproj" />
     <Project Path="tools/DeskPair.Tools.PlatformHarness/DeskPair.Tools.PlatformHarness.csproj" />
+    <Project Path="tools/DeskPair.Tools.Screenshots/DeskPair.Tools.Screenshots.csproj" />
     <Project Path="tools/DeskPair.Tools.Vectors/DeskPair.Tools.Vectors.csproj" />
   </Folder>
 </Solution>

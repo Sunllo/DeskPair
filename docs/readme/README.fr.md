@@ -22,6 +22,54 @@ L'architecture s'inspire de [RustDesk](https://github.com/rustdesk/rustdesk) mai
 (messages protobuf, AES-256-GCM de bout en bout, identités ECDSA P-256). Voir `docs/architecture.md` ; les documents
 de `docs/` sont rédigés en chinois traditionnel.
 
+## Captures d'écran
+
+L'application de bureau sous Windows. Les images sont dessinées à partir des propres fenêtres de l'application par
+`tools/DeskPair.Tools.Screenshots` ; les ordinateurs, les personnes et les adresses qu'elles montrent sont fictifs.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/remote-session.png" width="100%" alt="Une session à distance"><br>
+      Le contrôle d'un autre ordinateur ; chaque ordinateur connecté a son propre onglet.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/file-transfer.png" width="100%" alt="Transfert de fichiers"><br>
+      Transfert de fichiers : cet ordinateur à gauche, l'autre à droite.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/home.png" width="100%" alt="La fenêtre principale"><br>
+      L'ID et le mot de passe à usage unique de cet ordinateur, et les ordinateurs joints récemment.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/devices.png" width="100%" alt="Appareils"><br>
+      Les appareils enregistrés, par groupes, et ceux qui sont en ligne.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/terminal.png" width="100%" alt="Un terminal à distance"><br>
+      Un shell sur un autre ordinateur, exécuté sous le compte indiqué en haut.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/incoming-request.png" width="100%" alt="Une demande de connexion"><br>
+      Quelqu'un demande à se connecter : la personne devant cet ordinateur accepte ou refuse, et choisit ce qu'elle autorise.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/history.png" width="100%" alt="Historique des connexions"><br>
+      Qui s'est connecté à cet ordinateur, et ce qui lui était permis.
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/settings-security.png" width="100%" alt="Paramètres de sécurité"><br>
+      Paramètres de sécurité : qui peut se connecter, et comment le prouver.
+    </td>
+  </tr>
+</table>
+
 ## Téléchargement
 
 Chaque version se trouve sur la [page des versions](https://github.com/Sunllo/DeskPair/releases/latest) et sur

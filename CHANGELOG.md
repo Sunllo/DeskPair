@@ -17,6 +17,13 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## Desktop, unreleased
+
+### Fixed
+
+- The connection manager's card wraps the line that says what somebody wants ("… wants to control this computer")
+  instead of cutting it off after their name.
+
 ## 0.4.3 — 2026-09-28
 
 Desktop only; the phones stay at 0.4.0.

@@ -49,7 +49,8 @@
                     </StackPanel>
                     <TextBlock Foreground="#777" FontSize="12"><Run Text="{loc:Loc cm.deviceId}" /><Run Text="{Binding PeerIdSpaced}" /></TextBlock>
                     <TextBlock Foreground="#777" FontSize="12" Text="{Binding Address}" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Foreground="#777" FontSize="12" Text="{Binding Description}" />
+                    <!-- Wraps: it is the line that says what they want, and in a card this narrow it was cut after the name. -->
+                    <TextBlock Foreground="#777" FontSize="12" Text="{Binding Description}" TextWrapping="Wrap" />
                   </StackPanel>
                   <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Top">
                     <Button Content="{loc:Loc cm.accept}" Command="{Binding AcceptCommand}" IsVisible="{Binding IsPending}" IsEnabled="{Binding CanAccept}" Background="#2E7CF6" Foreground="White" Padding="12,4" CornerRadius="6" />

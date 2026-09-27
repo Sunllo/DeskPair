@@ -132,7 +132,13 @@ public sealed record DesktopConfig
     /// </summary>
     public List<PeerResolution> PeerResolutions { get; init => field = value ?? []; } = [];
 
-    public static string DefaultPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Sunllo", "DeskPair", "desktop.json");
+    public static string DefaultPath => PathOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Sunllo", "DeskPair", "desktop.json");
+
+    /// <summary>
+    /// Set only by the screenshot tool, before anything is loaded: its sample settings, and the device list beside
+    /// them, then live in a scratch folder, and nothing it does can read or overwrite the user's own.
+    /// </summary>
+    internal static string? PathOverride { get; set; }
 
     public static DesktopConfig Load(string? path = null)
     {

@@ -20,6 +20,54 @@ The architecture borrows from [RustDesk](https://github.com/rustdesk/rustdesk) b
 (protobuf messages, end-to-end AES-256-GCM, ECDSA P-256 identities). See `docs/architecture.md`; the documents
 under `docs/` are written in Traditional Chinese.
 
+## Screenshots
+
+The desktop app on Windows. The pictures are drawn from the app's own windows by `tools/DeskPair.Tools.Screenshots`,
+and the computers, people and addresses in them are made up.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/screenshots/remote-session.png" width="100%" alt="A remote session"><br>
+      Controlling another computer; each one you are connected to has its own tab.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/screenshots/file-transfer.png" width="100%" alt="File transfer"><br>
+      File transfer: this computer on the left, the other one on the right.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/screenshots/home.png" width="100%" alt="The main window"><br>
+      Your ID and one-time password, and the computers you reached recently.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/screenshots/devices.png" width="100%" alt="Devices"><br>
+      Saved devices in groups, and which of them are online.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/screenshots/terminal.png" width="100%" alt="A remote terminal"><br>
+      A shell on another computer, running as the account named at the top.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/screenshots/incoming-request.png" width="100%" alt="A request to connect"><br>
+      Someone asks to connect: the person at this computer accepts or rejects, and picks what to allow.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/screenshots/history.png" width="100%" alt="Connection history"><br>
+      Who has connected to this computer, and what they were allowed to do.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/screenshots/settings-security.png" width="100%" alt="Security settings"><br>
+      Security settings: who may connect, and how they prove it.
+    </td>
+  </tr>
+</table>
+
 ## Download
 
 Every release is on the [releases page](https://github.com/Sunllo/DeskPair/releases/latest) and at

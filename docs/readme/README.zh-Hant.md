@@ -20,6 +20,53 @@
 架構參考了 [RustDesk](https://github.com/rustdesk/rustdesk)，但使用自己的協定（protobuf 訊息、端對端
 AES-256-GCM、ECDSA P-256 身分）。詳見 `docs/architecture.md`；`docs/` 底下的文件都以繁體中文撰寫。
 
+## 截圖
+
+Windows 上的桌面程式。這些圖由 `tools/DeskPair.Tools.Screenshots` 從程式自己的視窗繪製而成，圖中的電腦、人名與位址都是虛構的。
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/remote-session.png" width="100%" alt="遠端工作階段"><br>
+      控制另一台電腦；每台連線中的電腦各有自己的分頁。
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/file-transfer.png" width="100%" alt="檔案傳輸"><br>
+      檔案傳輸：左邊是這台電腦，右邊是對方。
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/home.png" width="100%" alt="主視窗"><br>
+      這台電腦的 ID 與臨時密碼，以及最近連線過的電腦。
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/devices.png" width="100%" alt="設備清單"><br>
+      設備清單依群組排列，並顯示哪些在線。
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/terminal.png" width="100%" alt="遠端終端機"><br>
+      另一台電腦上的 shell，以頂端標示的帳號執行。
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/incoming-request.png" width="100%" alt="連線要求"><br>
+      有人要求連線時，這台電腦前的人決定接受或拒絕，並勾選允許的權限。
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/history.png" width="100%" alt="連線紀錄"><br>
+      誰連線過這台電腦，以及當時被允許做什麼。
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/settings-security.png" width="100%" alt="安全設定"><br>
+      安全設定：誰可以連線，以及如何證明身分。
+    </td>
+  </tr>
+</table>
+
 ## 下載
 
 每個版本都在 [Releases 頁面](https://github.com/Sunllo/DeskPair/releases/latest)與

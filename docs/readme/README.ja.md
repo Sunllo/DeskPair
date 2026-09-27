@@ -22,6 +22,54 @@ C# / .NET 10 で書かれた、クロスプラットフォーム（Windows／mac
 （protobuf メッセージ、エンドツーエンドの AES-256-GCM、ECDSA P-256 による識別）を使っています。詳しくは
 `docs/architecture.md` を参照してください。`docs/` 以下のドキュメントは繁体字中国語で書かれています。
 
+## スクリーンショット
+
+Windows 版のデスクトップアプリです。画像は `tools/DeskPair.Tools.Screenshots` がアプリ自身のウィンドウから描き出したもので、
+写っているコンピューター、人、アドレスはすべて架空のものです。
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/remote-session.png" width="100%" alt="リモートセッション"><br>
+      別のコンピューターを操作しているところ。接続中のコンピューターごとにタブが分かれます。
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/file-transfer.png" width="100%" alt="ファイル転送"><br>
+      ファイル転送。左がこのコンピューター、右が相手側です。
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/home.png" width="100%" alt="メインウィンドウ"><br>
+      このコンピューターの ID とワンタイムパスワード、最近接続したコンピューター。
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/devices.png" width="100%" alt="デバイス"><br>
+      グループ分けして保存したデバイスと、そのオンライン状態。
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/terminal.png" width="100%" alt="リモートターミナル"><br>
+      別のコンピューターのシェル。上部に表示されたアカウントで動いています。
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/incoming-request.png" width="100%" alt="接続の要求"><br>
+      接続を求められると、このコンピューターの前にいる人が受け入れるか拒否するかを選び、許可する操作を決めます。
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/history.png" width="100%" alt="接続履歴"><br>
+      このコンピューターに誰が接続し、何を許可されていたか。
+    </td>
+    <td width="50%" valign="top">
+      <img src="../images/screenshots/settings-security.png" width="100%" alt="セキュリティ設定"><br>
+      セキュリティ設定。誰が接続できるか、どうやって本人であることを示すか。
+    </td>
+  </tr>
+</table>
+
 ## ダウンロード
 
 各リリースは[リリースページ](https://github.com/Sunllo/DeskPair/releases/latest)と
