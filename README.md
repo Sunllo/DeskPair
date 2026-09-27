@@ -1,5 +1,10 @@
 # Sunllo DeskPair
 
+**English** · [繁體中文](docs/readme/README.zh-Hant.md) · [简体中文](docs/readme/README.zh-Hans.md) ·
+[日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Deutsch](docs/readme/README.de.md) ·
+[Français](docs/readme/README.fr.md) · [Español](docs/readme/README.es.md) ·
+[Português (Brasil)](docs/readme/README.pt-BR.md) · [Русский](docs/readme/README.ru.md)
+
 Cross-platform (Windows / macOS / Linux) remote desktop system written in C# / .NET 10.
 
 - **Desktop** (Avalonia) — controller and host in one application.
@@ -12,7 +17,34 @@ across them. They are a service run at `deskpair.app`, which the apps reach over
 not published.
 
 The architecture borrows from [RustDesk](https://github.com/rustdesk/rustdesk) but uses its own protocol
-(protobuf messages, end-to-end AES-256-GCM, ECDSA P-256 identities). See `docs/architecture.md`.
+(protobuf messages, end-to-end AES-256-GCM, ECDSA P-256 identities). See `docs/architecture.md`; the documents
+under `docs/` are written in Traditional Chinese.
+
+## Download
+
+Every release is on the [releases page](https://github.com/Sunllo/DeskPair/releases/latest) and at
+[deskpair.app/download](https://deskpair.app/download), with a SHA-256 for each file (`SHA256SUMS`).
+
+| System | Files |
+|---|---|
+| Windows 10 1809 or later | `DeskPair-<version>-win-x64.zip`, `-win-arm64.zip`, `-win-x86.zip` (32-bit). Not code-signed yet, so SmartScreen asks before the first run. |
+| macOS 13 or later | `DeskPair-<version>-arm64.dmg` (Apple silicon), `-x86_64.dmg` (Intel). Signed and notarised. |
+| Linux, glibc 2.31 or later | x64, ARM64 and 32-bit ARM (ARMv7): a `.deb`, an `.rpm`, an Arch package and a `.tar.gz` for each. |
+
+On Linux, install the package for your distribution with its own tools (the x64 names are shown):
+
+```
+sudo apt install ./deskpair_<version>_amd64.deb                              # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf install ./deskpair-<version>-1.x86_64.rpm                            # Fedora, RHEL
+sudo zypper install --allow-unsigned-rpm ./deskpair-<version>-1.x86_64.rpm    # openSUSE
+sudo pacman -U deskpair-<version>-1-x86_64.pkg.tar.zst                        # Arch, Manjaro
+```
+
+A package puts DeskPair in `/usr/lib/deskpair`, with `deskpair` on the path and an entry in the applications menu.
+When a new version comes out the app says so, and the new package is installed the same way. The `.tar.gz` runs from
+wherever it is unpacked, on any distribution, and updates itself, as the Windows and macOS builds do.
+
+The phone apps, which control a computer, are not in the stores yet.
 
 ## Build
 
@@ -39,9 +71,10 @@ dotnet run --project src/DeskPair.Desktop
 dotnet run --project src/DeskPair.Desktop -- --server
 ```
 
-**Unattended access** -- reachable while the computer is locked or nobody is signed in -- is a role you install:
-a service on Windows, a launchd agent on macOS and a root daemon on Linux. See `docs/unattended-windows.md` and
-`docs/unattended-linux.md`. Without it, turn on "start at sign-in" in Settings to be reachable after a restart.
+**Unattended access** -- reachable while the computer is locked or nobody is signed in -- is a role you install
+from Settings › Security › Reachable while locked: a service on Windows, a launchd agent on macOS and a root daemon
+on Linux. See `docs/unattended-windows.md` and `docs/unattended-linux.md`. Without it, turn on Settings › General ›
+**Start when I sign in** to be reachable after a restart.
 
 On macOS, run the app from its `.app` bundle: screen-recording and accessibility consent is granted to the
 bundle, and a binary started from a terminal takes the terminal's consent instead. That makes `--server` a
@@ -80,4 +113,4 @@ DeskPair is free software under the [GNU Affero General Public License, version 
 if you run the servers for other people: section 13 asks you to offer those people the source of what you are
 actually running, changes included.
 
-Third-party components keep their own licences; the application lists them under Settings -> About.
+Third-party components keep their own licences; the application lists them under Settings › About DeskPair.

@@ -27,6 +27,8 @@ not in git). Not wire-compatible with RustDesk. Full design: `docs/architecture.
 - .NET 10, `Directory.Build.props` owns TFM/analyzers (`TreatWarningsAsErrors`), `Directory.Packages.props` owns every package version (central package management; `dotnet add package` does not update it — edit the props file).
 - Solution file is `DeskPair.slnx`. Build: `dotnet build DeskPair.slnx`; test: `dotnet test DeskPair.slnx`.
 - Code, comments and commit messages in English. UI strings go through resources (zh-TW + en).
+- README.md (English) is the source of nine translations in `docs/readme/`; change them together.
+  `ReadmeTranslationTests` fails when a translation's commands, sections or language links fall behind.
 - Time-dependent logic takes a `TimeProvider`; never call `DateTime.UtcNow` directly in Core/Protocol.
 - Crypto is BCL only (ECDSA/ECDH P-256, HKDF, AES-256-GCM). Do not add native crypto packages.
 - Protocol changes: add fields, never renumber; bump `ProtocolConstants.ProtocolVersion` for incompatible changes.
