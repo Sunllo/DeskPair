@@ -27,10 +27,13 @@ C# 永遠不在 PipeWire 的執行緒上跑，PipeWire 也永遠不呼叫 C#。�
 ## 建置
 
 ```
-pwsh tools/build-wayland-shim.ps1
+pwsh tools/build-wayland-shim.ps1                   # linux-x64
+pwsh tools/build-wayland-shim.ps1 -Rid linux-arm64
+pwsh tools/build-wayland-shim.ps1 -Rid linux-arm    # 32 位元 ARMv7
 ```
 
-在 Docker 的 Ubuntu 22.04 容器裡跑 `build.sh`，產出 `artifacts/wayland-shim/linux-x64/libSunlloWaylandShim.so`。
+在 Docker 的 Ubuntu 22.04 容器裡跑 `build.sh`，產出 `artifacts/wayland-shim/<rid>/libSunlloWaylandShim.so`。
+ARM 的兩個在 Docker Desktop 提供的模擬下執行，比 x64 慢得多，但不需要另外的交叉編譯工具。
 選 22.04 是為了相容性：結果只需要 glibc 2.35 與 PipeWire 0.3.48，比這新的發行版都能用。任何裝了
 `build-essential pkg-config libpipewire-0.3-dev` 的 Linux 也可以直接跑 `build.sh`。
 

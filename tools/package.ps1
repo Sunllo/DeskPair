@@ -22,7 +22,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$AppVersion,
-    [string[]]$Rids = @("win-x64", "linux-x64"),
+    [string[]]$Rids = @("win-x64", "win-x86", "win-arm64", "linux-x64", "linux-arm64", "linux-arm"),
     [string]$Channel = "stable",
     [string]$NotesFile,
     [string]$NotesFileZh,
@@ -91,7 +91,7 @@ function Resolve-GnuTar {
 
 $artifacts = @()
 
-function Add-Artifact([string]$Path, [string]$Platform, [string]$Arch, [string]$Requires, [bool]$Signed) {
+function Add-Artifact([string]$Path, [string]$Platform, [string]$Arch, [string]$Requires, [bool]$Signed, [string]$Format) {
     $item = Get-Item $Path
     $hash = (Get-FileHash -Algorithm SHA256 $Path).Hash.ToLowerInvariant()
 
@@ -105,8 +105,49 @@ function Add-Artifact([string]$Path, [string]$Platform, [string]$Arch, [string]$
         sha256   = $hash
         requires = $Requires
         signed   = $Signed
+        format   = $Format
     }
     "  {0,-38} {1,8:N1} MB" -f $item.Name, ($item.Length / 1MB) | Write-Host
+}
+
+# ---- Linux system packages ---------------------------------------------------------------------------
+# One description (packaging/linux/nfpm.yaml), three formats: .deb, .rpm and Arch's .pkg.tar.zst, each named the
+# way its own distributions name packages. nfpm reads only some fields from the environment, so the template's
+# @NAME@ placeholders are filled in here and the result handed to it.
+function Add-LinuxPackages([string]$Rid, [string]$Stage) {
+    $nfpm = Join-Path $repo "artifacts\tools\nfpm\nfpm.exe"
+    if (-not (Test-Path $nfpm)) { & (Join-Path $PSScriptRoot "fetch-nfpm.ps1") | Out-Null }
+
+    $names = @{
+        "linux-x64"   = @{ Nfpm = "amd64"; Deb = "amd64"; Rpm = "x86_64";  Arch = "x86_64";  Rpm64 = "()(64bit)" }
+        "linux-arm64" = @{ Nfpm = "arm64"; Deb = "arm64"; Rpm = "aarch64"; Arch = "aarch64"; Rpm64 = "()(64bit)" }
+        "linux-arm"   = @{ Nfpm = "arm7";  Deb = "armhf"; Rpm = "armv7hl"; Arch = "armv7h";  Rpm64 = "" }
+    }[$Rid]
+    $files = [ordered]@{
+        "deb"       = "deskpair_$($AppVersion)_$($names.Deb).deb"
+        "rpm"       = "deskpair-$AppVersion-1.$($names.Rpm).rpm"
+        "archlinux" = "deskpair-$AppVersion-1-$($names.Arch).pkg.tar.zst"
+    }
+
+    $template = [IO.File]::ReadAllText((Join-Path $repo "packaging\linux\nfpm.yaml"))
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    foreach ($format in $files.Keys) {
+        $marker = Join-Path $stageRoot "packaged-$format"
+        [IO.File]::WriteAllText($marker, $format, $utf8)
+        $config = $template.Replace("@NFPM_ARCH@", $names.Nfpm).Replace("@VERSION@", $AppVersion).
+            Replace("@STAGE@", $Stage.Replace('\', '/')).Replace("@REPO@", "$repo".Replace('\', '/')).
+            Replace("@MARKER@", $marker.Replace('\', '/')).Replace("@RPM64@", $names.Rpm64)
+        $configPath = Join-Path $stageRoot "nfpm-$Rid-$format.yaml"
+        [IO.File]::WriteAllText($configPath, $config, $utf8)
+
+        $target = Join-Path $release $files[$format]
+        & $nfpm pkg --packager $format --config $configPath --target $target | Out-Null
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $target) -or (Get-Item $target).Length -eq 0) {
+            throw "nfpm could not build the $format package for $Rid."
+        }
+        Add-Artifact -Path $target -Platform "linux" -Arch ($Rid -replace '^linux-', '') `
+            -Requires "glibc 2.31" -Signed $false -Format $format
+    }
 }
 
 foreach ($rid in $Rids) {
@@ -145,7 +186,7 @@ foreach ($rid in $Rids) {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $zip, "Optimal", $true)
         Add-Artifact -Path $zip -Platform "windows" -Arch ($rid -replace '^win-', '') `
-            -Requires "Windows 10 1809" -Signed $false
+            -Requires "Windows 10 1809" -Signed $false -Format "zip"
     }
     elseif ($rid -like "linux-*") {
         # No equivalent version check here: an ELF has no Win32 version resource, and a single-file publish
@@ -195,8 +236,11 @@ foreach ($rid in $Rids) {
             throw "DeskPair is not executable inside $archive (listing said '$entry')."
         }
 
+        # The archive first: apps from before system packages existed take the first linux file for their
+        # architecture and can only install an archive.
         Add-Artifact -Path $archive -Platform "linux" -Arch ($rid -replace '^linux-', '') `
-            -Requires "glibc 2.31" -Signed $false
+            -Requires "glibc 2.31" -Signed $false -Format "tar.gz"
+        Add-LinuxPackages -Rid $rid -Stage $stage
     }
     else {
         Write-Warning "Nothing known about how to package $rid; skipped."
@@ -209,8 +253,10 @@ foreach ($arch in @("arm64", "x86_64")) {
     if (Test-Path $dmg) {
         Write-Host "==> macOS $arch"
         Copy-Item $dmg $release -Force
-        Add-Artifact -Path (Join-Path $release (Split-Path $dmg -Leaf)) -Platform "macos" -Arch $arch `
-            -Requires "macOS 13" -Signed $true
+        # The file keeps Apple's name for the architecture; the manifest uses the one the app reports (x64).
+        $manifestArch = if ($arch -eq "x86_64") { "x64" } else { $arch }
+        Add-Artifact -Path (Join-Path $release (Split-Path $dmg -Leaf)) -Platform "macos" -Arch $manifestArch `
+            -Requires "macOS 13" -Signed $true -Format "dmg"
     }
 }
 if (-not ($artifacts | Where-Object { $_.platform -eq "macos" })) {

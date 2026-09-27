@@ -152,45 +152,51 @@ internal static unsafe partial class OpenH264
 
     // ---- C entry points ----
 
+    // OpenH264's entry points and interface methods are cdecl (EXTAPI in codec_api.h); on 32-bit Windows the default is stdcall.
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int WelsCreateSVCEncoder(nint* ppEncoder);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial void WelsDestroySVCEncoder(nint pEncoder);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial CLong WelsCreateDecoder(nint* ppDecoder);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial void WelsDestroyDecoder(nint pDecoder);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial void WelsGetCodecVersionEx(OpenH264Version* pVersion);
 
     // ---- vtables (order from ISVCEncoderVtbl / ISVCDecoderVtbl) ----
 
     private static nint* Vtable(nint obj) => *(nint**)obj;
 
-    public static int EncInitializeExt(nint enc, SEncParamExt* p) => ((delegate* unmanaged<nint, SEncParamExt*, int>)Vtable(enc)[1])(enc, p);
+    public static int EncInitializeExt(nint enc, SEncParamExt* p) => ((delegate* unmanaged[Cdecl]<nint, SEncParamExt*, int>)Vtable(enc)[1])(enc, p);
 
-    public static int EncGetDefaultParams(nint enc, SEncParamExt* p) => ((delegate* unmanaged<nint, SEncParamExt*, int>)Vtable(enc)[2])(enc, p);
+    public static int EncGetDefaultParams(nint enc, SEncParamExt* p) => ((delegate* unmanaged[Cdecl]<nint, SEncParamExt*, int>)Vtable(enc)[2])(enc, p);
 
-    public static int EncUninitialize(nint enc) => ((delegate* unmanaged<nint, int>)Vtable(enc)[3])(enc);
+    public static int EncUninitialize(nint enc) => ((delegate* unmanaged[Cdecl]<nint, int>)Vtable(enc)[3])(enc);
 
-    public static int EncEncodeFrame(nint enc, SSourcePicture* pic, SFrameBSInfo* info) => ((delegate* unmanaged<nint, SSourcePicture*, SFrameBSInfo*, int>)Vtable(enc)[4])(enc, pic, info);
+    public static int EncEncodeFrame(nint enc, SSourcePicture* pic, SFrameBSInfo* info) => ((delegate* unmanaged[Cdecl]<nint, SSourcePicture*, SFrameBSInfo*, int>)Vtable(enc)[4])(enc, pic, info);
 
     /// <summary>C++ signature is ForceIntraFrame(bool bIDR, int iLayerId = -1); the default is not in the vtable call, so pass -1 (all layers).</summary>
-    public static int EncForceIntraFrame(nint enc, bool idr) => ((delegate* unmanaged<nint, byte, int, int>)Vtable(enc)[6])(enc, idr ? (byte)1 : (byte)0, -1);
+    public static int EncForceIntraFrame(nint enc, bool idr) => ((delegate* unmanaged[Cdecl]<nint, byte, int, int>)Vtable(enc)[6])(enc, idr ? (byte)1 : (byte)0, -1);
 
-    public static int EncSetOption(nint enc, int option, void* value) => ((delegate* unmanaged<nint, int, void*, int>)Vtable(enc)[7])(enc, option, value);
+    public static int EncSetOption(nint enc, int option, void* value) => ((delegate* unmanaged[Cdecl]<nint, int, void*, int>)Vtable(enc)[7])(enc, option, value);
 
-    public static CLong DecInitialize(nint dec, SDecodingParam* p) => ((delegate* unmanaged<nint, SDecodingParam*, CLong>)Vtable(dec)[0])(dec, p);
+    public static CLong DecInitialize(nint dec, SDecodingParam* p) => ((delegate* unmanaged[Cdecl]<nint, SDecodingParam*, CLong>)Vtable(dec)[0])(dec, p);
 
-    public static CLong DecUninitialize(nint dec) => ((delegate* unmanaged<nint, CLong>)Vtable(dec)[1])(dec);
+    public static CLong DecUninitialize(nint dec) => ((delegate* unmanaged[Cdecl]<nint, CLong>)Vtable(dec)[1])(dec);
 
-    public static int DecDecodeFrameNoDelay(nint dec, byte* src, int srcLen, byte** dst, SBufferInfo* info) => ((delegate* unmanaged<nint, byte*, int, byte**, SBufferInfo*, int>)Vtable(dec)[3])(dec, src, srcLen, dst, info);
+    public static int DecDecodeFrameNoDelay(nint dec, byte* src, int srcLen, byte** dst, SBufferInfo* info) => ((delegate* unmanaged[Cdecl]<nint, byte*, int, byte**, SBufferInfo*, int>)Vtable(dec)[3])(dec, src, srcLen, dst, info);
 
-    public static CLong DecSetOption(nint dec, int option, void* value) => ((delegate* unmanaged<nint, int, void*, CLong>)Vtable(dec)[8])(dec, option, value);
+    public static CLong DecSetOption(nint dec, int option, void* value) => ((delegate* unmanaged[Cdecl]<nint, int, void*, CLong>)Vtable(dec)[8])(dec, option, value);
 }
 
 [StructLayout(LayoutKind.Sequential)]

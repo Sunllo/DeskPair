@@ -14,7 +14,7 @@
   exactly a module definition file, so the DLL exports what libvpx itself would have exported and nothing
   more.
 
-  The result is artifacts/vpx/shim/vpx.dll, which the loader finds through SUNLLO_LIBVPX_PATH, or beside the
+  The result is artifacts/vpx/<rid>/vpx.dll, which the loader finds through SUNLLO_LIBVPX_PATH, or beside the
   executable once publish.ps1 has copied it.
 
   Nothing here is committed. Unlike OpenH264 there is no licence reason not to ship the binary -- libvpx is
@@ -27,17 +27,32 @@
 .PARAMETER BuildTrees
   vcpkg's scratch directory. Keep it short: MSVC fails with "cannot open compiler generated file ''" when the
   intermediate paths approach MAX_PATH, which a deep temp directory does on its own.
+
+.PARAMETER Rid
+  win-x64 (default), win-x86 or win-arm64. The other two are cross-compiled from an x64 machine, which needs
+  Visual Studio's matching C++ build tools (the ARM64 ones are a separate component).
 #>
 [CmdletBinding()]
 param(
-    [string]$Sources = (Join-Path $PSScriptRoot '..\reference\libvpx'),
-    [string]$BuildTrees = 'C:\vpxbt'
+    [string]$Sources,
+    [string]$BuildTrees = 'C:\vpxbt',
+    [ValidateSet('win-x64', 'win-x86', 'win-arm64')][string]$Rid = 'win-x64'
 )
 
 $ErrorActionPreference = 'Stop'
+# Here rather than as the parameter's default: Windows PowerShell leaves $PSScriptRoot empty in a param block
+# when the script is started with -File.
+if (-not $Sources) { $Sources = Join-Path $PSScriptRoot '..\reference\libvpx' }
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
 $work = Join-Path $root 'artifacts\vpx'
-$shim = Join-Path $work 'shim'
+$shim = Join-Path $work $Rid
+
+# vcpkg's triplet, the developer prompt that targets the same machine from an x64 host, and link's name for it.
+$target = @{
+    'win-x64'   = @{ Triplet = 'x64-windows';   Vcvars = 'vcvars64.bat';          Machine = 'X64' }
+    'win-x86'   = @{ Triplet = 'x86-windows';   Vcvars = 'vcvarsamd64_x86.bat';   Machine = 'X86' }
+    'win-arm64' = @{ Triplet = 'arm64-windows'; Vcvars = 'vcvarsamd64_arm64.bat'; Machine = 'ARM64' }
+}[$Rid]
 
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 if (-not (Test-Path $vswhere)) { throw "Visual Studio is not installed (no vswhere at $vswhere)." }
@@ -67,13 +82,13 @@ if (-not (Test-Path $manifest)) {
 Write-Host "building libvpx through vcpkg (this takes a few minutes the first time)"
 Push-Location $work
 try {
-    & $vcpkg install --triplet x64-windows --x-buildtrees-root=$BuildTrees
+    & $vcpkg install --triplet $target.Triplet --x-buildtrees-root=$BuildTrees
     if ($LASTEXITCODE -ne 0) { throw "vcpkg install failed ($LASTEXITCODE)." }
 } finally {
     Pop-Location
 }
 
-$static = Join-Path $work 'vcpkg_installed\x64-windows\lib\vpx.lib'
+$static = Join-Path $work "vcpkg_installed\$($target.Triplet)\lib\vpx.lib"
 if (-not (Test-Path $static)) { throw "vcpkg did not produce $static." }
 
 # libvpx's export lists are "text <name>" for functions and "data <name>" for the codec interface objects,
@@ -88,10 +103,11 @@ $lines = Get-Content $exports |
     }
 @('EXPORTS') + $lines | Out-File -FilePath $def -Encoding ascii
 
-$vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+$vcvars = Join-Path $vs "VC\Auxiliary\Build\$($target.Vcvars)"
+if (-not (Test-Path $vcvars)) { throw "No $($target.Vcvars) in this Visual Studio: install the C++ build tools for $Rid." }
 Push-Location $shim
 try {
-    cmd /c "`"$vcvars`" >nul && link /NOLOGO /DLL /MACHINE:X64 /OUT:vpx.dll /DEF:vpx.def `"$static`"" | Out-Null
+    cmd /c "`"$vcvars`" >nul && link /NOLOGO /DLL /MACHINE:$($target.Machine) /OUT:vpx.dll /DEF:vpx.def `"$static`"" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "link failed ($LASTEXITCODE)." }
 } finally {
     Pop-Location

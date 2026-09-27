@@ -19,19 +19,19 @@ internal static partial class XTest
 
     /// <summary>Moves the pointer to an absolute position on the given screen (-1 = the default screen).</summary>
     [LibraryImport(Lib)]
-    public static partial int XTestFakeMotionEvent(nint display, int screen, int x, int y, ulong delay);
+    public static partial int XTestFakeMotionEvent(nint display, int screen, int x, int y, nuint delay);
 
     /// <summary>Moves by a delta rather than to a point; screen -1 means "the one the pointer is on".</summary>
     [LibraryImport(Lib)]
-    public static partial int XTestFakeRelativeMotionEvent(nint display, int dx, int dy, ulong delay);
+    public static partial int XTestFakeRelativeMotionEvent(nint display, int dx, int dy, nuint delay);
 
     /// <summary>Presses (isPress=true) or releases a mouse button. Buttons: 1 left, 2 middle, 3 right, 4/5 wheel.</summary>
     [LibraryImport(Lib)]
-    public static partial int XTestFakeButtonEvent(nint display, uint button, [MarshalAs(UnmanagedType.Bool)] bool isPress, ulong delay);
+    public static partial int XTestFakeButtonEvent(nint display, uint button, [MarshalAs(UnmanagedType.Bool)] bool isPress, nuint delay);
 
     /// <summary>Presses or releases a key by X keycode (not keysym — the caller maps first).</summary>
     [LibraryImport(Lib)]
-    public static partial int XTestFakeKeyEvent(nint display, uint keycode, [MarshalAs(UnmanagedType.Bool)] bool isPress, ulong delay);
+    public static partial int XTestFakeKeyEvent(nint display, uint keycode, [MarshalAs(UnmanagedType.Bool)] bool isPress, nuint delay);
 
     // ---- keysym / keycode mapping, from Xlib proper ----
 

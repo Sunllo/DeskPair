@@ -131,12 +131,16 @@ internal static partial class Uinput
         public AbsInfo Info;
     }
 
-    /// <summary><c>struct input_event</c> on a 64-bit kernel: a timeval the kernel fills in, then type, code, value.</summary>
+    /// <summary>
+    /// <c>struct input_event</c>: a timeval the kernel fills in, then type, code, value. The timeval's two fields are
+    /// C longs, so the event is 24 bytes on a 64-bit userland and 16 on 32-bit ARM -- where a 24-byte write is read
+    /// as one empty event and the rest refused.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct InputEvent
     {
-        public long Seconds;
-        public long Microseconds;
+        public nint Seconds;
+        public nint Microseconds;
         public ushort Type;
         public ushort Code;
         public int Value;

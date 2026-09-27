@@ -91,7 +91,11 @@ $common = @(
     # Drop XML docs from the output only. Turning generation off instead breaks the build: IDE0005 is an error
     # here, and the analyzer needs the documentation file to run.
     "-p:PublishDocumentationFile=false",
-    "-p:PublishReferencesDocumentationFiles=false"
+    "-p:PublishReferencesDocumentationFiles=false",
+    # The PDB path each library records becomes /_/... rather than wherever the repository sits on the machine that
+    # built it. DeskPair.dll itself keeps the real one: Avalonia's XAML compiler rewrites that assembly after the C#
+    # compiler has mapped it. So release builds are made from a clone whose path names nobody (C:\GitHub\DeskPair).
+    "-p:ContinuousIntegrationBuild=true"
 )
 
 if ($AppVersion) {
@@ -124,7 +128,11 @@ if ($LASTEXITCODE -ne 0) {
 # loader reports VP9 unavailable without it and negotiation simply never offers it. tools/build-libvpx.ps1
 # produces it; unlike OpenH264 there is no licence reason it cannot ship. It is a Windows DLL, so it only
 # belongs in a Windows build -- it was being copied into macOS and Linux folders, where nothing could load it.
-$vpx = Join-Path $repo (Join-Path 'artifacts' (Join-Path 'vpx' (Join-Path 'shim' 'vpx.dll')))
+# One per architecture (build-libvpx.ps1 -Rid); an x64 one built before that existed is still in artifacts/vpx/shim.
+$vpx = Join-Path $repo (Join-Path 'artifacts' (Join-Path 'vpx' (Join-Path $Rid 'vpx.dll')))
+if (($Rid -eq 'win-x64') -and -not (Test-Path $vpx)) {
+    $vpx = Join-Path $repo (Join-Path 'artifacts' (Join-Path 'vpx' (Join-Path 'shim' 'vpx.dll')))
+}
 if (($Rid -like 'win-*') -and (Test-Path $vpx)) {
     Copy-Item $vpx (Join-Path $out 'vpx.dll') -Force
     Write-Host "included vpx.dll (VP9)"

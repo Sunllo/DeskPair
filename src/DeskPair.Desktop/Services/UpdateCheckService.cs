@@ -184,6 +184,12 @@ public sealed class UpdateCheckService : IDisposable
     /// </summary>
     private async Task<ReleaseFile?> InstallableAsync(string portal, string version, CancellationToken ct)
     {
+        if (Update.PackagedInstall.Format is { } format)
+        {
+            _log.LogInformation("Installed by the system's package manager ({Format}); version {Version} is announced, and installing it is the package manager's job", format, version);
+            return null;
+        }
+
         byte[]? key = ReleaseSigning.KeyFor(portal, _publicKey());
         if (key is null)
         {

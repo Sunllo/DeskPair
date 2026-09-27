@@ -8,17 +8,32 @@ namespace DeskPair.Core.Update;
 /// <summary>One downloadable file, as the release manifest lists it. <see cref="Name"/> is a file name, never a path.</summary>
 public sealed record ReleaseFile(string Platform, string Arch, string Name, long Size, string Sha256, bool Signed = false)
 {
-    /// <summary>Whether this file is the one for the machine this code is running on.</summary>
+    /// <summary>Whether this file is the one for the machine this code is running on, and one it can install itself.</summary>
     public bool IsForThisMachine() =>
         string.Equals(Platform, ThisPlatform, StringComparison.OrdinalIgnoreCase)
         && string.Equals(Arch, ThisArch, StringComparison.OrdinalIgnoreCase)
         && Name.Length > 0
-        && Path.GetFileName(Name) == Name;
+        && Path.GetFileName(Name) == Name
+        && !IsSystemPackage;
+
+    /// <summary>
+    /// A .deb, .rpm or Arch package: the system's package manager installs those, and the app never does. Decided
+    /// by the name so that a manifest from before packages existed reads the same.
+    /// </summary>
+    public bool IsSystemPackage =>
+        Name.EndsWith(".deb", StringComparison.OrdinalIgnoreCase)
+        || Name.EndsWith(".rpm", StringComparison.OrdinalIgnoreCase)
+        || Name.EndsWith(".pkg.tar.zst", StringComparison.OrdinalIgnoreCase);
 
     public static string ThisPlatform =>
         OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : OperatingSystem.IsLinux() ? "linux" : "other";
 
-    public static string ThisArch => RuntimeInformation.OSArchitecture switch
+    /// <summary>
+    /// This program's architecture, which an update keeps. Not the operating system's: 32-bit Raspberry Pi OS runs a
+    /// 64-bit kernel on a Pi 4 or 5, where the arm64 build cannot start, and an x64 build on Windows on ARM keeps
+    /// working until somebody chooses the ARM64 one.
+    /// </summary>
+    public static string ThisArch => RuntimeInformation.ProcessArchitecture switch
     {
         Architecture.X64 => "x64",
         Architecture.Arm64 => "arm64",

@@ -53,8 +53,10 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 echo "==> publishing $RID"
 # -f is spelled out because the Desktop project grows a net10.0-windows target when it is built on
 # Windows, and a multi-target project refuses to publish without being told which one.
+# ContinuousIntegrationBuild maps the repository to /_/ in whatever paths the compiler records, so nothing in the
+# bundle names the home directory it was built in.
 dotnet publish "$ROOT/src/DeskPair.Desktop" -c Release -f net10.0 -r "$RID" --self-contained true \
-    -p:DebugType=none -o "$APP/Contents/MacOS"
+    -p:DebugType=none -p:ContinuousIntegrationBuild=true -o "$APP/Contents/MacOS"
 
 echo "==> building the native shim"
 ARCH="$ARCH" "$ROOT/native/macos/SunlloMacShim/build.sh" "$APP/Contents/MacOS/libSunlloMacShim.dylib"

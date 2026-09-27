@@ -90,6 +90,40 @@ public class SignedReleaseTests
         (mine?.Name ?? string.Empty).ShouldBe(expected);
     }
 
+    [Theory]
+    [InlineData("deskpair_0.4.3_amd64.deb", true)]
+    [InlineData("deskpair-0.4.3-1.x86_64.rpm", true)]
+    [InlineData("deskpair-0.4.3-1-aarch64.pkg.tar.zst", true)]
+    [InlineData("DESKPAIR_0.4.3_ARMHF.DEB", true)]
+    [InlineData("DeskPair-0.4.3-linux-x64.tar.gz", false)]
+    [InlineData("DeskPair-0.4.3-win-arm64.zip", false)]
+    [InlineData("DeskPair-0.4.3-x86_64.dmg", false)]
+    [InlineData("notes.tar.zst", false)]
+    public void Deb_rpm_and_Arch_packages_are_the_system_package_managers_to_install(string name, bool package)
+    {
+        new ReleaseFile("linux", "x64", name, 1, new string('a', 64)).IsSystemPackage.ShouldBe(package);
+    }
+
+    [Fact]
+    public void The_app_installs_the_archive_even_when_a_package_for_this_machine_is_listed_before_it()
+    {
+        string platform = ReleaseFile.ThisPlatform;
+        string arch = ReleaseFile.ThisArch;
+        var packagesFirst = new SignedReleaseManifest("stable", "0.4.3",
+        [
+            new(platform, arch, "deskpair_0.4.3_amd64.deb", 1, new string('a', 64)),
+            new(platform, arch, "deskpair-0.4.3-1.x86_64.rpm", 1, new string('b', 64)),
+            new(platform, arch, "deskpair-0.4.3-1-x86_64.pkg.tar.zst", 1, new string('c', 64)),
+            new(platform, arch, "DeskPair-0.4.3-archive.tar.gz", 1, new string('d', 64)),
+        ]);
+        packagesFirst.FileForThisMachine().ShouldNotBeNull().Name.ShouldBe("DeskPair-0.4.3-archive.tar.gz");
+
+        // A release with nothing but packages for this machine has nothing the app can install: it says so and
+        // sends the reader to the download page.
+        var packagesOnly = new SignedReleaseManifest("stable", "0.4.3", packagesFirst.Files.Take(3).ToList());
+        packagesOnly.FileForThisMachine().ShouldBeNull();
+    }
+
     [Fact]
     public void The_official_portal_uses_the_built_in_key_and_a_self_hosted_one_needs_its_own()
     {

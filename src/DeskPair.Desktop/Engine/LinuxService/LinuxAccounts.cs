@@ -26,11 +26,8 @@ internal static partial class LinuxAccounts
             return null;
         }
 
-        // struct passwd { char *pw_name; char *pw_passwd; uid_t pw_uid; gid_t pw_gid; ... } on LP64.
-        var fields = (byte*)entry;
-        uint uid = *(uint*)(fields + 16);
-        uint gid = *(uint*)(fields + 20);
-        return (uid, gid);
+        var pw = (PasswdEntry*)entry;
+        return (pw->Uid, pw->Gid);
     }
 
     /// <summary>The account with <paramref name="uid"/>: its name, primary group and home; null when passwd does not know it.</summary>
@@ -44,11 +41,10 @@ internal static partial class LinuxAccounts
                 return null;
             }
 
-            // struct passwd on LP64: pw_name 0, pw_passwd 8, pw_uid 16, pw_gid 20, pw_gecos 24, pw_dir 32, pw_shell 40.
-            var fields = (byte*)entry;
-            string? name = Marshal.PtrToStringUTF8(*(nint*)fields);
-            string? home = Marshal.PtrToStringUTF8(*(nint*)(fields + 32));
-            return string.IsNullOrEmpty(name) ? null : (name, *(uint*)(fields + 20), string.IsNullOrEmpty(home) ? "/" : home);
+            var pw = (PasswdEntry*)entry;
+            string? name = Marshal.PtrToStringUTF8(pw->Name);
+            string? home = Marshal.PtrToStringUTF8(pw->Dir);
+            return string.IsNullOrEmpty(name) ? null : (name, pw->Gid, string.IsNullOrEmpty(home) ? "/" : home);
         }
     }
 
@@ -56,6 +52,23 @@ internal static partial class LinuxAccounts
 
     // getpwuid answers from a static buffer; one caller at a time reads it.
     private static readonly object Passwd = new();
+
+    /// <summary>
+    /// glibc's struct passwd. Its ids are two 4-byte fields between pointers, so their offsets depend on the pointer
+    /// size -- uid at 16 on 64-bit, at 8 on 32-bit ARM. Reading through the struct lets the runtime lay it out as C
+    /// does; 64-bit offsets there would read a pointer as the engine's uid.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PasswdEntry
+    {
+        public nint Name;
+        public nint Password;
+        public uint Uid;
+        public uint Gid;
+        public nint Gecos;
+        public nint Dir;
+        public nint Shell;
+    }
 
     [LibraryImport("libc")]
     private static partial nint getpwuid(uint uid);

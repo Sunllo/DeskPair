@@ -17,6 +17,51 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## 0.4.3 — 2026-09-28
+
+Desktop only; the phones stay at 0.4.0.
+
+### Added
+
+- **More machines.** Windows now comes for 32-bit x86 and for ARM64 as well as x64; Linux for ARM64 and for 32-bit
+  ARM (ARMv7 -- a Raspberry Pi on 32-bit Raspberry Pi OS, among others) as well as x64; and macOS for Intel as well
+  as Apple silicon.
+- **Linux packages**: `.deb` (Debian, Ubuntu, Mint, Raspberry Pi OS), `.rpm` (Fedora, RHEL, openSUSE) and Arch
+  Linux's `.pkg.tar.zst` for each Linux architecture, beside the `.tar.gz` that runs on any of them. One description,
+  `packaging/linux/nfpm.yaml`, is built three ways by `tools/package.ps1` with nfpm. They install to
+  `/usr/lib/deskpair` with `deskpair` on the path, a menu entry and icons, and declare what the program loads --
+  ICU included, without which the .NET runtime stops before the program starts. With unattended access on, a
+  package upgrade hands the service the new version and removing the package removes the service. The app does not
+  update a packaged install itself: it says a new version is out, and the package manager installs it. Checked on
+  Debian 12, Ubuntu 22.04 and 24.04, Fedora 44, Rocky 9, openSUSE Tumbleweed and Leap 15.6 and Arch: install, start,
+  upgrade, remove.
+
+### Fixed
+
+These are all in code that only the new builds run.
+
+- **32-bit native bindings.** Every one that passed a C `long` as 64 bits -- Xlib, XTest, XFixes, XShm, Xrandr,
+  `mmap`'s offset, uinput's event times, `struct passwd` -- now uses the pointer-sized type, which is what a C `long`
+  is on Linux, and XEvent members and 32-bit X properties are read and written at C-long offsets (`XEventBytes`).
+  libvpx's configuration, packet and image structs derive their offsets from the pointer and `long` sizes, and
+  libvpx and OpenH264 are called cdecl, which 32-bit Windows needs.
+- The unattended daemon's framebuffer check reads the inode through `statx`, with `fstat` fallbacks per
+  architecture; on ARM64 with a glibc older than 2.33 it read the wrong field.
+- An update keeps the program's own architecture rather than the operating system's: 32-bit Raspberry Pi OS runs a
+  64-bit kernel on a Pi 4 or 5, where the ARM64 build cannot start.
+- libvpx 1.17 (soname 12, Arch's current one) is looked for by name.
+
+### Known limits
+
+- Windows x86 cannot add displays: the virtual display driver has no 32-bit build. Its VP9 encoder and decoder and
+  its codec discovery were run in a 32-bit process; a whole session on 32-bit Windows has not been.
+- The Windows ARM64 build has not yet run on ARM hardware.
+- The Linux ARM builds were tested under emulation (Docker with QEMU) against a real X server: capture, keyboard and
+  mouse, the clipboard both ways, VP9, a terminal, and the packages. Not yet on a Raspberry Pi, and the unattended
+  daemon's DRM and uinput paths not on ARM at all.
+- The Intel Mac build was run under Rosetta on an Apple silicon Mac -- it starts, captures and sends a session its
+  pictures -- but not yet on an Intel Mac.
+
 ## 0.4.2 — 2026-09-27
 
 Desktop only; the phones stay at 0.4.0.

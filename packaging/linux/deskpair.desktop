@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=DeskPair
+GenericName=Remote Desktop
+Comment=Control another computer, or let this one be controlled
+Exec=deskpair
+Icon=deskpair
+Terminal=false
+Categories=Network;RemoteAccess;
+Keywords=remote;desktop;control;screen;share;

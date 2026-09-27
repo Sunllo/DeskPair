@@ -29,10 +29,10 @@ internal static partial class XFixes
     /// whenever the CLIPBOARD selection changes, so a paste from any application is noticed at once.
     /// </summary>
     [LibraryImport(Lib)]
-    public static partial void XFixesSelectSelectionInput(nint display, nint window, nint selection, ulong eventMask);
+    public static partial void XFixesSelectSelectionInput(nint display, nint window, nint selection, nuint eventMask);
 
     /// <summary>SetSelectionOwner | SelectionWindowDestroy | SelectionClientClose.</summary>
-    public const ulong SelectionEventMask = 1 | 2 | 4;
+    public const nuint SelectionEventMask = 1 | 2 | 4;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct XFixesCursorImage

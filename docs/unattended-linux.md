@@ -118,6 +118,23 @@ evdev 鍵碼就是協定的 Map code（X 那邊是 +8）；`Translate` 模式用
 
 安裝之後 app 端 `UnattendedInstall.IsInstalled()`（unit 檔存在）為真，app 不再自己跑引擎，透過 `/run/deskpair/DeskPair.sock` 連上 daemon 的引擎。
 
+### 用 .deb／.rpm／Arch 套件安裝時（0.4.3 起）
+
+套件把程式放在 `/usr/lib/deskpair`（`/usr/bin/deskpair` 是連結），刻意不用 `/opt/deskpair`——那是上面 root 半段自己複製的服務用副本，
+兩者分開，套件管理員才不會和服務搶同一個檔案。描述檔是 `packaging/linux/nfpm.yaml`，腳本在 `packaging/linux/scripts/`：
+
+- **安裝或升級之後**（deb postinst、rpm %post、Arch post_install／post_upgrade）：unit 檔存在才以 root 跑
+  `/usr/lib/deskpair/DeskPair --install-service --system-stage`（不帶 `--from`，機器層 store 已經有了），讓服務換成剛裝好的版本，
+  和 App 內建更新做的事一樣。失敗只印一行提示，不讓套件安裝失敗。本來沒開無人值守就什麼都不做。
+- **移除之前**（deb prerm、rpm %preun、Arch pre_remove）：只有真的移除才跑 `--uninstall-service`；升級時各家傳的參數不同
+  （deb 是 `upgrade`，rpm 是剩下的版本數，Arch 的 pre_remove 只在移除時呼叫），腳本逐一分辨。理由：留下一個還連得到網路、
+  卻已經沒有 App 可以關掉它的服務，比一起移除更糟。`/var/lib/deskpair` 與帳號同樣留著。
+- **App 不自己更新套件裝的版本**：`/usr/lib/deskpair/packaged` 寫著格式，有這個檔案時通知只提供「前往下載」，
+  `--update` 也說明要用套件管理員更新（`PackagedInstall`）。否則 App 換掉套件管理員擁有的檔案，下一次套件升級又會蓋回來。
+
+2026-09-28 在容器裡驗證過安裝 → 引擎啟動 → 升級（服務保留並重新 stage）→ 移除（服務、`/opt/deskpair`、`/usr/lib/deskpair` 都清掉）：
+Debian 12、Ubuntu 22.04／24.04、Fedora 44、Rocky 9、openSUSE Tumbleweed／Leap 15.6、Arch。
+
 ### 字型（介面語言）
 
 桌面程式的介面有十種語言；拉丁與西里爾字母由內建的 Inter 字型顯示，中日韓文字靠系統字型。Ubuntu／Debian 的最小安裝沒有，

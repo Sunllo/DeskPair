@@ -113,7 +113,7 @@ public sealed class X11ScreenCapturer : IScreenCapturer
 
             // Copy the monitor's rectangle from the root window into the shared image. The whole root is one
             // drawable spanning every monitor, so a multi-monitor setup reads its own sub-rectangle.
-            if (!XShm.XShmGetImage(_dpy, _root, _imagePtr, _display.X, _display.Y, 0xFFFFFFFF))
+            if (!XShm.XShmGetImage(_dpy, _root, _imagePtr, _display.X, _display.Y, nuint.MaxValue))
             {
                 return ValueTask.FromResult(CaptureResult.TimedOut);
             }

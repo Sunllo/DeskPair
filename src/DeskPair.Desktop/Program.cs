@@ -435,7 +435,9 @@ public static class Program
 
         if (state.Install is not { } file)
         {
-            Console.Error.WriteLine($"DeskPair {state.LatestVersion} is available but cannot be installed from here (no signed manifest, or no file for this machine). Download it from {state.DownloadUrl}");
+            Console.Error.WriteLine(Services.Update.PackagedInstall.Format is { } format
+                ? $"DeskPair {state.LatestVersion} is available. The system's package manager installed this copy ({format}), so it updates it too: get the new package from {state.DownloadUrl}"
+                : $"DeskPair {state.LatestVersion} is available but cannot be installed from here (no signed manifest, or no file for this machine). Download it from {state.DownloadUrl}");
             return 3;
         }
 

@@ -42,7 +42,7 @@ internal static partial class XShm
     /// <summary>Copies the current contents of a drawable (the root window) into the shared image.</summary>
     [LibraryImport(Lib)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool XShmGetImage(nint display, nint drawable, nint image, int x, int y, ulong planeMask);
+    public static partial bool XShmGetImage(nint display, nint drawable, nint image, int x, int y, nuint planeMask);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct XShmSegmentInfo

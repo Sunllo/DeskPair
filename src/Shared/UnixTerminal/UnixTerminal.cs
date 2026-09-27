@@ -117,8 +117,10 @@ internal readonly record struct UnixAccount(string Name, string Home, string She
                 return new UnixAccount($"uid {uid}", "/", string.Empty);
             }
 
-            // struct passwd: name first on both; home and shell sit after macOS's extra change/class fields.
-            (int dir, int shell) = OperatingSystem.IsMacOS() ? (48, 56) : (32, 40);
+            // struct passwd: name first on both; home and shell sit after macOS's extra change/class fields. glibc's
+            // is name, passwd, uid, gid, gecos, dir, shell -- pointers around two 4-byte ids, so its offsets follow the
+            // pointer size (32/40 on 64-bit, 20/24 on 32-bit ARM). macOS is 64-bit only.
+            (int dir, int shell) = OperatingSystem.IsMacOS() ? (48, 56) : ((3 * nint.Size) + 8, (4 * nint.Size) + 8);
             return new UnixAccount(
                 Marshal.PtrToStringUTF8(Marshal.ReadIntPtr(pw)) ?? $"uid {uid}",
                 Marshal.PtrToStringUTF8(Marshal.ReadIntPtr(pw, dir)) ?? "/",

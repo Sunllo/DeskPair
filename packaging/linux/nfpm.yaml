@@ -1,0 +1,193 @@
+# The Linux package, described once and built three ways by tools/package.ps1 through nfpm (tools/fetch-nfpm.ps1):
+# .deb for Debian, Ubuntu, Mint and Raspberry Pi OS; .rpm for Fedora, RHEL and openSUSE; .pkg.tar.zst for Arch and
+# Manjaro. package.ps1 replaces every @NAME@ for each architecture and format before nfpm reads this file.
+name: deskpair
+arch: "@NFPM_ARCH@"
+platform: linux
+version: "@VERSION@"
+release: "1"
+section: net
+priority: optional
+maintainer: Sunllo <support@deskpair.app>
+vendor: Sunllo
+homepage: https://deskpair.app
+license: AGPL-3.0-only
+description: |-
+  Remote desktop for Windows, macOS and Linux.
+  Control another computer, or let this one be controlled: end to end encrypted,
+  peer to peer where the network allows it and through a relay where it does not.
+
+contents:
+  # /usr/lib/deskpair rather than /opt/deskpair, which is the unattended service's own copy of the program: the app
+  # puts that there itself when unattended access is turned on. Named as a directory so that rpm owns it, and takes
+  # it away again on removal; dpkg and pacman own the directories they create anyway.
+  - dst: /usr/lib/deskpair
+    type: dir
+    file_info:
+      mode: 0755
+  - src: "@STAGE@/DeskPair"
+    dst: /usr/lib/deskpair/DeskPair
+    file_info:
+      mode: 0755
+  # Tells the app that a package manager installed it, so a new version sends it to the download page instead of
+  # replacing files the package manager owns (PackagedInstall.cs). Holds the format.
+  - src: "@MARKER@"
+    dst: /usr/lib/deskpair/packaged
+    file_info:
+      mode: 0644
+  - src: /usr/lib/deskpair/DeskPair
+    dst: /usr/bin/deskpair
+    type: symlink
+  - src: "@REPO@/packaging/linux/deskpair.desktop"
+    dst: /usr/share/applications/deskpair.desktop
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/deskpair.svg"
+    dst: /usr/share/icons/hicolor/scalable/apps/deskpair.svg
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/png/deskpair-16.png"
+    dst: /usr/share/icons/hicolor/16x16/apps/deskpair.png
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/png/deskpair-24.png"
+    dst: /usr/share/icons/hicolor/24x24/apps/deskpair.png
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/png/deskpair-32.png"
+    dst: /usr/share/icons/hicolor/32x32/apps/deskpair.png
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/png/deskpair-48.png"
+    dst: /usr/share/icons/hicolor/48x48/apps/deskpair.png
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/png/deskpair-64.png"
+    dst: /usr/share/icons/hicolor/64x64/apps/deskpair.png
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/png/deskpair-128.png"
+    dst: /usr/share/icons/hicolor/128x128/apps/deskpair.png
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/png/deskpair-256.png"
+    dst: /usr/share/icons/hicolor/256x256/apps/deskpair.png
+    file_info:
+      mode: 0644
+  - src: "@REPO@/assets/logo/png/deskpair-512.png"
+    dst: /usr/share/icons/hicolor/512x512/apps/deskpair.png
+    file_info:
+      mode: 0644
+  - src: "@REPO@/LICENSE"
+    dst: /usr/share/doc/deskpair/copyright
+    packager: deb
+    file_info:
+      mode: 0644
+  - dst: /usr/share/licenses/deskpair
+    packager: rpm
+    type: dir
+    file_info:
+      mode: 0755
+  - src: "@REPO@/LICENSE"
+    dst: /usr/share/licenses/deskpair/LICENSE
+    packager: rpm
+    type: license
+    file_info:
+      mode: 0644
+  - src: "@REPO@/LICENSE"
+    dst: /usr/share/licenses/deskpair/LICENSE
+    packager: archlinux
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: "@REPO@/packaging/linux/scripts/postinstall.sh"
+  preremove: "@REPO@/packaging/linux/scripts/preremove.sh"
+  postremove: "@REPO@/packaging/linux/scripts/postremove.sh"
+
+rpm:
+  # rpm writes down the machine that built a package, which would otherwise be the name of whoever's computer ran
+  # package.ps1 -- in a file published to everyone.
+  buildhost: localhost
+
+archlinux:
+  packager: Sunllo <support@deskpair.app>
+  scripts:
+    # pacman runs post_upgrade, not post_install, on an upgrade; the service has to move to the new version then too.
+    postupgrade: "@REPO@/packaging/linux/scripts/postinstall.sh"
+
+# What the program loads (libX11 and its extensions, fontconfig for text, OpenSSL for the BCL's crypto, ICU and
+# the C++ runtime for .NET itself), in each family's own terms. Without ICU the runtime stops before the first line
+# of ours runs. Audio, VP9, Wayland sharing and the polkit prompt the unattended installer uses are recommended
+# rather than required: without them the program runs, less capably. glibc 2.31 is what the download page promises.
+overrides:
+  deb:
+    depends:
+      - libc6 (>= 2.31)
+      - libgcc-s1
+      - libstdc++6
+      # Debian names ICU by its version: 66 is Ubuntu 20.04, 67 Debian 11, 72 Debian 12, 74 Ubuntu 24.04, 76 Debian 13.
+      - "libicu78 | libicu77 | libicu76 | libicu75 | libicu74 | libicu73 | libicu72 | libicu71 | libicu70 | libicu69 | libicu68 | libicu67 | libicu66"
+      - "libssl3t64 | libssl3 | libssl1.1"
+      - libfontconfig1
+      - libx11-6
+      - libxext6
+      - libxtst6
+      - libxfixes3
+      - libxrandr2
+      - libxi6
+      - libxcursor1
+      - libice6
+      - libsm6
+    recommends:
+      - ca-certificates
+      - libpulse0
+      - "libvpx12 | libvpx11 | libvpx9"
+      - "libpipewire-0.3-0t64 | libpipewire-0.3-0"
+      - "pkexec | policykit-1"
+  rpm:
+    # By soname, which Fedora, RHEL and openSUSE all resolve, rather than by package names they do not share.
+    depends:
+      - glibc >= 2.31
+      # Fedora and RHEL call the package libicu; openSUSE's libicu<version> packages provide the name too.
+      - libicu
+      - "libstdc++.so.6@RPM64@"
+      - "(libssl.so.3@RPM64@ or libssl.so.1.1@RPM64@)"
+      - "libfontconfig.so.1@RPM64@"
+      - "libX11.so.6@RPM64@"
+      - "libXext.so.6@RPM64@"
+      - "libXtst.so.6@RPM64@"
+      - "libXfixes.so.3@RPM64@"
+      - "libXrandr.so.2@RPM64@"
+      - "libXi.so.6@RPM64@"
+      - "libXcursor.so.1@RPM64@"
+      - "libICE.so.6@RPM64@"
+      - "libSM.so.6@RPM64@"
+    recommends:
+      - ca-certificates
+      - "libpulse-simple.so.0@RPM64@"
+      - "(libvpx.so.12@RPM64@ or libvpx.so.11@RPM64@ or libvpx.so.9@RPM64@)"
+      - "libpipewire-0.3.so.0@RPM64@"
+      - polkit
+  archlinux:
+    # nfpm writes no optdepends, and pacman would only print them anyway, so on Arch the libraries that make the
+    # program useful as a host (VP9, audio, Wayland sharing) are plain dependencies. They are small, and a
+    # desktop Arch has them already.
+    depends:
+      - glibc
+      - gcc-libs
+      - icu
+      - openssl
+      - fontconfig
+      - libx11
+      - libxext
+      - libxtst
+      - libxfixes
+      - libxrandr
+      - libxi
+      - libxcursor
+      - libice
+      - libsm
+      - libvpx
+      - libpulse
+      - libpipewire

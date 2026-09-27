@@ -12,7 +12,7 @@ internal static partial class Xlib
     private const string Lib = "libX11.so.6";
 
     /// <summary>An event mask value; the capture path opens the display read-only and asks for nothing.</summary>
-    public const long NoEventMask = 0;
+    public const nint NoEventMask = 0;
 
     private static int _threadsafe;
 
@@ -113,7 +113,7 @@ internal static partial class Xlib
     public static partial int XDestroyWindow(nint display, nint window);
 
     [LibraryImport(Lib)]
-    public static partial int XSelectInput(nint display, nint window, long eventMask);
+    public static partial int XSelectInput(nint display, nint window, nint eventMask);
 
     [LibraryImport(Lib)]
     public static partial int XConvertSelection(nint display, nint selection, nint target, nint property, nint requestor, nuint time);
@@ -125,7 +125,7 @@ internal static partial class Xlib
     public static partial nint XGetSelectionOwner(nint display, nint selection);
 
     [LibraryImport(Lib)]
-    public static partial int XGetWindowProperty(nint display, nint window, nint property, long offset, long length, [MarshalAs(UnmanagedType.Bool)] bool delete, nint reqType, out nint actualType, out int actualFormat, out nuint nItems, out nuint bytesAfter, out nint prop);
+    public static partial int XGetWindowProperty(nint display, nint window, nint property, nint offset, nint length, [MarshalAs(UnmanagedType.Bool)] bool delete, nint reqType, out nint actualType, out int actualFormat, out nuint nItems, out nuint bytesAfter, out nint prop);
 
     [LibraryImport(Lib)]
     public static partial int XChangeProperty(nint display, nint window, nint property, nint type, int format, int mode, byte[] data, int nElements);
@@ -140,7 +140,7 @@ internal static partial class Xlib
     public static partial int XPending(nint display);
 
     [LibraryImport(Lib)]
-    public static partial int XSendEvent(nint display, nint window, [MarshalAs(UnmanagedType.Bool)] bool propagate, long eventMask, byte[] eventSend);
+    public static partial int XSendEvent(nint display, nint window, [MarshalAs(UnmanagedType.Bool)] bool propagate, nint eventMask, byte[] eventSend);
 
     /// <summary>Reads the file descriptor of the display connection, so a thread can select() on it for events.</summary>
     [LibraryImport(Lib)]
@@ -148,10 +148,10 @@ internal static partial class Xlib
 
     /// <summary>The server's per-request limit, in four-byte units. Zero when BIG-REQUESTS is absent.</summary>
     [LibraryImport(Lib)]
-    public static partial long XExtendedMaxRequestSize(nint display);
+    public static partial nint XExtendedMaxRequestSize(nint display);
 
     [LibraryImport(Lib)]
-    public static partial long XMaxRequestSize(nint display);
+    public static partial nint XMaxRequestSize(nint display);
 
     public const int PropModeReplace = 0;
     public const int PropModeAppend = 2;
@@ -161,7 +161,7 @@ internal static partial class Xlib
 
     /// <summary>XPropertyEvent.state: the requestor has consumed a chunk and wants the next one.</summary>
     public const int PropertyDelete = 1;
-    public const long PropertyChangeMask = 1L << 22;
+    public const nint PropertyChangeMask = 1 << 22;
     public const int SelectionNotify = 31;
     public const int SelectionRequest = 30;
     public const int SelectionClear = 29;
@@ -182,9 +182,9 @@ internal static partial class Xlib
         public int Depth;
         public int BytesPerLine;
         public int BitsPerPixel;
-        public uint RedMask;
-        public uint GreenMask;
-        public uint BlueMask;
+        public nuint RedMask;
+        public nuint GreenMask;
+        public nuint BlueMask;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -208,9 +208,9 @@ internal static partial class Xlib
         public nint Colormap;
         public int MapInstalled;
         public int MapState;
-        public long AllEventMasks;
-        public long YourEventMask;
-        public long DoNotPropagateMask;
+        public nint AllEventMasks;
+        public nint YourEventMask;
+        public nint DoNotPropagateMask;
         public int OverrideRedirect;
         public nint Screen;
     }

@@ -51,20 +51,24 @@ public class VpxLayoutTests
     }
 
     /// <summary>
-    /// After rc_end_usage at 72 the next field is a vpx_fixed_buf_t, which holds a pointer and a size_t and
-    /// so starts at the next multiple of eight: 80, not 76. Two of them occupy 80..111, which is why the
-    /// rate-control run resumes at 112. Getting this wrong by one field writes the target bitrate into the
-    /// tail of a pointer.
+    /// After rc_end_usage at 72 come two vpx_fixed_buf_t, a pointer and a size_t each, so they start at the next
+    /// multiple of the pointer size and the rate-control run resumes four pointers later: 80 + 32 = 112 on 64-bit
+    /// targets, 76 + 16 = 92 on 32-bit ARM and x86. Getting this wrong by one field writes the target bitrate into
+    /// the tail of a pointer.
     /// </summary>
-    [Fact]
-    public void The_two_fixed_buffers_push_the_rate_control_fields_to_112()
+    [Theory]
+    [InlineData(8, 8, 112)] // 64-bit Unix
+    [InlineData(8, 4, 112)] // 64-bit Windows
+    [InlineData(4, 4, 92)] // 32-bit ARM and x86
+    public void The_two_fixed_buffers_push_the_rate_control_fields_past_four_pointers(int pointer, int cLong, int expected)
     {
-        const int AfterRcEndUsage = VpxInterop.EncCfg.RcEndUsage + 4;
-        const int FirstFixedBuf = (AfterRcEndUsage + 7) / 8 * 8;
-        const int FixedBufSize = 16; // void* + size_t on every 64-bit target
+        new VpxInterop.Abi(pointer, cLong).RcTargetBitrate.ShouldBe(expected);
+    }
 
-        FirstFixedBuf.ShouldBe(80);
-        VpxInterop.EncCfg.RcTargetBitrate.ShouldBe(FirstFixedBuf + (2 * FixedBufSize));
+    [Fact]
+    public void The_rate_control_run_follows_the_fixed_buffers_in_order()
+    {
+        VpxInterop.EncCfg.RcTargetBitrate.ShouldBe(VpxInterop.Abi.Current.RcTargetBitrate);
 
         int[] inOrder =
         [
@@ -94,22 +98,31 @@ public class VpxLayoutTests
     }
 
     /// <summary>
-    /// The packet's union puts <c>unsigned long duration</c> between the presentation timestamp and the
-    /// flags. That type is four bytes on Windows and eight on the LP64 platforms, so the keyframe flag moves.
-    /// Reading it at the wrong offset does not fail — it returns other data, and every frame looks like a
-    /// delta frame, which a viewer experiences as a picture that never starts.
+    /// The packet's frame is <c>{ void *buf; size_t sz; int64 pts; unsigned long duration; uint32 flags; }</c>
+    /// in an eight-aligned union after the four-byte kind. The size is pointer-sized and the duration a C long --
+    /// four bytes on Windows and on 32-bit targets, eight on 64-bit Unix -- so the keyframe flag moves with both.
+    /// Reading it at the wrong offset does not fail: it returns other data, and every frame looks like a delta
+    /// frame, which a viewer experiences as a picture that never starts.
     /// </summary>
+    [Theory]
+    [InlineData(8, 8, 16, 24, 32, 40)] // 64-bit Unix
+    [InlineData(8, 4, 16, 24, 32, 36)] // 64-bit Windows
+    [InlineData(4, 4, 12, 16, 24, 28)] // 32-bit ARM and x86
+    public void The_keyframe_flag_moves_with_the_size_of_a_pointer_and_a_c_long(int pointer, int cLong, int sz, int pts, int duration, int flags)
+    {
+        var abi = new VpxInterop.Abi(pointer, cLong);
+
+        (abi.FrameSz, abi.FramePts, abi.FrameDuration, abi.FrameFlags).ShouldBe((sz, pts, duration, flags));
+    }
+
     [Fact]
-    public void The_keyframe_flag_moves_with_the_size_of_a_c_long()
+    public void This_build_reads_packets_with_its_own_abi()
     {
         VpxInterop.CxPkt.FrameBuf.ShouldBe(8, "the union is eight-aligned, after the four-byte kind");
-        VpxInterop.CxPkt.FrameSz.ShouldBe(VpxInterop.CxPkt.FrameBuf + 8);
-        VpxInterop.CxPkt.FramePts.ShouldBe(VpxInterop.CxPkt.FrameSz + 8);
-        VpxInterop.CxPkt.FrameDuration.ShouldBe(VpxInterop.CxPkt.FramePts + 8);
+        VpxInterop.CxPkt.FrameFlags.ShouldBe(VpxInterop.Abi.Current.FrameFlags);
 
-        int cLongSize = OperatingSystem.IsWindows() ? 4 : 8;
-        VpxInterop.CxPkt.FrameFlags.ShouldBe(VpxInterop.CxPkt.FrameDuration + cLongSize);
-        Marshal.SizeOf<CLong>().ShouldBe(cLongSize, "and CLong must agree, since the calls pass one");
+        int cLongSize = OperatingSystem.IsWindows() || nint.Size == 4 ? 4 : 8;
+        VpxInterop.Abi.Current.CLongSize.ShouldBe(cLongSize, "and CLong must agree, since the calls pass one");
     }
 
     /// <summary>
@@ -134,24 +147,35 @@ public class VpxLayoutTests
         VpxInterop.Img.XChromaShift.ShouldBe(10 * 4);
         VpxInterop.Img.YChromaShift.ShouldBe(11 * 4);
         VpxInterop.Img.Planes.ShouldBe(12 * 4);
-        VpxInterop.Img.Stride.ShouldBe(VpxInterop.Img.Planes + (4 * 8));
-
-        // int bps, then a pointer that has to be eight-aligned, so bps sits at 96 and user_priv at 104.
-        VpxInterop.Img.Bps.ShouldBe(VpxInterop.Img.Stride + (4 * 4));
-        VpxInterop.Img.ImgData.ShouldBe(VpxInterop.Img.Bps + 4 + 4 + 8, "bps, padding, user_priv, then img_data");
+        VpxInterop.Img.Stride.ShouldBe(VpxInterop.Abi.Current.Stride);
         VpxInterop.Img.Size.ShouldBeGreaterThan(136, "libvpx 1.15 uses 136 bytes");
+    }
+
+    /// <summary>
+    /// After the four plane pointers: <c>int stride[4]; int bps; void *user_priv; unsigned char *img_data;</c>.
+    /// On 64-bit targets user_priv has to be eight-aligned, so there is a hole after bps; on 32-bit ones there is not.
+    /// </summary>
+    [Theory]
+    [InlineData(8, 80, 96, 112)]
+    [InlineData(4, 64, 80, 88)]
+    public void The_strides_and_image_data_follow_the_plane_pointers(int pointer, int stride, int bps, int imgData)
+    {
+        var abi = new VpxInterop.Abi(pointer, 4);
+
+        (abi.Stride, abi.Bps, abi.ImgData).ShouldBe((stride, bps, imgData));
     }
 
     /// <summary>
     /// <c>vpx_codec_ctx_t</c> holds a <c>vpx_codec_flags_t</c>, which is a C <c>long</c>. On Windows it is
     /// four bytes followed by four of padding before the eight-aligned union; on LP64 it is eight with the
     /// padding earlier. The two arrangements happen to give the same size and the same offsets for
-    /// everything after, which is why one declaration serves both.
+    /// everything after, which is why one declaration serves both. On a 32-bit process every one of the seven
+    /// members is four bytes and there is no padding at all, so it is seven pointers wide everywhere: 56 or 28.
     /// </summary>
     [Fact]
     public void The_codec_context_is_the_same_size_on_both_conventions()
     {
-        Marshal.SizeOf<VpxInterop.VpxCodecCtx>().ShouldBe(56);
+        Marshal.SizeOf<VpxInterop.VpxCodecCtx>().ShouldBe(7 * nint.Size);
     }
 
     [Fact]

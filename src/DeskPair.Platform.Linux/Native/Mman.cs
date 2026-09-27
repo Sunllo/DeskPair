@@ -18,7 +18,7 @@ internal static unsafe partial class Mman
     public const ulong DmaBufSyncEnd = 4;
 
     [LibraryImport(Lib, SetLastError = true)]
-    public static partial void* mmap(void* address, nuint length, int protection, int flags, int fd, long offset);
+    public static partial void* mmap(void* address, nuint length, int protection, int flags, int fd, nint offset); // off_t is a C long
 
     [LibraryImport(Lib, SetLastError = true)]
     public static partial int munmap(void* address, nuint length);

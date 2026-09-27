@@ -19,6 +19,8 @@ not in git). Not wire-compatible with RustDesk. Full design: `docs/architecture.
   the engine as the fixed `deskpair` account. See `docs/unattended-windows.md` and `docs/unattended-linux.md`.
 - `src/DeskPair.Rendezvous`, `src/DeskPair.Relay` — servers; reference `Protocol` + `Server.Shared`, never `Core`.
 - `tools/` — `PeerCli` (headless peer for E2E), `KeyGen`, `PlatformHarness`. `tests/` — xunit + Shouldly + NSubstitute.
+- `packaging/linux/` — the .deb/.rpm/Arch package description (`nfpm.yaml`) and its install/remove scripts;
+  `tools/package.ps1` builds all three per Linux RID with nfpm (`tools/fetch-nfpm.ps1`).
 
 ## Conventions
 
@@ -33,6 +35,11 @@ not in git). Not wire-compatible with RustDesk. Full design: `docs/architecture.
   `h265`/`av1`) is a preference, not an instruction. A stream has one encoder, so a viewer that joins and
   cannot decode it restarts the stream for everyone.
 - Pooled buffers (`Frame`) must be disposed after parsing; never keep a `ByteString` that wraps pooled memory.
+- Releases cover win-x64/x86/arm64, linux-x64/arm64/arm (ARMv7) and macOS arm64/x86_64, so native bindings must
+  hold on 32-bit: a C `long`/`unsigned long` on Linux is `nint`/`nuint` (it is 4 bytes on Windows, hence
+  `CLong` in bindings shared with Windows); XEvent members and format-32 property data are C longs
+  (`XEventBytes`); struct offsets that pass a pointer or a long are derived, not written as 64-bit numbers
+  (`VpxInterop.Abi`); and imports of cdecl C libraries (libvpx, OpenH264) say `CallConvCdecl`, which win-x86 needs.
 - Servers never reference `Core`; platform projects never reference `Core` or `Protocol`.
 - `net10.0-windows` projects (Platform.Windows, its tests, PlatformHarness) compile on every OS via `EnableWindowsTargeting`
   but only run on Windows; `Service`/`Desktop` add the `net10.0-windows` target only when built on Windows (`IsWindowsBuildHost`).

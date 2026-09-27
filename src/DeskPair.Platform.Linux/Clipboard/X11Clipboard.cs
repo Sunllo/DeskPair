@@ -347,15 +347,14 @@ public sealed class X11Clipboard : IClipboard, IFilePromiseClipboard
     /// <summary>Answers a paste: writes our text (or the list of targets) into the requestor's property.</summary>
     private void ServeSelectionRequest(byte[] ev)
     {
-        // XSelectionRequestEvent on LP64: type(4)+pad(4), serial(8), send_event(4)+pad(4), display(8), then
-        // owner(8), requestor(8), selection(8), target(8), property(8), time(8). The owner field is the one
-        // that is easy to miss — requestor is at offset 40, not 32. (The SelectionNotify reply below is an
-        // XSelectionEvent, which has no owner field, so its fields sit 8 bytes earlier.)
-        nint requestor = (nint)BitConverter.ToInt64(ev, 40);
-        nint selection = (nint)BitConverter.ToInt64(ev, 48);
-        nint target = (nint)BitConverter.ToInt64(ev, 56);
-        nint property = (nint)BitConverter.ToInt64(ev, 64);
-        nuint time = (nuint)BitConverter.ToInt64(ev, 72);
+        // XSelectionRequestEvent: type, serial, send_event, display, owner, requestor, selection, target, property,
+        // time. The owner member is the one that is easy to miss -- requestor is the fifth, not the fourth. (The
+        // SelectionNotify reply below is an XSelectionEvent, which has no owner, so its members sit one place earlier.)
+        nint requestor = XEventBytes.ReadLong(ev, 5);
+        nint selection = XEventBytes.ReadLong(ev, 6);
+        nint target = XEventBytes.ReadLong(ev, 7);
+        nint property = XEventBytes.ReadLong(ev, 8);
+        nuint time = XEventBytes.ReadULong(ev, 9);
         Volatile.Write(ref _lastEventTime, time);
 
         if (property == 0)
@@ -370,17 +369,14 @@ public sealed class X11Clipboard : IClipboard, IFilePromiseClipboard
         {
             // What we can actually convert to, not a fixed pair. TARGETS and TIMESTAMP are always there;
             // the rest is whatever the last write put on the clipboard.
-            long[] atoms = [(long)_targets, (long)_timestamp, .. owned.Targets.Select(t => (long)t)];
-            byte[] bytes = new byte[atoms.Length * 8];
-            Buffer.BlockCopy(atoms, 0, bytes, 0, bytes.Length);
-            Xlib.XChangeProperty(_dpy, requestor, property, _atom, 32, Xlib.PropModeReplace, bytes, atoms.Length);
+            nint[] atoms = [_targets, _timestamp, .. owned.Targets];
+            Xlib.XChangeProperty(_dpy, requestor, property, _atom, 32, Xlib.PropModeReplace, XEventBytes.Longs(atoms), atoms.Length);
         }
         else if (target == _timestamp)
         {
             // ICCCM requires an owner to answer this, and refusing it makes some managers drop the
             // selection. It is the time ownership was taken, not the time now.
-            byte[] bytes = new byte[8];
-            BitConverter.GetBytes((long)owned.TakenAt).CopyTo(bytes, 0);
+            byte[] bytes = XEventBytes.Longs([(nint)owned.TakenAt]);
             Xlib.XChangeProperty(_dpy, requestor, property, _integer, 32, Xlib.PropModeReplace, bytes, 1);
         }
         else if ((target == _uriList || target == _gnomeCopied) && _promiseSource is not null)
@@ -402,8 +398,7 @@ public sealed class X11Clipboard : IClipboard, IFilePromiseClipboard
                 // transfer whose requestor has gone away.
                 Xlib.XSelectInput(_dpy, requestor, Xlib.PropertyChangeMask);
 
-                byte[] size = new byte[8];
-                BitConverter.GetBytes((long)payload.Length).CopyTo(size, 0);
+                byte[] size = XEventBytes.Longs([payload.Length]);
                 Xlib.XChangeProperty(_dpy, requestor, property, _incr, 32, Xlib.PropModeReplace, size, 1);
 
                 lock (_promiseGate)
@@ -426,11 +421,11 @@ public sealed class X11Clipboard : IClipboard, IFilePromiseClipboard
         // Send the SelectionNotify that tells the requestor the property is ready.
         byte[] notify = new byte[192];
         BitConverter.GetBytes(Xlib.SelectionNotify).CopyTo(notify, 0);
-        BitConverter.GetBytes((long)requestor).CopyTo(notify, 32);  // requestor
-        BitConverter.GetBytes((long)selection).CopyTo(notify, 40);  // selection
-        BitConverter.GetBytes((long)target).CopyTo(notify, 48);     // target
-        BitConverter.GetBytes((long)notifyProperty).CopyTo(notify, 56); // property (0 = refused)
-        BitConverter.GetBytes((long)time).CopyTo(notify, 64);       // time
+        XEventBytes.WriteLong(notify, 4, requestor);
+        XEventBytes.WriteLong(notify, 5, selection);
+        XEventBytes.WriteLong(notify, 6, target);
+        XEventBytes.WriteLong(notify, 7, notifyProperty); // 0 = refused
+        XEventBytes.WriteULong(notify, 8, time);
         Xlib.XSendEvent(_dpy, requestor, propagate: false, 0, notify);
         Xlib.XFlush(_dpy);
     }
@@ -445,12 +440,10 @@ public sealed class X11Clipboard : IClipboard, IFilePromiseClipboard
     /// </remarks>
     private void ServePropertyNotify(byte[] ev)
     {
-        // XPropertyEvent on LP64: type(4)+pad(4), serial(8), send_event(4)+pad(4), display(8), window(8),
-        // atom(8), time(8), state(4). The same counting that put requestor at 40 rather than 32 in
-        // ServeSelectionRequest applies here, so these offsets are derived rather than guessed.
-        nint window = (nint)BitConverter.ToInt64(ev, 32);
-        nint atom = (nint)BitConverter.ToInt64(ev, 40);
-        int state = BitConverter.ToInt32(ev, 56);
+        // XPropertyEvent: type, serial, send_event, display, window, atom, time, state.
+        nint window = XEventBytes.ReadLong(ev, 4);
+        nint atom = XEventBytes.ReadLong(ev, 5);
+        int state = XEventBytes.ReadInt(ev, 7);
 
         if (state != Xlib.PropertyDelete)
         {
@@ -632,11 +625,11 @@ public sealed class X11Clipboard : IClipboard, IFilePromiseClipboard
     {
         byte[] notify = new byte[192];
         BitConverter.GetBytes(Xlib.SelectionNotify).CopyTo(notify, 0);
-        BitConverter.GetBytes((long)request.Requestor).CopyTo(notify, 32);
-        BitConverter.GetBytes((long)request.Selection).CopyTo(notify, 40);
-        BitConverter.GetBytes((long)request.Target).CopyTo(notify, 48);
-        BitConverter.GetBytes((long)property).CopyTo(notify, 56);
-        BitConverter.GetBytes((long)request.Time).CopyTo(notify, 64);
+        XEventBytes.WriteLong(notify, 4, request.Requestor);
+        XEventBytes.WriteLong(notify, 5, request.Selection);
+        XEventBytes.WriteLong(notify, 6, request.Target);
+        XEventBytes.WriteLong(notify, 7, property);
+        XEventBytes.WriteULong(notify, 8, request.Time);
         Xlib.XSendEvent(_dpy, request.Requestor, propagate: false, 0, notify);
     }
 

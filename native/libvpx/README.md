@@ -25,7 +25,7 @@ In order, and the first one that loads wins:
 3. `runtimes/<rid>/native/` beside the executable, e.g. `runtimes/win-x64/native/vpx.dll`.
 4. The system loader's own search, by name.
 
-Names tried: `vpx.dll`, `libvpx.dll`, `libvpx-1.dll` on Windows; `libvpx.so.11`, `libvpx.so.9`, `libvpx.so`
+Names tried: `vpx.dll`, `libvpx.dll`, `libvpx-1.dll` on Windows; `libvpx.so.12`, `libvpx.so.11`, `libvpx.so.9`, `libvpx.so`
 on Linux; the matching `.dylib` names on macOS. Find nothing and `VpxVideoEncoderFactory.Describe()` returns
 an empty list, `VpxVideoDecoderFactory.Probe()` returns `None`, and negotiation simply never offers VP9.
 
@@ -34,8 +34,14 @@ an empty list, `VpxVideoDecoderFactory.Probe()` returns `None`, and negotiation 
 ### Windows
 
 ```
-pwsh tools/build-libvpx.ps1
+pwsh tools/build-libvpx.ps1                 # win-x64
+pwsh tools/build-libvpx.ps1 -Rid win-x86
+pwsh tools/build-libvpx.ps1 -Rid win-arm64
 ```
+
+One run per architecture: vcpkg's manifest mode keeps only the triplet it was last asked for, so building the
+next one removes the previous one's `vpx.lib`. The x86 and ARM64 libraries are cross-compiled on an x64 machine,
+which needs Visual Studio's C++ build tools for that architecture (the ARM64 ones are a separate component).
 
 Two steps, because neither alone gives .NET something to load. vcpkg builds libvpx and fetches its own nasm,
 so nothing has to be installed beyond Visual Studio — but its Windows port produces a **static** `vpx.lib`,
@@ -43,7 +49,12 @@ since libvpx's MSVC build has no shared-library configuration. The script then l
 library using libvpx's own export lists (`vpx/exports_com`, `exports_enc`, `exports_dec` and the per-codec
 lists) as a module definition file, so the DLL exports exactly what libvpx means to export and nothing more.
 
-The result is `artifacts/vpx/shim/vpx.dll`, which `tools/publish.ps1` copies into a build when it is there.
+The result is `artifacts/vpx/<rid>/vpx.dll`, which `tools/publish.ps1` copies into the build for that
+architecture when it is there (for win-x64 it also takes `artifacts/vpx/shim/vpx.dll`, where the one x64 build
+used to go).
+
+On 32-bit x86 every import is declared `cdecl`, which is how libvpx is compiled; .NET's default there is
+`stdcall`, and the mismatch unbalances the stack on the first call.
 
 Two things that cost time the first time round:
 
@@ -72,7 +83,8 @@ The x86-64 builds need nasm or yasm for the assembly; there is no pure-C path fo
 ## Which version
 
 The binding was written against **libvpx 1.15.2** and is verified against **1.16.0**, which is what vcpkg
-currently builds. Two things tie it to a version, and both are checked rather than assumed. Both earned
+currently builds, and on 2026-09-28 against the distributions' own: **1.17.0** (Arch, soname 12), **1.15.0**
+(Debian 13, arm64 end to end) and **1.14** (Ubuntu 24.04). Two things tie it to a version, and both are checked rather than assumed. Both earned
 their keep on the first run against a real library: one absorbed a moved ABI version, the other caught a
 wrong expectation in this binding before it could reach the encoder.
 

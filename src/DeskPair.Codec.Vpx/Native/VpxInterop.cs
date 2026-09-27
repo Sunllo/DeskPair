@@ -79,8 +79,9 @@ internal static unsafe partial class VpxInterop
 
     /// <summary>
     /// What a libvpx shared library is called. The Windows build produces vpx.dll; the autotools builds on
-    /// Linux and macOS carry the soname major version, which has been 11 since libvpx 1.15 and 9 before it,
-    /// so both are tried before the unversioned development symlink.
+    /// Linux and macOS carry the soname major version, which has been 9, then 11, and is 12 as of 1.17, so those
+    /// are tried, newest first, before the unversioned development symlink. 1.17 was verified on Arch (2026-09-28);
+    /// a release that moves the ABI further is refused by the checks in the encoder, not used blind.
     /// </summary>
     private static IEnumerable<string> CandidateNames()
     {
@@ -91,10 +92,10 @@ internal static unsafe partial class VpxInterop
 
         if (OperatingSystem.IsMacOS())
         {
-            return ["libvpx.11.dylib", "libvpx.9.dylib", "libvpx.dylib"];
+            return ["libvpx.12.dylib", "libvpx.11.dylib", "libvpx.9.dylib", "libvpx.dylib"];
         }
 
-        return ["libvpx.so.11", "libvpx.so.9", "libvpx.so"];
+        return ["libvpx.so.12", "libvpx.so.11", "libvpx.so.9", "libvpx.so"];
     }
 
     private static IEnumerable<string> CandidatePaths()
@@ -197,26 +198,26 @@ internal static unsafe partial class VpxInterop
         public const int RcResizeDownThresh = 68;
         public const int RcEndUsage = 72;
 
-        // 76 is padding: the two vpx_fixed_buf_t that follow hold a pointer and a size_t, so they are
-        // 8-aligned, and occupy 80..111.
-        public const int RcTargetBitrate = 112;
-        public const int RcMinQuantizer = 116;
-        public const int RcMaxQuantizer = 120;
-        public const int RcUndershootPct = 124;
-        public const int RcOvershootPct = 128;
-        public const int RcBufSz = 132;
-        public const int RcBufInitialSz = 136;
-        public const int RcBufOptimalSz = 140;
-        public const int Rc2PassVbrMaxsectionPct = 152;
-        public const int KfMode = 160;
-        public const int KfMinDist = 164;
-        public const int KfMaxDist = 168;
+        // Then two vpx_fixed_buf_t, a pointer and a size_t each, which move everything after them with the pointer
+        // size: the rate-control run resumes at 112 on 64-bit targets and at 92 on 32-bit ones (see Abi).
+        public static readonly int RcTargetBitrate = Abi.Current.RcTargetBitrate;
+        public static readonly int RcMinQuantizer = RcTargetBitrate + 4;
+        public static readonly int RcMaxQuantizer = RcTargetBitrate + 8;
+        public static readonly int RcUndershootPct = RcTargetBitrate + 12;
+        public static readonly int RcOvershootPct = RcTargetBitrate + 16;
+        public static readonly int RcBufSz = RcTargetBitrate + 20;
+        public static readonly int RcBufInitialSz = RcTargetBitrate + 24;
+        public static readonly int RcBufOptimalSz = RcTargetBitrate + 28;
+        public static readonly int Rc2PassVbrMaxsectionPct = RcTargetBitrate + 40;
+        public static readonly int KfMode = RcTargetBitrate + 48;
+        public static readonly int KfMinDist = RcTargetBitrate + 52;
+        public static readonly int KfMaxDist = RcTargetBitrate + 56;
 
         /// <summary>
         /// Which of libvpx's own defaults did not land where this binding expects it, or null when they all
-        /// did. Distinctive values spread across the whole prefix, including past the 8-aligned hole at
-        /// offset 76: if the struct changes shape, this names the field instead of letting the encoder
-        /// quietly configure the wrong one.
+        /// did. Distinctive values spread across the whole prefix, including past the two fixed buffers
+        /// whose size follows the pointer size: if the struct changes shape, or this build has the ABI wrong,
+        /// this names the field instead of letting the encoder quietly configure the wrong one.
         /// </summary>
         public static string? Disagreement(ReadOnlySpan<byte> cfg)
         {
@@ -255,19 +256,19 @@ internal static unsafe partial class VpxInterop
 
     /// <summary>
     /// Offsets into <c>vpx_codec_cx_pkt_t</c>. The union member before <c>flags</c> is an
-    /// <c>unsigned long duration</c>, which is four bytes on Windows and eight everywhere else, so the one
-    /// field that matters most — whether this packet is a keyframe — sits at a different offset per platform.
-    /// Reading it at the wrong one returns the low half of a partition id and every frame looks like a delta.
+    /// <c>unsigned long duration</c>, which is four bytes on Windows and on 32-bit targets and eight on 64-bit
+    /// Unix, so the one field that matters most — whether this packet is a keyframe — sits at a different offset
+    /// per platform. Reading it at the wrong one returns the low half of a partition id and every frame looks
+    /// like a delta. The frame's size is a size_t, so on 32-bit targets everything from it moves too.
     /// </summary>
     public static class CxPkt
     {
         public const int Kind = 0;
         public const int FrameBuf = 8;
-        public const int FrameSz = 16;
-        public const int FramePts = 24;
-        public const int FrameDuration = 32;
-
-        public static int FrameFlags => OperatingSystem.IsWindows() ? 36 : 40;
+        public static readonly int FrameSz = Abi.Current.FrameSz;
+        public static readonly int FramePts = Abi.Current.FramePts;
+        public static readonly int FrameDuration = Abi.Current.FrameDuration;
+        public static readonly int FrameFlags = Abi.Current.FrameFlags;
     }
 
     /// <summary>
@@ -291,9 +292,40 @@ internal static unsafe partial class VpxInterop
         public const int XChromaShift = 40;
         public const int YChromaShift = 44;
         public const int Planes = 48;
-        public const int Stride = 80;
-        public const int Bps = 96;
-        public const int ImgData = 112;
+        public static readonly int Stride = Abi.Current.Stride;
+        public static readonly int Bps = Abi.Current.Bps;
+        public static readonly int ImgData = Abi.Current.ImgData;
+    }
+
+    /// <summary>
+    /// Where the pointer- and long-sized members of libvpx's structs put the fields this binding touches, for one
+    /// ABI: 64-bit Unix (pointer 8, C long 8), 64-bit Windows (8, 4), and 32-bit ARM and x86 (4, 4). Everything
+    /// before those members is four-byte ints and enums and sits at the same offset on all of them.
+    /// </summary>
+    public readonly record struct Abi(int PointerSize, int CLongSize)
+    {
+        public static readonly Abi Current = new(nint.Size, Marshal.SizeOf<CLong>());
+
+        /// <summary>vpx_codec_enc_cfg_t: two vpx_fixed_buf_t (a pointer and a size_t each) after rc_end_usage.</summary>
+        public int RcTargetBitrate => Align(EncCfg.RcEndUsage + 4, PointerSize) + (4 * PointerSize);
+
+        // vpx_codec_cx_pkt_t's frame: { void *buf; size_t sz; int64 pts; unsigned long duration; uint32 flags; }.
+        public int FrameSz => CxPkt.FrameBuf + PointerSize;
+
+        public int FramePts => Align(FrameSz + PointerSize, 8);
+
+        public int FrameDuration => FramePts + 8;
+
+        public int FrameFlags => FrameDuration + CLongSize;
+
+        // vpx_image_t after planes[4]: int stride[4]; int bps; void *user_priv; unsigned char *img_data.
+        public int Stride => Img.Planes + (4 * PointerSize);
+
+        public int Bps => Stride + (4 * 4);
+
+        public int ImgData => Align(Bps + 4, PointerSize) + PointerSize;
+
+        private static int Align(int offset, int to) => (offset + to - 1) & ~(to - 1);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -302,9 +334,8 @@ internal static unsafe partial class VpxInterop
         public nint Name;
         public nint Iface;
         public int Err;
-        private readonly int _pad;
-        public nint ErrDetail;
-        public nint InitFlags;
+        public nint ErrDetail; // sequential layout puts the hole before it where C does, on 64-bit only
+        public CLong InitFlags; // vpx_codec_flags_t is a C long
         public nint Config;
         public nint Priv;
     }
@@ -319,31 +350,41 @@ internal static unsafe partial class VpxInterop
 
     // ---- C entry points ----
 
+    // libvpx is cdecl. On 32-bit Windows an import defaults to stdcall, which unbalances the stack, so each one says so.
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_version();
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial nint vpx_codec_version_str();
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial nint vpx_codec_err_to_string(int err);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial nint vpx_codec_vp9_cx();
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial nint vpx_codec_vp9_dx();
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_enc_config_default(nint iface, byte* cfg, uint usage);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_enc_init_ver(VpxCodecCtx* ctx, nint iface, byte* cfg, CLong flags, int version);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_enc_config_set(VpxCodecCtx* ctx, byte* cfg);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_dec_init_ver(VpxCodecCtx* ctx, nint iface, VpxCodecDecCfg* cfg, CLong flags, int version);
 
     /// <summary>
@@ -353,21 +394,27 @@ internal static unsafe partial class VpxInterop
     /// struct would need more care than this.
     /// </summary>
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_control_(VpxCodecCtx* ctx, int ctrlId, int value);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_encode(VpxCodecCtx* ctx, byte* img, long pts, CULong duration, CLong flags, CULong deadline);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial byte* vpx_codec_get_cx_data(VpxCodecCtx* ctx, nint* iter);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_decode(VpxCodecCtx* ctx, byte* data, uint dataSize, nint userPriv, CLong deadline);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial byte* vpx_codec_get_frame(VpxCodecCtx* ctx, nint* iter);
 
     [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int vpx_codec_destroy(VpxCodecCtx* ctx);
 
     public static string Describe(int err)

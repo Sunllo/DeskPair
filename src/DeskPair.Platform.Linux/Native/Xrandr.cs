@@ -81,8 +81,8 @@ internal static partial class Xrandr
         public nint Crtc;
         public nint Name;
         public int NameLen;
-        public ulong MmWidth;
-        public ulong MmHeight;
+        public nuint MmWidth;
+        public nuint MmHeight;
         public ushort Connection;
         public ushort SubpixelOrder;
         public int NCrtc;

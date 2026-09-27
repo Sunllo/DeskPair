@@ -16,11 +16,12 @@
   executable and the loader also finds through SUNLLO_WAYLANDSHIM_PATH. Nothing here is committed.
 
 .PARAMETER Rid
-  linux-x64 or linux-arm64. arm64 runs the container under emulation, which Docker Desktop provides.
+  linux-x64, linux-arm64 or linux-arm (32-bit ARMv7). The ARM ones run the container under emulation, which Docker
+  Desktop provides.
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('linux-x64', 'linux-arm64')]
+    [ValidateSet('linux-x64', 'linux-arm64', 'linux-arm')]
     [string]$Rid = 'linux-x64'
 )
 
@@ -34,7 +35,7 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw 'Docker is not installed; build.sh can also be run by hand on any Linux machine with libpipewire-0.3-dev.'
 }
 
-$platform = if ($Rid -eq 'linux-arm64') { 'linux/arm64' } else { 'linux/amd64' }
+$platform = @{ 'linux-x64' = 'linux/amd64'; 'linux-arm64' = 'linux/arm64'; 'linux-arm' = 'linux/arm/v7' }[$Rid]
 $script = 'export DEBIAN_FRONTEND=noninteractive && apt-get update -qq >/dev/null && ' +
           'apt-get install -y -qq gcc libc6-dev pkg-config libpipewire-0.3-dev >/dev/null && ' +
           'bash /shim/build.sh /out/libSunlloWaylandShim.so'
