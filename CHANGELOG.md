@@ -17,6 +17,14 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## 0.4.2 — 2026-09-27
+
+Desktop only; the phones stay at 0.4.0.
+
+- **The source is public**: the applications and the servers are at github.com/Sunllo/DeskPair, under the
+  AGPL-3.0. Nothing else changed since 0.4.1; this build is made from that repository, so the commit it reports
+  with `--version` can be looked up there.
+
 ## 0.4.1 — 2026-09-27
 
 Desktop only; the phones stay at 0.4.0.
