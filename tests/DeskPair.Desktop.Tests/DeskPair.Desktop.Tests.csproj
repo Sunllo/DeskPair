@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The Desktop project is the multi-targeted one; its tests only need the portable target. -->
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="coverlet.collector" PrivateAssets="all" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <!-- Geometry needs a render interface to parse; headless supplies one without a window. -->
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Desktop\DeskPair.Desktop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The app's Win32 manifest repeats the version by hand, because a manifest cannot read an MSBuild
+         property. VersionTests reads it from here and fails when the two copies drift apart, which they did
+         for the whole of 0.1.0. -->
+    <EmbeddedResource Include="..\..\src\DeskPair.Desktop\app.manifest" LogicalName="app.manifest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Shouldly" />
+  </ItemGroup>
+
+</Project>

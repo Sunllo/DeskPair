@@ -1,0 +1,248 @@
+/* Подключение */
+"connect.target" = "ID или адрес удаленного компьютера";
+"connect.password" = "Пароль";
+"connect.action" = "Подключиться";
+"connect.retry" = "Повторить";
+
+"progress.lookingUp" = "Поиск компьютера";
+"progress.measuring" = "Проверка этой сети";
+"progress.punching" = "Открытие прямого пути";
+"progress.connecting" = "Подключение…";
+"progress.waiting" = "Ожидание, пока удаленный пользователь примет подключение…";
+
+/* В сеансе. Формулировки повторяют настольную версию, чтобы оба продукта говорили одно и то же. */
+"session.disconnect" = "Отключиться";
+/* Четыре панели полосы сеанса. Коротко: они стоят под значком в узкой вкладке. */
+"session.tab.actions" = "Действия";
+"session.tab.input" = "Касания";
+"session.tab.screen" = "Экран";
+"session.tab.keyboard" = "Клавиши";
+"session.gestures" = "Как работают жесты";
+"session.quality" = "Качество";
+"session.quality.low" = "Низкое";
+"session.quality.balanced" = "Сбалансированное";
+"session.quality.best" = "Наилучшее";
+"session.fit" = "Вписать";
+"session.original" = "1:1";
+"session.resolution" = "Разрешение";
+"session.resolution.original" = "Исходное";
+"session.resolution.failed" = "Не удалось изменить разрешение: %@";
+"session.remoteCursor" = "Удаленный указатель";
+"session.remoteCursorHint" = "Показывать указатель другого компьютера вместе с вашим.";
+"session.ctrlAltDel" = "Ctrl+Alt+Del";
+"session.lock" = "Заблокировать";
+"session.refresh" = "Обновить";
+"session.stalled" = "Связь потеряна — ожидание";
+"session.stalledHint" = "На экране последний полученный кадр";
+"display.label" = "Экран %d";
+
+/* Режимы указателя. У настольной версии есть настоящая мышь, поэтому там аналога нет. */
+"mode.touch" = "Касание";
+"mode.mouse" = "Мышь";
+
+"gesture.tap" = "Касание одним пальцем";
+"gesture.tapTouch" = "Щелчок там, где коснулись";
+"gesture.tapMouse" = "Щелчок там, где указатель";
+"gesture.twoTap" = "Касание двумя пальцами";
+"gesture.twoTapAction" = "Правый щелчок";
+"gesture.drag" = "Перетаскивание одним пальцем";
+"gesture.dragTouch" = "Перемещает изображение";
+"gesture.dragMouse" = "Перемещает указатель";
+"gesture.twoDrag" = "Перетаскивание двумя пальцами";
+"gesture.twoDragAction" = "Перемещает изображение";
+"gesture.pinch" = "Щипок двумя пальцами";
+"gesture.pinchAction" = "Масштабирует изображение";
+"gesture.three" = "Три пальца вверх или вниз";
+"gesture.threeAction" = "Колесо прокрутки";
+
+/* Клавиатура */
+"keyboard.type" = "Вводите здесь";
+"keyboard.pin" = "Закрепить";
+"keyboard.function" = "Fn";
+"keyboard.numpad" = "123";
+"keyboard.more" = "Еще";
+"keyboard.ime" = "IME";
+"clipboard.send" = "Отправить буфер обмена";
+
+"audio.unavailable" = "Нет звука: %@";
+"video.unavailable" = "Нет изображения: %@";
+
+/* Главная. Формулировки взяты из Strings.cs настольной версии, чтобы оба продукта говорили одно и то же. */
+"home.controlRemote" = "Управлять удаленным компьютером";
+"home.favouritesEmptyHint" = "Нажмите на сердечко рядом с недавним подключением, чтобы оставить его здесь.";
+"home.noFavourites" = "Устройств пока нет";
+"home.recent" = "Недавние";
+"presence.online" = "В сети";
+"presence.offline" = "Не в сети";
+"presence.unknown" = "Неизвестно";
+"home.noRecent" = "Недавних подключений нет";
+"home.forgetRecent" = "Убрать из недавних";
+"home.noServer" = "Сигнальный сервер не задан. Откройте «Настройки», чтобы подключаться по ID.";
+
+/* Лист с паролем */
+"connect.cancel" = "Отмена";
+
+/* Настройки */
+"settings.title" = "Настройки";
+"settings.section.general" = "Общие";
+"settings.section.session" = "При подключении к другим";
+"settings.viewOnly" = "Только просмотр";
+"settings.viewOnlyHint" = "Смотреть, не имея возможности ничего трогать.";
+"settings.lockAfterEnd" = "Блокировать по окончании сеанса";
+"settings.lockAfterEndHint" = "Оставлять другой компьютер заблокированным при отключении.";
+"session.rtt" = "задержка";
+"session.waitingForPicture" = "Ожидание экрана компьютера %@…";
+"session.pictureLate" = "Пока ничего. Другой компьютер, возможно, стоит на экране блокировки или входа в систему, а его Windows не позволяет захватывать — кто-то должен разблокировать компьютер, прежде чем появится изображение.";
+"session.signal.platform" = "Система";
+"session.signal.route" = "Маршрут";
+"session.route.lan" = "Напрямую, та же сеть";
+"session.route.direct" = "Напрямую";
+"session.route.punched" = "Peer-to-peer";
+"session.route.relay" = "Через ретранслятор";
+"session.inputRefused" = "Другой компьютер не принимает ввод.";
+"settings.section.network" = "Сеть";
+"settings.section.about" = "О DeskPair";
+"settings.language" = "Язык";
+"settings.language.system" = "Как в системе";
+"settings.recentLimit" = "Недавние подключения";
+"settings.recentLimitHint" = "Сколько хранить в списке.";
+"settings.clearRecent" = "Очистить недавние подключения";
+"settings.defaultQuality" = "Качество";
+"settings.defaultQualityHint" = "С чего начинаются новые сеансы.";
+"settings.bitrate" = "Битрейт (кбит/с)";
+"settings.bitrateInvalid" = "Укажите битрейт от 100 до 200000 кбит/с";
+"settings.fps" = "Частота кадров";
+"settings.fpsInvalid" = "Укажите частоту кадров от 5 до 120";
+"settings.quality.custom" = "Свое";
+"settings.lossless" = "Уточнять, когда неподвижно";
+"settings.losslessHint" = "Доводить до попиксельной точности, когда изображение перестает двигаться.";
+"settings.fitToWindow" = "Вписывать в экран";
+"settings.fitToWindowHint" = "Уменьшать удаленный экран так, чтобы он был виден целиком.";
+"settings.audio" = "Звук";
+"settings.audioHint" = "Воспроизводить то, что играет удаленный компьютер.";
+"settings.pointerMode" = "Указатель";
+"settings.server" = "Сигнальный сервер";
+"settings.serverKey" = "Открытый ключ сервера";
+"settings.fetchKey" = "Получить с сервера";
+"settings.keyFetched" = "Открытый ключ получен";
+"settings.keyInvalid" = "Открытый ключ — не корректный base64; нажмите «Получить с сервера»";
+"settings.selfHosted" = "У меня собственные серверы";
+"settings.directoryHint" = "DeskPair спрашивает у портала, какой сигнальный сервер использовать, поэтому здесь ничего заполнять не нужно.";
+"settings.keyMissing" = "Без ключа сервера подключение по ID ничего не проверяет";
+"settings.serverRequired" = "Сначала укажите сигнальный сервер";
+"settings.udpMedia" = "Видео по UDP";
+"settings.udpMediaHint" = "Плавнее в хорошей сети; когда сеть плохая, возвращается к TCP.";
+"settings.forceRelay" = "Всегда через ретранслятор";
+"settings.forceRelayHint" = "Никогда не подключаться напрямую, даже в той же сети.";
+"settings.version" = "Версия";
+
+/* Три вкладки */
+"nav.connect" = "Подключение";
+"nav.favourites" = "Устройства";
+"nav.settings" = "Настройки";
+
+/* Сканирование кода сопряжения */
+"home.scan" = "Сканировать код";
+"scan.applied" = "Применены настройки от %@";
+"scan.notDeskPair" = "Это не код DeskPair.";
+"scan.noVersion" = "В этом коде нет версии.";
+"scan.newerVersion" = "Этот код создан более новой версией DeskPair (v%d). Обновите это приложение.";
+"scan.noId" = "В этом коде не назван компьютер.";
+"scan.damagedKey" = "Ключ в этом коде поврежден.";
+"scan.cameraDenied" = "Нет доступа к камере";
+"scan.cameraDeniedHint" = "Разрешите доступ к камере в «Настройках», чтобы сканировать код сопряжения.";
+"scan.unavailable" = "Сканер не смог запуститься на этом устройстве.";
+
+"clipboard.sendImage" = "Отправить изображение";
+"clipboard.imageSent" = "Изображение отправлено — нажмите Cmd+V (или Ctrl+V) на удаленном компьютере";
+"clipboard.imageKnown" = "На удаленном компьютере уже есть это изображение";
+"clipboard.imageFailed" = "Не удалось отправить это изображение";
+
+"settings.section.account" = "Учетная запись";
+"settings.account.signedOut" = "Вход не выполнен";
+"settings.account.signedOutHint" = "Войдите, чтобы синхронизировать список устройств";
+"settings.account.devices" = "Устройств: %d";
+"settings.deviceName" = "Имя этого устройства";
+"settings.account.portal" = "Адрес портала";
+"settings.account.email" = "Эл. почта";
+"settings.account.password" = "Пароль";
+"settings.account.signInTitle" = "Вход в учетную запись";
+"settings.account.signIn" = "Войти";
+"settings.account.register" = "Создать учетную запись";
+"settings.account.needEmail" = "Введите адрес электронной почты.";
+"settings.account.needPassword" = "Введите пароль.";
+"settings.account.verify" = "Учетная запись создана. Подтвердите %@ по письму в почте, затем войдите.";
+"settings.account.unlink" = "Выйти";
+"settings.account.linked" = "Вы вошли как %@.";
+"settings.account.unlinked" = "Выход выполнен.";
+"settings.account.unlinkedLocally" = "Здесь выход выполнен, но сервер об этом не узнал (%@). Отзовите это устройство и на сайте.";
+"favourites.ungrouped" = "Вне папок";
+
+"devices.edit" = "Изменить";
+"devices.edit.title" = "Сохраненное устройство";
+"devices.edit.name" = "Имя";
+"devices.edit.password" = "Пароль";
+"devices.edit.passwordHint" = "Необязательно. Пароль, сохраненный здесь, используется вместо запроса — для компьютера, к которому вы подключаетесь часто. Оставьте пустым, чтобы вас спрашивали каждый раз.";
+"devices.edit.save" = "Сохранить";
+
+"keyChanged.title" = "Ключ этого компьютера изменился";
+"keyChanged.body" = "%1$@ предъявляет не тот ключ, что раньше.\n\nБыл %2$@…\nТеперь %3$@…\n\nТак бывает, когда компьютер переустановили. Так же бывает, когда кто-то выдает себя за него. Доверяйте новому ключу, только если знаете, почему он изменился.";
+"keyChanged.trust" = "Доверять новому ключу";
+"keyChanged.cancel" = "Не сейчас";
+"devices.signInRequired" = "Войдите, чтобы вести список устройств";
+"devices.signInRequiredHint" = "Список принадлежит вашей учетной записи, поэтому следует за вами на другие устройства. Вход — в настройках.";
+
+"account.error.badCredentials" = "Учетной записи с таким адресом и паролем нет.";
+"account.error.notVerified" = "Сначала подтвердите адрес электронной почты. Проверьте почту.";
+"account.error.disabled" = "Эта учетная запись отключена.";
+"account.error.closed" = "Этот сервер не принимает новые учетные записи.";
+"account.error.emailTaken" = "У этого адреса уже есть учетная запись. Войдите в нее.";
+"account.error.weakPassword" = "Этот пароль слишком короткий.";
+"account.error.badEmail" = "Это не похоже на адрес электронной почты.";
+"account.error.tooMany" = "Слишком много попыток. Подождите несколько минут и повторите.";
+"devices.edit.group" = "Группа";
+"devices.edit.noGroup" = "Без группы";
+"devices.remove" = "Удалить";
+"devices.group.add" = "Новая группа";
+"devices.group.rename" = "Переименовать группу";
+"devices.group.delete" = "Удалить группу";
+"devices.group.name" = "Название группы";
+"devices.group.cancel" = "Отмена";
+"session.dropped" = "Соединение оборвалось.";
+"session.droppedRetrying" = "Соединение оборвалось. Повторная попытка через ретранслятор.";
+"session.closedByHost" = "Другой компьютер завершил сеанс.";
+
+/* Язык */
+"settings.language.restart" = "Вступит в силу при следующем открытии DeskPair. Тот же выбор есть в «Настройки» > DeskPair > «Язык».";
+
+/* Почему подключение не удалось, по тому, что сообщил общий модуль */
+"session.hostTooOld" = "DeskPair на этом компьютере старее, чем нужно этому приложению. Обновите DeskPair на компьютере, к которому подключаетесь.";
+"session.clientTooOld" = "Это приложение старее, чем нужно DeskPair на компьютере. Обновите DeskPair на этом устройстве.";
+"session.unreachable.unknownId" = "Компьютер с ID %@ не зарегистрирован на сигнальном сервере.";
+"session.unreachable.offline" = "%@ сейчас не в сети.";
+"session.unreachable.busy" = "Сигнальный сервер занят. Повторите чуть позже.";
+"session.unreachable.noRelay" = "%@ недоступен напрямую, а сервер не предложил ретранслятор.";
+"session.unreachable.noAnswer" = "Сигнальный сервер не ответил.";
+"session.failedDetail" = "Подключение не удалось: %@";
+
+/* Проблемы с видео и звуком, показываемые поверх изображения */
+"video.unsupportedFormat" = "Видеопоток в формате, который это устройство не может прочитать";
+"video.noParameterSets" = "В ключевом кадре нет пригодных наборов параметров";
+"video.parameterSetsFailed" = "Не удалось прочитать наборы параметров (OSStatus %lld)";
+"video.blockBufferFailed" = "Не удалось упаковать кадр для декодера (%lld)";
+"video.copyFailed" = "Не удалось скопировать кадр в его буфер (%lld)";
+"video.sampleBufferFailed" = "Не удалось передать кадр декодеру (%lld)";
+"audio.noOpus" = "На этом устройстве нет декодера Opus";
+
+/* Terminal */
+"terminal.open" = "Открыть терминал";
+"terminal.close" = "Закрыть";
+"terminal.notAllowed" = "Этот компьютер не разрешает терминал. Владелец может включить его в «Настройки › Безопасность»; в DeskPair старше этой версии терминала нет.";
+"terminal.opening" = "Открывается оболочка…";
+"terminal.ended" = "Оболочка завершилась (код выхода %lld).";
+"terminal.endedReason" = "Оболочка завершилась: %@";
+"terminal.failed" = "Не удалось открыть оболочку: %@";
+"terminal.newShell" = "Открыть новую оболочку";
+"terminal.connectionLost" = "Соединение потеряно, а с ним и оболочка. Оболочка не переживает своё соединение.";
+"terminal.paste" = "Вставить";
+"terminal.pasteConfirm" = "Вставить %lld строк в оболочку? Каждая строка выполнится как команда.";

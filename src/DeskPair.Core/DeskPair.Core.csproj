@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Session engine shared by controller and host: transports, handshake/login, publisher services, QoS, file transfer, IPC.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Concentus" />
+    <PackageReference Include="System.IO.Hashing" />
+    <PackageReference Include="Wcwidth" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeskPair.Protocol\DeskPair.Protocol.csproj" />
+    <ProjectReference Include="..\DeskPair.Platform.Abstractions\DeskPair.Platform.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DeskPair.Core.Tests" />
+    <InternalsVisibleTo Include="DeskPair.Integration.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.ChatView"
+             x:DataType="vm:ChatViewModel">
+  <DockPanel Margin="8">
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+      <TextBox Text="{Binding Draft}" Watermark="{loc:Loc chat.placeholder}" x:Name="DraftBox" />
+      <Button Grid.Column="1" Content="{loc:Loc chat.send}" Command="{Binding SendCommand}" Margin="6,0,0,0" IsDefault="True" />
+    </Grid>
+    <ScrollViewer x:Name="Scroller">
+      <ItemsControl ItemsSource="{Binding Lines}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ChatLine">
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
+              <TextBlock Text="{Binding TimeText}" Foreground="#888" FontSize="11" VerticalAlignment="Top" />
+              <TextBlock Text="{Binding Prefix}" Foreground="#888" VerticalAlignment="Top" />
+              <TextBlock Text="{Binding Text}" TextWrapping="Wrap" MaxWidth="220" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

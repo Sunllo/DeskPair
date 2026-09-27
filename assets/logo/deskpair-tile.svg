@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Sunllo DeskPair">
+  <title>Sunllo DeskPair</title>
+  <defs>
+    <linearGradient id="tileBg" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#002559"/>
+      <stop offset="1" stop-color="#001839"/>
+    </linearGradient>
+    <linearGradient id="tileBody" x1="70" y1="70" x2="186" y2="186" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#74d7ea"/>
+      <stop offset=".35" stop-color="#0aa9d1"/>
+      <stop offset=".72" stop-color="#418bd6"/>
+      <stop offset="1" stop-color="#0d5ba6"/>
+    </linearGradient>
+    <mask id="tileArrows">
+      <rect x="0" y="0" width="256" height="256" fill="#000"/>
+      <g transform="translate(128 128) scale(.72) translate(-128 -128)">
+        <g transform="rotate(45 128 128)">
+          <rect x="40" y="40" width="176" height="176" rx="30" fill="#fff"/>
+        </g>
+        <g fill="none" stroke="#000" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M117 100 74 144l43 44"/>
+          <path d="M139 68l43 44-43 44"/>
+        </g>
+      </g>
+    </mask>
+  </defs>
+  <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#tileBg)"/>
+  <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#tileBody)" mask="url(#tileArrows)"/>
+</svg>

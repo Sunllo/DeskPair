@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Two colours only, and both are duplicates on purpose.
+
+      launch_background must equal ColorScheme.background in ui/Colour.kt, because it is the same surface
+      seen a few milliseconds earlier. XML cannot read a Kotlin value, so the pair has to be kept by hand;
+      if one moves, move the other.
+
+      ic_launcher_background is the logo tile's top stop, from IconGen's DrawTile.
+    -->
+    <color name="launch_background">#F2F4F7</color>
+    <color name="ic_launcher_background">#002559</color>
+</resources>

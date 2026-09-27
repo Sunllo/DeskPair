@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DeskPair</string>
+
+    <!-- Подключение -->
+    <string name="connect_title">Подключение к компьютеру</string>
+    <string name="connect_target">ID или адрес удаленного компьютера</string>
+    <string name="connect_password">Пароль</string>
+    <string name="connect_action">Подключиться</string>
+    <string name="connect_retry">Повторить</string>
+
+    <string name="progress_looking_up">Поиск компьютера</string>
+    <string name="progress_measuring">Проверка этой сети</string>
+    <string name="progress_punching">Открытие прямого пути</string>
+    <string name="progress_connecting">Подключение…</string>
+    <string name="progress_waiting">Ожидание, пока удаленный пользователь примет подключение…</string>
+
+    <!-- В сеансе. Формулировки повторяют настольную версию, чтобы оба продукта говорили одно и то же. -->
+    <string name="session_disconnect">Отключиться</string>
+    <string name="session_picture">Изображение</string>
+    <string name="session_more">Еще</string>
+    <!-- Показывается поверх изображения, когда часть сеанса молча не работает. -->
+    <string name="audio_unavailable">Нет звука: %1$s</string>
+    <string name="video_unavailable">Нет изображения: на этом телефоне нет работающего декодера H.264 (%1$s)</string>
+    <!-- Четыре панели полосы сеанса. Коротко: они стоят под значком в узкой вкладке. -->
+    <string name="session_tab_actions">Действия</string>
+    <string name="session_tab_input">Касания</string>
+    <string name="session_tab_screen">Экран</string>
+    <string name="session_tab_keyboard">Клавиши</string>
+    <string name="session_gestures">Как работают жесты</string>
+    <string name="session_hide">Скрыть</string>
+    <string name="session_quality">Качество</string>
+    <string name="session_display">Дисплей</string>
+    <string name="session_scale">Масштаб</string>
+    <string name="session_fit">Вписать</string>
+    <string name="session_original">1:1</string>
+    <string name="session_resolution">Разрешение</string>
+    <string name="session_resolution_original">Исходное</string>
+    <string name="session_resolution_failed">Не удалось изменить разрешение: %1$s</string>
+    <string name="session_remote_cursor">Удаленный указатель</string>
+    <string name="session_remote_cursor_hint">Показывать указатель другого компьютера вместе с вашим.</string>
+    <string name="session_ctrl_alt_del">Ctrl+Alt+Del</string>
+    <string name="session_lock">Заблокировать</string>
+    <string name="session_refresh">Обновить</string>
+    <string name="session_reset_canvas">Сбросить вид</string>
+    <string name="session_rtt">RTT</string>
+    <string name="session_waiting_for_picture">Ожидание экрана компьютера %1$s…</string>
+    <string name="session_picture_late">Пока ничего. Другой компьютер, возможно, стоит на экране блокировки или входа в систему, а его Windows не позволяет захватывать — кто-то должен разблокировать компьютер, прежде чем появится изображение.</string>
+    <string name="session_signal_platform">Система</string>
+    <string name="session_signal_route">Маршрут</string>
+    <string name="session_route_lan">Напрямую, та же сеть</string>
+    <string name="session_route_direct">Напрямую</string>
+    <string name="session_route_punched">Peer-to-peer</string>
+    <string name="session_route_relay">Через ретранслятор</string>
+    <string name="session_stalled">Связь потеряна — ожидание</string>
+    <string name="session_stalled_hint">На экране последний полученный кадр</string>
+
+    <string name="quality_low">Низкое</string>
+    <string name="quality_balanced">Сбалансированное</string>
+    <string name="quality_best">Наилучшее</string>
+    <string name="display_label">Экран %1$d</string>
+
+    <!-- Режимы указателя. У настольной версии есть настоящая мышь, поэтому там аналога нет. -->
+    <string name="mode_touch">Касание</string>
+    <string name="mode_mouse">Мышь</string>
+
+    <string name="gesture_tap">Касание одним пальцем</string>
+    <string name="gesture_tap_touch">Щелчок там, где коснулись</string>
+    <string name="gesture_tap_mouse">Щелчок там, где указатель</string>
+    <string name="gesture_two_tap">Касание двумя пальцами</string>
+    <string name="gesture_two_tap_action">Правый щелчок</string>
+    <string name="gesture_drag">Перетаскивание одним пальцем</string>
+    <string name="gesture_drag_touch">Перемещает изображение</string>
+    <string name="gesture_drag_mouse">Перемещает указатель</string>
+    <string name="gesture_two_drag">Перетаскивание двумя пальцами</string>
+    <string name="gesture_two_drag_action">Перемещает изображение</string>
+    <string name="gesture_pinch">Щипок двумя пальцами</string>
+    <string name="gesture_pinch_action">Масштабирует изображение</string>
+    <string name="gesture_three">Три пальца вверх или вниз</string>
+    <string name="gesture_three_action">Колесо прокрутки</string>
+
+    <!-- Клавиатура -->
+    <string name="keyboard_tab">Клавиатура</string>
+    <string name="keyboard_type">Вводите здесь</string>
+    <string name="keyboard_pin">Закрепить</string>
+    <string name="keyboard_function">Fn</string>
+    <!-- Названия групп на полосе клавиш. Намеренно кратко: они стоят в прокручиваемом ряду клавиш. -->
+    <string name="keyboard_numpad">123</string>
+    <string name="keyboard_more">Еще</string>
+    <string name="keyboard_ime">IME</string>
+    <string name="clipboard_send">Отправить буфер обмена</string>
+
+    <string name="dialog_done">Готово</string>
+
+    <!-- Главная. Формулировки взяты из Strings.cs настольной версии, чтобы оба продукта говорили одно и то же. -->
+    <string name="home_control_remote">Управлять удаленным компьютером</string>
+    <string name="home_settings">Настройки</string>
+    <string name="home_favourites">Устройства</string>
+    <string name="home_no_favourites">Устройств пока нет</string>
+    <string name="home_favourites_empty_hint">Нажмите на сердечко рядом с недавним подключением, чтобы оставить его здесь.</string>
+    <string name="home_recent">Недавние</string>
+    <string name="presence_online">В сети</string>
+    <string name="presence_offline">Не в сети</string>
+    <string name="presence_unknown">Неизвестно</string>
+    <string name="home_no_recent">Недавних подключений нет</string>
+    <string name="home_add_favourite">Сохранить в устройства</string>
+    <string name="home_remove_favourite">Убрать из устройств</string>
+    <string name="home_forget_recent">Убрать из недавних</string>
+    <string name="home_no_server">Сигнальный сервер не задан. Откройте «Настройки», чтобы подключаться по ID.</string>
+
+    <!-- Лист с паролем -->
+    <string name="connect_remember">Запомнить этот пароль</string>
+    <string name="connect_show_password">Показать пароль</string>
+    <string name="connect_hide_password">Скрыть пароль</string>
+    <string name="connect_cancel">Отмена</string>
+
+    <!-- Настройки -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_section_general">Общие</string>
+    <string name="settings_section_session">При подключении к другим</string>
+    <string name="settings_view_only">Только просмотр</string>
+    <string name="settings_view_only_hint">Смотреть, не имея возможности ничего трогать.</string>
+    <string name="settings_lock_after_end">Блокировать по окончании сеанса</string>
+    <string name="settings_lock_after_end_hint">Оставлять другой компьютер заблокированным при отключении.</string>
+    <string name="session_input_refused">Другой компьютер не принимает ввод.</string>
+    <string name="settings_section_network">Сеть</string>
+    <string name="favourites_ungrouped">Вне папок</string>
+    <string name="settings_section_account">Учетная запись</string>
+    <string name="settings_account_signed_out">Вход не выполнен</string>
+    <string name="settings_account_signed_out_hint">Войдите, чтобы синхронизировать список устройств</string>
+    <string name="settings_account_devices">Устройств: %1$d</string>
+    <string name="settings_portal">Адрес портала</string>
+    <string name="settings_portal_hint">Где находится ваша учетная запись DeskPair. Привязка держит сохраненные компьютеры одинаковыми на всех ваших устройствах.</string>
+    <string name="settings_device_name">Имя этого устройства</string>
+    <string name="settings_account_email">Эл. почта</string>
+    <string name="settings_account_password">Пароль</string>
+    <string name="settings_account_sign_in">Войти</string>
+    <string name="settings_account_register">Создать учетную запись</string>
+    <string name="settings_account_email_required">Введите адрес электронной почты.</string>
+    <string name="settings_account_password_required">Введите пароль.</string>
+    <string name="settings_account_verify">Учетная запись создана. Подтвердите %1$s по письму в почте, затем войдите.</string>
+    <string name="settings_linked_to">Вы вошли как</string>
+    <string name="settings_linked">Вы вошли как %1$s.</string>
+    <string name="settings_unlink">Выйти</string>
+    <string name="settings_unlinked">Выход выполнен.</string>
+    <string name="settings_unlinked_locally">Здесь выход выполнен, но сервер об этом не узнал (%1$s). Отзовите это устройство и на сайте.</string>
+    <string name="settings_section_security">Безопасность</string>
+    <string name="settings_section_about">О DeskPair</string>
+
+    <string name="settings_language">Язык</string>
+    <string name="settings_language_system">Как в системе</string>
+    <string name="settings_recent_limit">Недавние подключения</string>
+    <string name="settings_recent_limit_hint">Сколько хранить в списке.</string>
+    <string name="settings_recent_limit_invalid">Укажите от 1 до 200 подключений</string>
+    <string name="settings_clear_recent">Очистить недавние подключения</string>
+
+    <string name="settings_default_quality">Качество</string>
+    <string name="settings_default_quality_hint">С чего начинаются новые сеансы.</string>
+    <string name="settings_quality_custom">Свое</string>
+    <string name="settings_bitrate">Битрейт (кбит/с)</string>
+    <string name="settings_bitrate_invalid">Укажите битрейт от 100 до 200000 кбит/с</string>
+    <string name="settings_fps">Частота кадров</string>
+    <string name="settings_fps_invalid">Укажите частоту кадров от 5 до 120</string>
+    <string name="settings_lossless">Уточнять, когда неподвижно</string>
+    <string name="settings_lossless_hint">Доводить до попиксельной точности, когда изображение перестает двигаться.</string>
+    <string name="settings_fit_to_window">Вписывать в экран</string>
+    <string name="settings_fit_to_window_hint">Уменьшать удаленный экран так, чтобы он был виден целиком.</string>
+    <string name="settings_audio">Звук</string>
+    <string name="settings_audio_hint">Воспроизводить то, что играет удаленный компьютер.</string>
+    <string name="settings_pointer_mode">Указатель</string>
+
+    <string name="settings_server">Сигнальный сервер</string>
+    <string name="settings_self_hosted">У меня собственные серверы</string>
+    <string name="settings_directory_hint">DeskPair спрашивает у портала, какой сигнальный сервер использовать, поэтому здесь ничего заполнять не нужно.</string>
+    <string name="settings_server_key">Открытый ключ сервера</string>
+    <string name="settings_fetch_key">Получить с сервера</string>
+    <string name="settings_key_fetched">Открытый ключ получен</string>
+    <string name="settings_key_fetch_failed">Не удалось получить ключ: %1$s</string>
+    <string name="settings_key_invalid">Открытый ключ — не корректный base64; нажмите «Получить с сервера»</string>
+    <string name="settings_key_missing">Без ключа сервера подключение по ID ничего не проверяет</string>
+    <string name="settings_server_required">Сначала укажите сигнальный сервер</string>
+    <string name="settings_udp_media">Видео по UDP</string>
+    <string name="settings_udp_media_hint">Плавнее в хорошей сети; когда сеть плохая, возвращается к TCP.</string>
+    <string name="settings_force_relay">Всегда через ретранслятор</string>
+    <string name="settings_force_relay_hint">Никогда не подключаться напрямую, даже в той же сети.</string>
+
+    <string name="settings_known_hosts">Доверенные компьютеры</string>
+    <string name="settings_known_hosts_hint">Забудьте компьютер, чтобы вас снова спросили, когда его ключ изменится</string>
+    <string name="settings_forget">Забыть</string>
+    <string name="settings_forget_all">Забыть все</string>
+    <string name="settings_no_known_hosts">Пока ничего не доверено</string>
+    <string name="settings_passwords">Запомненные пароли</string>
+    <string name="settings_no_passwords">Запомненных паролей нет</string>
+    <string name="settings_forget_passwords">Забыть все пароли</string>
+
+    <string name="settings_version">Версия %1$s</string>
+
+    <!-- Три вкладки. Достаточно коротко, чтобы не переноситься под значком нижней панели при любом масштабе шрифта. -->
+    <string name="nav_connect">Подключение</string>
+    <string name="nav_favourites">Устройства</string>
+    <string name="nav_settings">Настройки</string>
+    <string name="nav_back">Назад</string>
+    <string name="home_scan">Сканировать код</string>
+    <string name="scan_not_deskpair">Это не код DeskPair.</string>
+    <string name="scan_no_version">В этом коде нет версии.</string>
+    <string name="scan_newer_version">Этот код создан более новой версией DeskPair (v%1$d). Обновите это приложение.</string>
+    <string name="scan_no_id">В этом коде не назван компьютер.</string>
+    <string name="scan_damaged_key">Ключ в этом коде поврежден.</string>
+    <string name="scan_applied">Применены настройки от %1$s</string>
+    <string name="scan_unavailable">Сканер не смог запуститься на этом устройстве.</string>
+    <string name="clipboard_send_image">Отправить изображение</string>
+    <string name="clipboard_image_sent">Изображение отправлено — нажмите Ctrl+V (или Cmd+V) на удаленном компьютере</string>
+    <string name="clipboard_image_known">На удаленном компьютере уже есть это изображение</string>
+    <string name="clipboard_image_failed">Не удалось отправить это изображение</string>
+    <string name="devices_edit">Изменить</string>
+    <string name="devices_edit_title">Сохраненное устройство</string>
+    <string name="devices_edit_name">Имя</string>
+    <string name="devices_edit_password">Пароль</string>
+    <string name="devices_edit_password_hint">Необязательно. Пароль, сохраненный здесь, используется вместо запроса — для компьютера, к которому вы подключаетесь часто.</string>
+    <string name="devices_edit_save">Сохранить</string>
+    <string name="key_changed_title">Ключ этого компьютера изменился</string>
+    <string name="key_changed_body">%1$s предъявляет не тот ключ, что раньше.\n\nБыл %2$s…\nТеперь %3$s…\n\nТак бывает, когда компьютер переустановили. Так же бывает, когда кто-то выдает себя за него. Доверяйте новому ключу, только если знаете, почему он изменился.</string>
+    <string name="key_changed_trust">Доверять новому ключу</string>
+    <string name="key_changed_cancel">Не сейчас</string>
+    <string name="devices_sign_in_required">Войдите, чтобы вести список устройств</string>
+    <string name="devices_sign_in_required_hint">Список принадлежит вашей учетной записи, поэтому следует за вами на другие устройства. Вход — в настройках.</string>
+    <string name="account_error_bad_credentials">Учетной записи с таким адресом и паролем нет.</string>
+    <string name="account_error_not_verified">Сначала подтвердите адрес электронной почты. Проверьте почту.</string>
+    <string name="account_error_disabled">Эта учетная запись отключена.</string>
+    <string name="account_error_closed">Этот сервер не принимает новые учетные записи.</string>
+    <string name="account_error_email_taken">У этого адреса уже есть учетная запись. Войдите в нее.</string>
+    <string name="account_error_weak_password">Этот пароль слишком короткий.</string>
+    <string name="account_error_bad_email">Это не похоже на адрес электронной почты.</string>
+    <string name="account_error_too_many">Слишком много попыток. Подождите несколько минут и повторите.</string>
+    <string name="devices_edit_group">Группа</string>
+    <string name="devices_group_add">Новая группа</string>
+    <string name="devices_group_rename">Переименовать группу</string>
+    <string name="devices_group_delete">Удалить группу</string>
+    <string name="devices_group_name">Название группы</string>
+    <string name="devices_group_cancel">Отмена</string>
+    <string name="session_dropped">Соединение оборвалось.</string>
+    <string name="session_dropped_retrying">Соединение оборвалось. Повторная попытка через ретранслятор.</string>
+    <string name="session_host_too_old">DeskPair на этом компьютере старее, чем нужно этому приложению. Обновите DeskPair на компьютере, к которому подключаетесь.</string>
+    <string name="session_client_too_old">Это приложение старее, чем нужно DeskPair на компьютере. Обновите DeskPair на этом телефоне.</string>
+    <string name="session_unreachable_unknown_id">Компьютер с ID %1$s не зарегистрирован на сигнальном сервере.</string>
+    <string name="session_unreachable_offline">%1$s сейчас не в сети.</string>
+    <string name="session_unreachable_busy">Сигнальный сервер занят. Повторите чуть позже.</string>
+    <string name="session_unreachable_no_relay">%1$s недоступен напрямую, а сервер не предложил ретранслятор.</string>
+    <string name="session_unreachable_no_answer">Сигнальный сервер не ответил.</string>
+    <string name="session_failed_detail">Подключение не удалось: %1$s</string>
+    <string name="clipboard_too_large">Это изображение слишком велико для буфера обмена даже в уменьшенном виде.</string>
+
+    <!-- Terminal -->
+    <string name="terminal_open">Открыть терминал</string>
+    <string name="terminal_close">Закрыть</string>
+    <string name="terminal_not_allowed">Этот компьютер не разрешает терминал. Владелец может включить его в «Настройки › Безопасность»; в DeskPair старше этой версии терминала нет.</string>
+    <string name="terminal_opening">Открывается оболочка…</string>
+    <string name="terminal_ended">Оболочка завершилась (код выхода %1$d).</string>
+    <string name="terminal_ended_reason">Оболочка завершилась: %1$s</string>
+    <string name="terminal_failed">Не удалось открыть оболочку: %1$s</string>
+    <string name="terminal_new_shell">Открыть новую оболочку</string>
+    <string name="terminal_connection_lost">Соединение потеряно, а с ним и оболочка. Оболочка не переживает своё соединение.</string>
+    <string name="terminal_paste">Вставить</string>
+    <string name="terminal_paste_confirm">Вставить %1$d строк в оболочку? Каждая строка выполнится как команда.</string>
+</resources>

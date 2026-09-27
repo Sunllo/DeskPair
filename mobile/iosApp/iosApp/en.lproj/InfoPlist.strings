@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "DeskPair uses the camera only to read the pairing code shown on a computer.";
+"NSLocalNetworkUsageDescription" = "DeskPair connects to computers on this network directly, without going through a server.";

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- Media Foundation, DXGI and friends only exist on Windows; the project builds everywhere but runs only there. -->
+    <IsTestProject Condition="'$(IsWindowsBuildHost)' != 'true'">false</IsTestProject>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="coverlet.collector" PrivateAssets="all" />
+    <PackageReference Include="Shouldly" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Platform.Windows\DeskPair.Platform.Windows.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Core\DeskPair.Core.csproj" />
+    <ProjectReference Include="..\DeskPair.Integration.Tests\DeskPair.Integration.Tests.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Codec.OpenH264\DeskPair.Codec.OpenH264.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Shouldly" />
+  </ItemGroup>
+
+</Project>

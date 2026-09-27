@@ -1,0 +1,6 @@
+The first public release.
+Connections go peer to peer where the network allows it. Where it does not, a relay carries them and only ever sees encrypted bytes: the picture, the keystrokes and the clipboard are end-to-end encrypted either way.
+One account, one list of computers. The desktop app, the iPhone app and the Android app share the same saved machines and folders.
+A device is linked by typing an eight-character code. No account password is stored on any machine, and a device can be revoked on its own from the web console.
+There is no unattended access. Somebody has to be at the other computer to let you in, and that is a decision rather than a missing feature.
+The macOS build is for Apple silicon, signed and notarised, so it opens without a Gatekeeper warning. There is no Intel build.

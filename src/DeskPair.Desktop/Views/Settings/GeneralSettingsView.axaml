@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels.Settings"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.Settings.GeneralSettingsView"
+             x:DataType="vm:GeneralSettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="10" MaxWidth="600" HorizontalAlignment="Left">
+      <TextBlock Text="{loc:Loc settings.tab.general}" Classes="title" />
+      <TextBlock Text="{loc:Loc settings.generalIntro}" Classes="hint" TextWrapping="Wrap" />
+
+      <TextBlock Text="{loc:Loc settings.language}" Classes="label" Margin="0,8,0,0" />
+      <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}" MinWidth="220">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:LanguageOption">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <TextBlock Text="{loc:Loc settings.thisComputer}" Classes="section" Margin="0,14,0,0" />
+      <TextBlock Text="{loc:Loc settings.deviceName}" Classes="label" />
+      <TextBox Text="{Binding DeviceName}" Watermark="{loc:Loc settings.deviceNameHint}" />
+      <TextBlock Text="{loc:Loc settings.deviceNameWhere}" Classes="hint" TextWrapping="Wrap" />
+      <StackPanel Spacing="4" IsVisible="{Binding IsStartupSupported}">
+        <CheckBox IsChecked="{Binding StartWithSystem}" Content="{loc:Loc settings.startWithSystem}" />
+        <TextBlock Text="{loc:Loc settings.startWithSystemHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap" />
+      </StackPanel>
+      <CheckBox IsChecked="{Binding StartMinimised}" Content="{loc:Loc settings.startMinimised}" />
+      <CheckBox IsChecked="{Binding CloseToTray}" Content="{loc:Loc settings.closeToTray}" />
+
+      <TextBlock Text="{loc:Loc settings.whenConnecting}" Classes="section" Margin="0,14,0,0" />
+      <TextBlock Text="{loc:Loc settings.fileFolder}" Classes="label" />
+      <TextBox Text="{Binding FileTransferFolder}" Watermark="{loc:Loc settings.fileFolderHint}" />
+      <TextBlock Text="{loc:Loc settings.recentLimit}" Classes="label" />
+      <TextBox Text="{Binding RecentLimit.Text}" Width="100" HorizontalAlignment="Left" />
+      <TextBlock Text="{Binding RecentLimit.Problem}" Classes="problem" TextWrapping="Wrap" />
+
+      <TextBlock Text="{loc:Loc settings.recording}" Classes="section" Margin="0,14,0,0" />
+      <TextBlock Text="{loc:Loc settings.recordingFolder}" Classes="label" />
+      <TextBox Text="{Binding RecordingFolder}" Watermark="{loc:Loc settings.recordingFolderHint}" />
+      <CheckBox IsChecked="{Binding RecordAudio}" Content="{loc:Loc settings.recordAudio}" />
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

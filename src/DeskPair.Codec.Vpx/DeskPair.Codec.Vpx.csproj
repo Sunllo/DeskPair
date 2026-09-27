@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Royalty-free software VP9 through libvpx (BSD-3; the patents are granted, unlike H.264).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeskPair.Platform.Abstractions\DeskPair.Platform.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!--
+    No binary is bundled yet, but unlike OpenH264 there is no reason one could not be: libvpx is BSD-3 and
+    VP9's patents are granted royalty-free, so shipping a build carries no licence liability. What is missing
+    is only the build; see native/libvpx/README.md. Until then the loader honours SUNLLO_LIBVPX_PATH and
+    runtimes/<rid>/native, and the factories report themselves unavailable when there is nothing to load.
+  -->
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DeskPair.Codec.Vpx.Tests" />
+  </ItemGroup>
+
+</Project>

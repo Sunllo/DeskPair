@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DeskPair</string>
+
+    <!-- Connecting -->
+    <string name="connect_title">コンピューターに接続</string>
+    <string name="connect_target">相手のIDまたはアドレス</string>
+    <string name="connect_password">パスワード</string>
+    <string name="connect_action">接続</string>
+    <string name="connect_retry">もう一度試す</string>
+
+    <string name="progress_looking_up">ホストを探しています</string>
+    <string name="progress_measuring">このネットワークを確認しています</string>
+    <string name="progress_punching">直接の経路を開いています</string>
+    <string name="progress_connecting">接続しています…</string>
+    <string name="progress_waiting">相手が受け入れるのを待っています…</string>
+
+    <!-- In session. These follow the desktop's wording so the two products say the same things. -->
+    <string name="session_disconnect">切断</string>
+    <string name="session_picture">画面</string>
+    <string name="session_more">その他</string>
+    <!-- Shown over the picture when part of the session quietly does not work. -->
+    <string name="audio_unavailable">音が出ません：%1$s</string>
+    <string name="video_unavailable">画面が出ません：このスマートフォンには動作するH.264デコーダーがありません（%1$s）</string>
+    <!-- The four panels of the session bar. Short: they sit under an icon in a narrow tab. -->
+    <string name="session_tab_actions">操作</string>
+    <string name="session_tab_input">タッチ</string>
+    <string name="session_tab_screen">画面</string>
+    <string name="session_tab_keyboard">キー</string>
+    <string name="session_gestures">ジェスチャーの使い方</string>
+    <string name="session_hide">隠す</string>
+    <string name="session_quality">画質</string>
+    <string name="session_display">ディスプレイ</string>
+    <string name="session_scale">拡大縮小</string>
+    <string name="session_fit">全体表示</string>
+    <string name="session_original">1:1</string>
+    <string name="session_resolution">解像度</string>
+    <string name="session_resolution_original">元のサイズ</string>
+    <string name="session_resolution_failed">解像度を変更できませんでした：%1$s</string>
+    <string name="session_remote_cursor">リモートのポインター</string>
+    <string name="session_remote_cursor_hint">自分のポインターに加えて、相手のマシンのポインターも表示します。</string>
+    <string name="session_ctrl_alt_del">Ctrl+Alt+Del</string>
+    <string name="session_lock">ロック</string>
+    <string name="session_refresh">更新</string>
+    <string name="session_reset_canvas">表示をリセット</string>
+    <string name="session_rtt">RTT</string>
+    <string name="session_waiting_for_picture">%1$sの画面を待っています…</string>
+    <string name="session_picture_late">まだ何も届きません。相手のコンピューターはロック画面かサインイン画面のままかもしれません。Windowsはその画面の取り込みを許可しないため、誰かがロックを解除するまで画面は表示されません。</string>
+    <string name="session_signal_platform">システム</string>
+    <string name="session_signal_route">経路</string>
+    <string name="session_route_lan">直接、同じネットワーク</string>
+    <string name="session_route_direct">直接</string>
+    <string name="session_route_punched">ピアツーピア</string>
+    <string name="session_route_relay">リレー経由</string>
+    <string name="session_stalled">接続が切れました。待機しています</string>
+    <string name="session_stalled_hint">表示されているのは最後に届いた画面です</string>
+
+    <string name="quality_low">低画質</string>
+    <string name="quality_balanced">バランス</string>
+    <string name="quality_best">高画質</string>
+    <string name="display_label">画面%1$d</string>
+
+    <!-- Pointer modes. The desktop has a real mouse and so has no equivalent. -->
+    <string name="mode_touch">タッチ</string>
+    <string name="mode_mouse">マウス</string>
+
+    <string name="gesture_tap">1本指でタップ</string>
+    <string name="gesture_tap_touch">触れた場所をクリック</string>
+    <string name="gesture_tap_mouse">ポインターの位置をクリック</string>
+    <string name="gesture_two_tap">2本指でタップ</string>
+    <string name="gesture_two_tap_action">右クリック</string>
+    <string name="gesture_drag">1本指でドラッグ</string>
+    <string name="gesture_drag_touch">画面を動かす</string>
+    <string name="gesture_drag_mouse">ポインターを動かす</string>
+    <string name="gesture_two_drag">2本指でドラッグ</string>
+    <string name="gesture_two_drag_action">画面を動かす</string>
+    <string name="gesture_pinch">ピンチ</string>
+    <string name="gesture_pinch_action">画面を拡大縮小</string>
+    <string name="gesture_three">3本指で上下</string>
+    <string name="gesture_three_action">スクロールホイール</string>
+
+    <!-- Keyboard -->
+    <string name="keyboard_tab">キーボード</string>
+    <string name="keyboard_type">ここに入力</string>
+    <string name="keyboard_pin">固定</string>
+    <string name="keyboard_function">Fn</string>
+    <!-- Group names on the key bar. Deliberately terse: they sit in a scrolling row of key caps. -->
+    <string name="keyboard_numpad">123</string>
+    <string name="keyboard_more">その他</string>
+    <string name="keyboard_ime">IME</string>
+    <string name="clipboard_send">クリップボードを送信</string>
+
+    <string name="dialog_done">完了</string>
+
+    <!-- Home. Wording taken from the desktop's Strings.cs so the two products say the same things. -->
+    <string name="home_control_remote">リモートのコンピューターを操作</string>
+    <string name="home_settings">設定</string>
+    <string name="home_favourites">デバイス</string>
+    <string name="home_no_favourites">まだデバイスがありません</string>
+    <string name="home_favourites_empty_hint">最近の接続の横にあるハートをタップすると、ここに残ります。</string>
+    <string name="home_recent">最近の接続</string>
+    <string name="presence_online">オンライン</string>
+    <string name="presence_offline">オフライン</string>
+    <string name="presence_unknown">不明</string>
+    <string name="home_no_recent">最近の接続はありません</string>
+    <string name="home_add_favourite">デバイスに保存</string>
+    <string name="home_remove_favourite">デバイスから削除</string>
+    <string name="home_forget_recent">最近の接続から削除</string>
+    <string name="home_no_server">シグナリングサーバーが設定されていません。IDで接続するには「設定」を開いてください。</string>
+
+    <!-- The password sheet -->
+    <string name="connect_remember">このパスワードを記憶する</string>
+    <string name="connect_show_password">パスワードを表示</string>
+    <string name="connect_hide_password">パスワードを隠す</string>
+    <string name="connect_cancel">キャンセル</string>
+
+    <!-- Settings -->
+    <string name="settings_title">設定</string>
+    <string name="settings_section_general">一般</string>
+    <string name="settings_section_session">ほかのコンピューターに接続するとき</string>
+    <string name="settings_view_only">表示のみ</string>
+    <string name="settings_view_only_hint">何も操作せずに見るだけにします。</string>
+    <string name="settings_lock_after_end">セッション終了時にロック</string>
+    <string name="settings_lock_after_end_hint">切断後、相手のコンピューターをロックしたままにします。</string>
+    <string name="session_input_refused">相手のコンピューターが入力を受け付けていません。</string>
+    <string name="settings_section_network">ネットワーク</string>
+    <string name="favourites_ungrouped">フォルダーなし</string>
+    <string name="settings_section_account">アカウント</string>
+    <string name="settings_account_signed_out">サインインしていません</string>
+    <string name="settings_account_signed_out_hint">サインインするとデバイスの一覧が同期されます</string>
+    <string name="settings_account_devices">デバイス：%1$d</string>
+    <string name="settings_portal">ポータルのアドレス</string>
+    <string name="settings_portal_hint">DeskPairアカウントがある場所です。リンクすると、保存したコンピューターがデバイス間で同期されます。</string>
+    <string name="settings_device_name">このデバイスの名前</string>
+    <string name="settings_account_email">メールアドレス</string>
+    <string name="settings_account_password">パスワード</string>
+    <string name="settings_account_sign_in">サインイン</string>
+    <string name="settings_account_register">アカウントを作成</string>
+    <string name="settings_account_email_required">メールアドレスを入力してください。</string>
+    <string name="settings_account_password_required">パスワードを入力してください。</string>
+    <string name="settings_account_verify">アカウントを作成しました。受信トレイから%1$sを確認してから、サインインしてください。</string>
+    <string name="settings_linked_to">サインイン中</string>
+    <string name="settings_linked">%1$sとしてサインインしています。</string>
+    <string name="settings_unlink">サインアウト</string>
+    <string name="settings_unlinked">サインアウトしました。</string>
+    <string name="settings_unlinked_locally">ここではサインアウトしましたが、サーバーには伝わっていません（%1$s）。ウェブサイトからもこのデバイスを取り消してください。</string>
+    <string name="settings_section_security">セキュリティ</string>
+    <string name="settings_section_about">DeskPairについて</string>
+
+    <string name="settings_language">言語</string>
+    <string name="settings_language_system">システム</string>
+    <string name="settings_recent_limit">最近の接続</string>
+    <string name="settings_recent_limit_hint">一覧に残す件数。</string>
+    <string name="settings_recent_limit_invalid">1から200の間で指定してください</string>
+    <string name="settings_clear_recent">最近の接続を消去</string>
+
+    <string name="settings_default_quality">画質</string>
+    <string name="settings_default_quality_hint">新しいセッションの開始時の画質。</string>
+    <string name="settings_quality_custom">カスタム</string>
+    <string name="settings_bitrate">ビットレート（kbps）</string>
+    <string name="settings_bitrate_invalid">ビットレートは100から200000kbpsの間で指定してください</string>
+    <string name="settings_fps">フレームレート</string>
+    <string name="settings_fps_invalid">フレームレートは5から120の間で指定してください</string>
+    <string name="settings_lossless">静止時に鮮明化</string>
+    <string name="settings_lossless_hint">画面の動きが止まったら、ピクセル単位まで鮮明にします。</string>
+    <string name="settings_fit_to_window">全体表示</string>
+    <string name="settings_fit_to_window_hint">リモートの画面を縮小して、全体が一度に見えるようにします。</string>
+    <string name="settings_audio">サウンド</string>
+    <string name="settings_audio_hint">リモートのコンピューターで再生されている音を再生します。</string>
+    <string name="settings_pointer_mode">ポインター</string>
+
+    <string name="settings_server">シグナリングサーバー</string>
+    <string name="settings_self_hosted">自分のサーバーで運用する</string>
+    <string name="settings_directory_hint">DeskPairはどのシグナリングサーバーを使うかをポータルに問い合わせるため、ここに入力するものはありません。</string>
+    <string name="settings_server_key">サーバーの公開鍵</string>
+    <string name="settings_fetch_key">サーバーから取得</string>
+    <string name="settings_key_fetched">公開鍵を取得しました</string>
+    <string name="settings_key_fetch_failed">鍵を取得できませんでした：%1$s</string>
+    <string name="settings_key_invalid">公開鍵が正しいbase64ではありません。「サーバーから取得」を使ってください</string>
+    <string name="settings_key_missing">サーバーの鍵がないと、IDでの接続では何も検証されません</string>
+    <string name="settings_server_required">先にシグナリングサーバーを入力してください</string>
+    <string name="settings_udp_media">動画をUDPで送る</string>
+    <string name="settings_udp_media_hint">良いネットワークではなめらかになり、そうでないときはTCPに戻ります。</string>
+    <string name="settings_force_relay">常にリレーを使う</string>
+    <string name="settings_force_relay_hint">同じネットワーク上でも直接には接続しません。</string>
+
+    <string name="settings_known_hosts">信頼したコンピューター</string>
+    <string name="settings_known_hosts_hint">削除すると、次にその鍵が変わったときに再び確認されます</string>
+    <string name="settings_forget">削除</string>
+    <string name="settings_forget_all">すべて削除</string>
+    <string name="settings_no_known_hosts">まだ何も信頼していません</string>
+    <string name="settings_passwords">記憶したパスワード</string>
+    <string name="settings_no_passwords">記憶したパスワードはありません</string>
+    <string name="settings_forget_passwords">すべてのパスワードを削除</string>
+
+    <string name="settings_version">バージョン%1$s</string>
+
+    <!-- The three tabs. Short enough not to wrap under a bottom-bar icon at any font scale. -->
+    <string name="nav_connect">接続</string>
+    <string name="nav_favourites">デバイス</string>
+    <string name="nav_settings">設定</string>
+    <string name="nav_back">戻る</string>
+    <string name="home_scan">コードをスキャン</string>
+    <string name="scan_not_deskpair">DeskPairのコードではありません。</string>
+    <string name="scan_no_version">このコードにはバージョンがありません。</string>
+    <string name="scan_newer_version">このコードは新しいバージョンのDeskPair（v%1$d）で作られたものです。このアプリを更新してください。</string>
+    <string name="scan_no_id">このコードはコンピューターを指定していません。</string>
+    <string name="scan_damaged_key">このコードに含まれる鍵が壊れています。</string>
+    <string name="scan_applied">%1$sから設定を取り込みました</string>
+    <string name="scan_unavailable">このデバイスではスキャナーを起動できませんでした。</string>
+    <string name="clipboard_send_image">画像を送信</string>
+    <string name="clipboard_image_sent">画像を送信しました。リモートのコンピューターでCtrl+V（またはCmd+V）を押してください</string>
+    <string name="clipboard_image_known">リモートのコンピューターにはすでにその画像があります</string>
+    <string name="clipboard_image_failed">その画像を送信できませんでした</string>
+    <string name="devices_edit">編集</string>
+    <string name="devices_edit_title">保存したデバイス</string>
+    <string name="devices_edit_name">名前</string>
+    <string name="devices_edit_password">パスワード</string>
+    <string name="devices_edit_password_hint">任意。ここに保存したパスワードは、よく接続するマシンに対して、確認の代わりに使われます。</string>
+    <string name="devices_edit_save">保存</string>
+    <string name="key_changed_title">このコンピューターの鍵が変わりました</string>
+    <string name="key_changed_body">%1$sが以前と異なる鍵を提示しています。\n\n以前：%2$s…\n現在：%3$s…\n\nコンピューターを再インストールするとこうなります。何かがそのコンピューターになりすましているときにもこうなります。なぜ変わったのか分かっている場合にだけ、新しい鍵を信頼してください。</string>
+    <string name="key_changed_trust">新しい鍵を信頼する</string>
+    <string name="key_changed_cancel">今はしない</string>
+    <string name="devices_sign_in_required">デバイスの一覧を使うにはサインインしてください</string>
+    <string name="devices_sign_in_required_hint">この一覧はアカウントのものなので、ほかのデバイスにもついてきます。サインインは「設定」にあります。</string>
+    <string name="account_error_bad_credentials">そのメールアドレスとパスワードに一致するアカウントがありません。</string>
+    <string name="account_error_not_verified">先にメールアドレスを確認してください。受信トレイを確認してください。</string>
+    <string name="account_error_disabled">そのアカウントは無効になっています。</string>
+    <string name="account_error_closed">このサーバーでは新しいアカウントを受け付けていません。</string>
+    <string name="account_error_email_taken">そのアドレスにはすでにアカウントがあります。サインインしてください。</string>
+    <string name="account_error_weak_password">そのパスワードは短すぎます。</string>
+    <string name="account_error_bad_email">メールアドレスの形式ではないようです。</string>
+    <string name="account_error_too_many">試行回数が多すぎます。数分待ってからもう一度お試しください。</string>
+    <string name="devices_edit_group">グループ</string>
+    <string name="devices_group_add">新しいグループ</string>
+    <string name="devices_group_rename">グループの名前を変更</string>
+    <string name="devices_group_delete">グループを削除</string>
+    <string name="devices_group_name">グループ名</string>
+    <string name="devices_group_cancel">キャンセル</string>
+    <string name="session_dropped">接続が切れました。</string>
+    <string name="session_dropped_retrying">接続が切れました。リレー経由でもう一度試しています。</string>
+    <string name="session_host_too_old">このコンピューターのDeskPairは、このアプリに必要なものより古いバージョンです。接続先のコンピューターでDeskPairを更新してください。</string>
+    <string name="session_client_too_old">このアプリは、コンピューターのDeskPairに必要なものより古いバージョンです。このスマートフォンでDeskPairを更新してください。</string>
+    <string name="session_unreachable_unknown_id">IDが%1$sのコンピューターはシグナリングサーバーに登録されていません。</string>
+    <string name="session_unreachable_offline">%1$sは今オンラインではありません。</string>
+    <string name="session_unreachable_busy">シグナリングサーバーが混み合っています。しばらくしてからもう一度お試しください。</string>
+    <string name="session_unreachable_no_relay">%1$sに直接到達できず、サーバーもリレーを提供しませんでした。</string>
+    <string name="session_unreachable_no_answer">シグナリングサーバーが応答しませんでした。</string>
+    <string name="session_failed_detail">接続に失敗しました：%1$s</string>
+    <string name="clipboard_too_large">その画像は、縮小してもクリップボードに入れるには大きすぎます。</string>
+
+    <!-- Terminal -->
+    <string name="terminal_open">ターミナルを開く</string>
+    <string name="terminal_close">閉じる</string>
+    <string name="terminal_not_allowed">このコンピューターはターミナルを許可していません。所有者は「設定 › セキュリティ」で有効にできます。このバージョンより古い DeskPair にはターミナルがありません。</string>
+    <string name="terminal_opening">シェルを開いています…</string>
+    <string name="terminal_ended">シェルが終了しました（終了コード %1$d）。</string>
+    <string name="terminal_ended_reason">シェルが終了しました：%1$s</string>
+    <string name="terminal_failed">シェルを開けませんでした：%1$s</string>
+    <string name="terminal_new_shell">新しいシェルを開く</string>
+    <string name="terminal_connection_lost">接続が切れ、シェルも終了しました。シェルは接続が切れると残りません。</string>
+    <string name="terminal_paste">貼り付け</string>
+    <string name="terminal_paste_confirm">%1$d 行をシェルに貼り付けますか？各行がコマンドとして実行されます。</string>
+</resources>

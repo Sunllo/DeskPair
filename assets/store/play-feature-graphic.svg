@@ -1,0 +1,50 @@
+<!--
+  Google Play's feature graphic: exactly 1024 x 500, no alpha channel.
+
+  Deliberately language-neutral: the mark and the name, nothing to translate. The graphic is
+  per-locale and a tagline would mean maintaining one of these per language for no gain. Play also crops
+  this differently in different placements, so everything that matters sits well inside the edges.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0b2545"/>
+      <stop offset=".55" stop-color="#11365f"/>
+      <stop offset="1" stop-color="#062038"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="300" cy="250" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0aa9d1" stop-opacity=".30"/>
+      <stop offset="1" stop-color="#0aa9d1" stop-opacity="0"/>
+    </radialGradient>
+
+      <!-- The mark, exactly as assets/logo/deskpair.svg draws it. -->
+    <linearGradient id="body" x1="46" y1="46" x2="210" y2="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#74d7ea"/>
+      <stop offset=".35" stop-color="#0aa9d1"/>
+      <stop offset=".72" stop-color="#418bd6"/>
+      <stop offset="1" stop-color="#003c7e"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="92" cy="80" r="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".38"/>
+      <stop offset=".55" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#glow)"/>
+
+  <g transform="translate(132 122) scale(0.98)">
+    <g transform="rotate(45 128 128)">
+      <rect x="40" y="40" width="176" height="176" rx="30" fill="url(#body)"/>
+      <rect x="40" y="40" width="176" height="176" rx="30" fill="url(#sheen)"/>
+    </g>
+    <g fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M117 100 74 144l43 44"/>
+      <path d="M139 68l43 44-43 44"/>
+    </g>
+  </g>
+
+  <text x="452" y="270" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="98" font-weight="600" letter-spacing="-1" fill="#ffffff">DeskPair</text>
+</svg>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>DeskPair</string>
+	<key>CFBundleIconFile</key>
+	<string>DeskPair</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.sunllo.deskpair</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>DeskPair</string>
+	<key>CFBundleDisplayName</key>
+	<string>DeskPair</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@SHORT_VERSION@</string>
+	<key>CFBundleVersion</key>
+	<string>@BUILD_VERSION@</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © Sunllo</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+
+	<!-- ScreenCaptureKit is the only capture path there is, and it wants 12.3. The shim is built against
+	     13.0, so that is the floor this bundle can honestly claim. -->
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+
+	<!--
+	  Screen Recording and Accessibility are not declared here: macOS grants both through TCC, by prompting
+	  the first time the app asks, and there is no Info.plist key for either. What matters for them is that
+	  the signature stays the same, because TCC keys its decisions on it and a re-signed bundle is a
+	  different app that has to be granted again.
+
+	  There is no microphone key because there is no microphone: the host's audio comes from the same
+	  ScreenCaptureKit stream as its video, and the controller only plays audio back.
+	-->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>DeskPair connects directly to computers on the same network, which is faster and keeps the screen off the internet.</string>
+</dict>
+</plist>

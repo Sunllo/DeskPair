@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "DeskPair 只用相机读取电脑上显示的配对二维码。";
+"NSLocalNetworkUsageDescription" = "DeskPair 会直接连接同一个网络上的电脑，不经过服务器。";

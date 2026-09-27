@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels.Settings"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.Settings.AboutSettingsView"
+             x:DataType="vm:AboutSettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="10" MaxWidth="600" HorizontalAlignment="Left">
+      <TextBlock Text="{loc:Loc settings.tab.about}" Classes="title" />
+      <TextBlock Text="{loc:Loc settings.aboutIntro}" Classes="hint" TextWrapping="Wrap" />
+
+      <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
+        <Image Source="avares://DeskPair/Assets/deskpair-64.png" Width="48" Height="48" VerticalAlignment="Top" />
+        <StackPanel Spacing="2" VerticalAlignment="Center">
+          <TextBlock Text="{loc:Loc app.title}" Classes="section" />
+          <TextBlock Text="{Binding VersionText}" Classes="label" />
+          <TextBlock Text="{Binding BuildDateText}" Classes="hint" />
+        </StackPanel>
+      </StackPanel>
+
+      <TextBlock Text="{loc:Loc settings.updates}" Classes="section" Margin="0,18,0,0" />
+      <CheckBox Content="{loc:Loc settings.checkForUpdates}" IsChecked="{Binding CheckForUpdates}" />
+      <TextBlock Text="{loc:Loc settings.checkForUpdatesHint}" Classes="hint" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding UpdateText}" TextWrapping="Wrap" />
+      <!-- Shown because an unsigned manifest cannot tell suppression from being up to date. -->
+      <TextBlock Text="{Binding LastCheckedText}" Classes="hint" />
+      <TextBlock Text="{loc:Loc settings.updateNotes}" Classes="label" Margin="0,8,0,0"
+                 IsVisible="{Binding HasUpdateNotes}" />
+      <!-- Somebody else's words: plain text, never markup, and capped before it reaches here. -->
+      <TextBlock Text="{Binding UpdateNotes}" Classes="hint" TextWrapping="Wrap"
+                 IsVisible="{Binding HasUpdateNotes}" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="{loc:Loc settings.checkNow}" Command="{Binding CheckNowCommand}"
+                IsEnabled="{Binding !Checking}" />
+        <Button Content="{loc:Loc settings.openDownloadPage}" Command="{Binding OpenDownloadPageCommand}" />
+      </StackPanel>
+
+      <TextBlock Text="{loc:Loc settings.server}" Classes="section" Margin="0,16,0,0" />
+      <TextBlock Text="{Binding ServerText}" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding DeviceIdText}" Classes="hint" TextWrapping="Wrap" />
+
+      <!-- No paths on screen. Where this build keeps its settings is not something anybody reading this
+           tab needs, and printing it invited hand-editing of a file the app writes underneath them. The
+           log folder is the one thing worth reaching, and the button reaches it without naming it. -->
+      <TextBlock Text="{loc:Loc settings.logs}" Classes="section" Margin="0,16,0,0" />
+      <TextBlock Text="{loc:Loc settings.logsHint}" Classes="hint" TextWrapping="Wrap" />
+      <Button Content="{loc:Loc settings.openLogs}" Command="{Binding OpenLogsCommand}"
+              HorizontalAlignment="Left" />
+
+      <TextBlock Text="{loc:Loc settings.components}" Classes="hint" TextWrapping="Wrap" Margin="0,16,0,0" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

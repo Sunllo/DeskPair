@@ -1,0 +1,248 @@
+/* Conectando */
+"connect.target" = "ID ou endereço remoto";
+"connect.password" = "Senha";
+"connect.action" = "Conectar";
+"connect.retry" = "Tentar de novo";
+
+"progress.lookingUp" = "Procurando o computador";
+"progress.measuring" = "Verificando esta rede";
+"progress.punching" = "Abrindo um caminho direto";
+"progress.connecting" = "Conectando…";
+"progress.waiting" = "Aguardando o usuário remoto aceitar…";
+
+/* Na sessão. Segue as palavras do desktop para que os dois produtos digam as mesmas coisas. */
+"session.disconnect" = "Desconectar";
+/* Os quatro painéis da barra de sessão. Curtos: ficam sob um ícone em uma aba estreita. */
+"session.tab.actions" = "Ações";
+"session.tab.input" = "Toque";
+"session.tab.screen" = "Tela";
+"session.tab.keyboard" = "Teclas";
+"session.gestures" = "Como funcionam os gestos";
+"session.quality" = "Qualidade";
+"session.quality.low" = "Baixa";
+"session.quality.balanced" = "Equilibrada";
+"session.quality.best" = "Máxima";
+"session.fit" = "Ajustar";
+"session.original" = "1:1";
+"session.resolution" = "Resolução";
+"session.resolution.original" = "Original";
+"session.resolution.failed" = "Não foi possível alterar a resolução: %@";
+"session.remoteCursor" = "Ponteiro remoto";
+"session.remoteCursorHint" = "Mostrar o ponteiro da outra máquina além do seu.";
+"session.ctrlAltDel" = "Ctrl+Alt+Del";
+"session.lock" = "Bloquear";
+"session.refresh" = "Atualizar";
+"session.stalled" = "Conexão perdida — aguardando";
+"session.stalledHint" = "A imagem é a última que chegou";
+"display.label" = "Tela %d";
+
+/* Modos de ponteiro. O desktop tem um mouse de verdade e por isso não tem equivalente. */
+"mode.touch" = "Toque";
+"mode.mouse" = "Mouse";
+
+"gesture.tap" = "Toque com um dedo";
+"gesture.tapTouch" = "Clica onde você toca";
+"gesture.tapMouse" = "Clica onde o ponteiro está";
+"gesture.twoTap" = "Toque com dois dedos";
+"gesture.twoTapAction" = "Clique direito";
+"gesture.drag" = "Arrastar com um dedo";
+"gesture.dragTouch" = "Move a imagem";
+"gesture.dragMouse" = "Move o ponteiro";
+"gesture.twoDrag" = "Arrastar com dois dedos";
+"gesture.twoDragAction" = "Move a imagem";
+"gesture.pinch" = "Pinça";
+"gesture.pinchAction" = "Amplia ou reduz a imagem";
+"gesture.three" = "Três dedos para cima ou para baixo";
+"gesture.threeAction" = "Roda de rolagem";
+
+/* Teclado */
+"keyboard.type" = "Digite aqui";
+"keyboard.pin" = "Fixar";
+"keyboard.function" = "Fn";
+"keyboard.numpad" = "123";
+"keyboard.more" = "Mais";
+"keyboard.ime" = "IME";
+"clipboard.send" = "Enviar área de transferência";
+
+"audio.unavailable" = "Sem som: %@";
+"video.unavailable" = "Sem imagem: %@";
+
+/* Início. Palavras tiradas do Strings.cs do desktop para que os dois produtos digam as mesmas coisas. */
+"home.controlRemote" = "Controlar outro computador";
+"home.favouritesEmptyHint" = "Toque no coração ao lado de uma conexão recente para mantê-la aqui.";
+"home.noFavourites" = "Nenhum dispositivo ainda";
+"home.recent" = "Recentes";
+"presence.online" = "Online";
+"presence.offline" = "Offline";
+"presence.unknown" = "Desconhecido";
+"home.noRecent" = "Nenhuma conexão recente";
+"home.forgetRecent" = "Remover dos recentes";
+"home.noServer" = "Nenhum servidor de sinalização definido. Abra Ajustes para conectar por ID.";
+
+/* A folha de senha */
+"connect.cancel" = "Cancelar";
+
+/* Ajustes */
+"settings.title" = "Ajustes";
+"settings.section.general" = "Geral";
+"settings.section.session" = "Ao conectar a outros";
+"settings.viewOnly" = "Somente visualizar";
+"settings.viewOnlyHint" = "Assistir sem poder mexer em nada.";
+"settings.lockAfterEnd" = "Bloquear ao encerrar a sessão";
+"settings.lockAfterEndHint" = "Deixa o outro computador bloqueado ao desconectar.";
+"session.rtt" = "ida e volta";
+"session.waitingForPicture" = "Aguardando a tela de %@…";
+"session.pictureLate" = "Ainda nada. O outro computador pode estar na tela de bloqueio ou de login, que o Windows não permite capturar — alguém precisa desbloqueá-lo para que a imagem apareça.";
+"session.signal.platform" = "Sistema";
+"session.signal.route" = "Rota";
+"session.route.lan" = "Direto, mesma rede";
+"session.route.direct" = "Direto";
+"session.route.punched" = "Ponto a ponto";
+"session.route.relay" = "Pelo servidor de retransmissão";
+"session.inputRefused" = "O outro computador não está aceitando comandos.";
+"settings.section.network" = "Rede";
+"settings.section.about" = "Sobre o DeskPair";
+"settings.language" = "Idioma";
+"settings.language.system" = "Sistema";
+"settings.recentLimit" = "Conexões recentes";
+"settings.recentLimitHint" = "Quantas manter na lista.";
+"settings.clearRecent" = "Limpar conexões recentes";
+"settings.defaultQuality" = "Qualidade";
+"settings.defaultQualityHint" = "Com que qualidade as novas sessões começam.";
+"settings.bitrate" = "Taxa de bits (kbps)";
+"settings.bitrateInvalid" = "Use uma taxa de bits entre 100 e 200000 kbps";
+"settings.fps" = "Taxa de quadros";
+"settings.fpsInvalid" = "Use uma taxa de quadros entre 5 e 120";
+"settings.quality.custom" = "Personalizada";
+"settings.lossless" = "Nitidez ao parar";
+"settings.losslessHint" = "Refina até ficar nítido pixel a pixel quando a imagem para de se mover.";
+"settings.fitToWindow" = "Ajustar à tela";
+"settings.fitToWindowHint" = "Reduz a tela remota para que toda ela fique visível de uma vez.";
+"settings.audio" = "Som";
+"settings.audioHint" = "Reproduz o que o computador remoto está tocando.";
+"settings.pointerMode" = "Ponteiro";
+"settings.server" = "Servidor de sinalização";
+"settings.serverKey" = "Chave pública do servidor";
+"settings.fetchKey" = "Obter do servidor";
+"settings.keyFetched" = "Chave pública obtida";
+"settings.keyInvalid" = "A chave pública não é base64 válido; use “Obter do servidor”";
+"settings.selfHosted" = "Eu rodo os meus próprios servidores";
+"settings.directoryHint" = "O DeskPair pergunta ao portal qual servidor de sinalização usar, então nada aqui precisa ser preenchido.";
+"settings.keyMissing" = "Sem a chave do servidor, uma conexão por ID não verifica nada";
+"settings.serverRequired" = "Informe o servidor de sinalização primeiro";
+"settings.udpMedia" = "Vídeo por UDP";
+"settings.udpMediaHint" = "Mais fluido em uma boa rede, e volta ao TCP quando ela não é.";
+"settings.forceRelay" = "Sempre usar retransmissão";
+"settings.forceRelayHint" = "Nunca conectar diretamente, nem na mesma rede.";
+"settings.version" = "Versão";
+
+/* As três abas */
+"nav.connect" = "Conectar";
+"nav.favourites" = "Dispositivos";
+"nav.settings" = "Ajustes";
+
+/* Escaneando um código de pareamento */
+"home.scan" = "Escanear um código";
+"scan.applied" = "Configurações aplicadas a partir de %@";
+"scan.notDeskPair" = "Isso não é um código do DeskPair.";
+"scan.noVersion" = "Esse código está sem a versão.";
+"scan.newerVersion" = "Esse código foi feito por uma versão mais nova do DeskPair (v%d). Atualize este aplicativo.";
+"scan.noId" = "Esse código não indica nenhum computador.";
+"scan.damagedKey" = "A chave nesse código está danificada.";
+"scan.cameraDenied" = "Sem acesso à câmera";
+"scan.cameraDeniedHint" = "Permita a câmera em Ajustes para escanear um código de pareamento.";
+"scan.unavailable" = "O leitor não pôde iniciar neste dispositivo.";
+
+"clipboard.sendImage" = "Enviar uma imagem";
+"clipboard.imageSent" = "Imagem enviada — pressione Cmd+V (ou Ctrl+V) no computador remoto";
+"clipboard.imageKnown" = "O computador remoto já tem essa imagem";
+"clipboard.imageFailed" = "Não foi possível enviar essa imagem";
+
+"settings.section.account" = "Conta";
+"settings.account.signedOut" = "Não entrou na conta";
+"settings.account.signedOutHint" = "Entre para sincronizar a sua lista de dispositivos";
+"settings.account.devices" = "Dispositivos: %d";
+"settings.deviceName" = "Nome deste dispositivo";
+"settings.account.portal" = "Endereço do portal";
+"settings.account.email" = "E-mail";
+"settings.account.password" = "Senha";
+"settings.account.signInTitle" = "Entrar na sua conta";
+"settings.account.signIn" = "Entrar";
+"settings.account.register" = "Criar uma conta";
+"settings.account.needEmail" = "Digite o seu endereço de e-mail.";
+"settings.account.needPassword" = "Digite a sua senha.";
+"settings.account.verify" = "Conta criada. Confirme %@ pela sua caixa de entrada e depois entre.";
+"settings.account.unlink" = "Sair";
+"settings.account.linked" = "Você entrou como %@.";
+"settings.account.unlinked" = "Você saiu.";
+"settings.account.unlinkedLocally" = "Você saiu aqui, mas o servidor não foi avisado (%@). Revogue este dispositivo também pelo site.";
+"favourites.ungrouped" = "Sem pasta";
+
+"devices.edit" = "Editar";
+"devices.edit.title" = "Dispositivo salvo";
+"devices.edit.name" = "Nome";
+"devices.edit.password" = "Senha";
+"devices.edit.passwordHint" = "Opcional. Uma senha guardada aqui é usada em vez de perguntar, para uma máquina que você acessa com frequência. Deixe vazio para ser perguntado a cada vez.";
+"devices.edit.save" = "Salvar";
+
+"keyChanged.title" = "A chave deste computador mudou";
+"keyChanged.body" = "%1$@ não está apresentando a chave que apresentou antes.\n\nEra %2$@…\nAgora é %3$@…\n\nIsso acontece quando um computador é reinstalado. Também acontece quando algo está se passando por ele. Só confie na nova chave se souber por que ela mudou.";
+"keyChanged.trust" = "Confiar na nova chave";
+"keyChanged.cancel" = "Agora não";
+"devices.signInRequired" = "Entre para manter uma lista de dispositivos";
+"devices.signInRequiredHint" = "A lista pertence à sua conta, então acompanha você até os seus outros dispositivos. A entrada na conta está em Ajustes.";
+
+"account.error.badCredentials" = "Esse e-mail e essa senha não correspondem a nenhuma conta.";
+"account.error.notVerified" = "Confirme o seu endereço de e-mail primeiro. Verifique a sua caixa de entrada.";
+"account.error.disabled" = "Essa conta foi desativada.";
+"account.error.closed" = "Este servidor não aceita novas contas.";
+"account.error.emailTaken" = "Esse endereço já tem uma conta. Entre em vez disso.";
+"account.error.weakPassword" = "Essa senha é muito curta.";
+"account.error.badEmail" = "Isso não parece um endereço de e-mail.";
+"account.error.tooMany" = "Tentativas demais. Aguarde alguns minutos e tente de novo.";
+"devices.edit.group" = "Grupo";
+"devices.edit.noGroup" = "Sem grupo";
+"devices.remove" = "Remover";
+"devices.group.add" = "Novo grupo";
+"devices.group.rename" = "Renomear grupo";
+"devices.group.delete" = "Excluir grupo";
+"devices.group.name" = "Nome do grupo";
+"devices.group.cancel" = "Cancelar";
+"session.dropped" = "A conexão caiu.";
+"session.droppedRetrying" = "A conexão caiu. Tentando de novo pelo servidor de retransmissão.";
+"session.closedByHost" = "O outro computador encerrou a sessão.";
+
+/* Idioma */
+"settings.language.restart" = "Entra em vigor na próxima vez que o DeskPair for aberto. A mesma opção está em Ajustes > DeskPair > Idioma.";
+
+/* Por que uma conexão falhou, pelo que o módulo compartilhado informou */
+"session.hostTooOld" = "O DeskPair deste computador é mais antigo do que este aplicativo precisa. Atualize o DeskPair no computador ao qual você está se conectando.";
+"session.clientTooOld" = "Este aplicativo é mais antigo do que o DeskPair do computador precisa. Atualize o DeskPair neste dispositivo.";
+"session.unreachable.unknownId" = "Nenhum computador com o ID %@ está registrado no servidor de sinalização.";
+"session.unreachable.offline" = "%@ não está online agora.";
+"session.unreachable.busy" = "O servidor de sinalização está ocupado. Tente de novo em instantes.";
+"session.unreachable.noRelay" = "%@ não pôde ser alcançado diretamente e o servidor não ofereceu retransmissão.";
+"session.unreachable.noAnswer" = "O servidor de sinalização não respondeu.";
+"session.failedDetail" = "A conexão falhou: %@";
+
+/* Problemas de vídeo e áudio mostrados sobre a imagem */
+"video.unsupportedFormat" = "O fluxo de vídeo não está em um formato que este dispositivo consegue ler";
+"video.noParameterSets" = "O quadro-chave não trazia conjuntos de parâmetros utilizáveis";
+"video.parameterSetsFailed" = "Não foi possível ler os conjuntos de parâmetros (OSStatus %lld)";
+"video.blockBufferFailed" = "Não foi possível empacotar o quadro para o decodificador (%lld)";
+"video.copyFailed" = "Não foi possível copiar o quadro para o seu buffer (%lld)";
+"video.sampleBufferFailed" = "Não foi possível entregar o quadro ao decodificador (%lld)";
+"audio.noOpus" = "Este dispositivo não tem decodificador Opus";
+
+/* Terminal */
+"terminal.open" = "Abrir um terminal";
+"terminal.close" = "Fechar";
+"terminal.notAllowed" = "Este computador não permite terminal. O proprietário pode ativá-lo em Configurações › Segurança; um DeskPair mais antigo que esta versão não tem terminal.";
+"terminal.opening" = "Abrindo um shell…";
+"terminal.ended" = "O shell terminou (código de saída %lld).";
+"terminal.endedReason" = "O shell terminou: %@";
+"terminal.failed" = "Não foi possível abrir um shell: %@";
+"terminal.newShell" = "Abrir um novo shell";
+"terminal.connectionLost" = "A conexão caiu, e o shell junto com ela. Um shell não sobrevive à sua conexão.";
+"terminal.paste" = "Colar";
+"terminal.pasteConfirm" = "Colar %lld linhas no shell? Cada linha é executada como um comando.";

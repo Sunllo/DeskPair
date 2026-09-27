@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    Carries the Wayland shim (libSunlloWaylandShim.so, native/linux/SunlloWaylandShim) into a Linux build of an app
+    that references DeskPair.Platform.Linux, when one has been built: tools/build-wayland-shim.ps1 puts it in
+    artifacts/wayland-shim/<rid>/. Nothing is committed, and without it the app still builds; the loader then
+    reports the shim unavailable and Wayland capture with it.
+
+    An app imports this rather than the library carrying it, because only the app's publish knows the RID: a
+    RID-agnostic library reference is built without one. In a single-file publish the library is bundled like any
+    other native library and extracted beside the runtime's own, which is where the loader's last resort looks;
+    the Linux installer copies the one executable and nothing next to it.
+  -->
+  <PropertyGroup>
+    <WaylandShimPath>$(MSBuildThisFileDirectory)..\..\artifacts\wayland-shim\$(RuntimeIdentifier)\libSunlloWaylandShim.so</WaylandShimPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('linux-')) And Exists('$(WaylandShimPath)')">
+    <None Include="$(WaylandShimPath)" Link="libSunlloWaylandShim.so" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

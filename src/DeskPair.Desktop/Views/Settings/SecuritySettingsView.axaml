@@ -1,0 +1,227 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels.Settings"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.Settings.SecuritySettingsView"
+             x:DataType="vm:SecuritySettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="10" MaxWidth="600" HorizontalAlignment="Left">
+      <TextBlock Text="{loc:Loc settings.tab.security}" Classes="title" />
+      <TextBlock Text="{loc:Loc settings.securityIntro}" Classes="hint" TextWrapping="Wrap" />
+
+      <TextBlock Text="{loc:Loc settings.approveMode}" Classes="label" Margin="0,8,0,0" />
+      <ComboBox SelectedIndex="{Binding ApproveModeIndex}" MinWidth="220">
+        <ComboBoxItem Content="{loc:Loc settings.approve.password}" />
+        <ComboBoxItem Content="{loc:Loc settings.approve.click}" />
+        <ComboBoxItem Content="{loc:Loc settings.approve.both}" />
+      </ComboBox>
+      <TextBlock Text="{loc:Loc settings.approvalTimeout}" Classes="label" />
+      <TextBox Text="{Binding ApprovalTimeout.Text}" Width="100" HorizontalAlignment="Left" />
+      <TextBlock Text="{Binding ApprovalTimeout.Problem}" Classes="problem" TextWrapping="Wrap" />
+      <CheckBox IsChecked="{Binding AllowPasswordInClickMode}" Content="{loc:Loc settings.allowPasswordInClick}" />
+
+      <TextBlock Text="{loc:Loc settings.tempPassword}" Classes="section" Margin="0,14,0,0" />
+      <CheckBox IsChecked="{Binding TemporaryPasswordEnabled}" Content="{loc:Loc settings.tempPasswordEnabled}" />
+      <Grid ColumnDefinitions="Auto,12,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:Loc settings.tempPasswordLength}" Classes="label" />
+          <ComboBox SelectedIndex="{Binding TemporaryLengthIndex}" MinWidth="90">
+            <ComboBoxItem Content="6" />
+            <ComboBoxItem Content="8" />
+            <ComboBoxItem Content="10" />
+            <ComboBoxItem Content="12" />
+          </ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Column="2" Spacing="4">
+          <TextBlock Text="{loc:Loc settings.rotation}" Classes="label" />
+          <TextBox Text="{Binding RotationThreshold.Text}" Width="100" />
+        </StackPanel>
+      </Grid>
+      <TextBlock Text="{Binding RotationThreshold.Problem}" Classes="problem" TextWrapping="Wrap" />
+      <CheckBox IsChecked="{Binding RotateAfterSession}" Content="{loc:Loc settings.rotateAfterSession}" />
+
+      <TextBlock Text="{loc:Loc home.permanentPassword}" Classes="section" Margin="0,14,0,0" />
+      <TextBlock Text="{loc:Loc settings.permanentSet}" Classes="label" IsVisible="{Binding HasPermanentPassword}" />
+      <TextBlock Text="{loc:Loc settings.permanentNotSet}" Classes="label" IsVisible="{Binding !HasPermanentPassword}" />
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBox Text="{Binding PermanentPassword}" PasswordChar="●" Watermark="{loc:Loc session.password}"
+                 InputMethod.IsInputMethodEnabled="False" TextInputOptions.ContentType="Password" />
+        <Button Grid.Column="1" Content="{loc:Loc home.setPassword}" Command="{Binding SetPermanentPasswordCommand}" Margin="8,0,0,0" />
+        <Button Grid.Column="2" Content="{loc:Loc settings.clearPassword}" Command="{Binding ClearPermanentPasswordCommand}" Margin="8,0,0,0" />
+      </Grid>
+
+      <TextBlock Text="{loc:Loc settings.permissions}" Classes="section" Margin="0,14,0,0" />
+      <CheckBox IsChecked="{Binding FileTransferEnabled}" Content="{loc:Loc settings.allowFiles}" />
+
+      <!--
+        The terminal: a button and a confirmation rather than a checkbox. A shell is the whole machine, and
+        on an unattended one it is SYSTEM or root; one stray click must not be how that gets switched on.
+      -->
+      <TextBlock Text="{loc:Loc settings.terminal}" Classes="section" Margin="0,14,0,0" />
+      <TextBlock Text="{loc:Loc settings.terminalHint}" Classes="hint" TextWrapping="Wrap" />
+      <StackPanel IsVisible="{Binding !TerminalEnabled}" Spacing="6" Margin="0,4,0,0">
+        <TextBlock Text="{loc:Loc settings.terminalOff}" Classes="label" />
+        <Button Content="{loc:Loc settings.terminalTurnOn}" Command="{Binding BeginEnableTerminalCommand}"
+                IsVisible="{Binding !TerminalConfirming}" HorizontalAlignment="Left" />
+        <Border IsVisible="{Binding TerminalConfirming}" Background="#3A2F12" CornerRadius="6" Padding="12,10">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{loc:Loc settings.terminalConfirmText}" TextWrapping="Wrap" Foreground="#F3DFAE" />
+            <TextBlock Text="{loc:Loc settings.terminalNeedsPassword}" IsVisible="{Binding TerminalNeedsPassword}"
+                       Classes="problem" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="{loc:Loc settings.terminalConfirm}" Command="{Binding ConfirmEnableTerminalCommand}"
+                      IsEnabled="{Binding !TerminalNeedsPassword}" Classes="accent" />
+              <Button Content="{loc:Loc session.cancel}" Command="{Binding CancelEnableTerminalCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+      <StackPanel IsVisible="{Binding TerminalEnabled}" Spacing="6" Margin="0,4,0,0">
+        <TextBlock Text="{loc:Loc settings.terminalOn}" Classes="label" />
+        <TextBlock Text="{loc:Loc settings.terminalRunsAs}" Classes="label" />
+        <ComboBox SelectedIndex="{Binding TerminalRunsAsIndex}" MinWidth="320">
+          <ComboBoxItem Content="{loc:Loc settings.terminalRunsAsSystem}" />
+          <ComboBoxItem Content="{loc:Loc settings.terminalRunsAsUser}" />
+        </ComboBox>
+        <Button Content="{loc:Loc settings.terminalTurnOff}" Command="{Binding DisableTerminalCommand}" HorizontalAlignment="Left" />
+      </StackPanel>
+
+      <TextBlock Text="{loc:Loc settings.thisComputer}" Classes="section" Margin="0,14,0,0" />
+      <CheckBox IsChecked="{Binding LanAccessEnabled}" Content="{loc:Loc settings.lanAccess}" />
+      <TextBlock Text="{loc:Loc settings.lanAccessHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap" />
+      <Button Content="{loc:Loc settings.firewallButton}" Command="{Binding AllowThroughFirewallCommand}" HorizontalAlignment="Left" Margin="26,4,0,0"
+              IsVisible="{Binding IsWindows}" />
+      <TextBlock Text="{loc:Loc settings.firewallHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap"
+                 IsVisible="{Binding IsWindows}" />
+
+      <!--
+        Two buttons rather than a checkbox. A checkbox that moves, asks for administrator rights, and then
+        springs back when the prompt is declined reads as a fault; a button that was pressed and answered
+        does not. The state is shown as a sentence beside them.
+      -->
+      <StackPanel IsVisible="{Binding SupportsUnattendedAccess}" Margin="0,14,0,0">
+        <TextBlock Text="{loc:Loc settings.unattended}" Classes="section" />
+        <TextBlock Text="{loc:Loc settings.unattendedHint}" Classes="hint" TextWrapping="Wrap" />
+        <TextBlock Text="{loc:Loc settings.unattendedMacHint}" Classes="hint" TextWrapping="Wrap"
+                   IsVisible="{Binding IsMacOS}" Margin="0,4,0,0" />
+        <TextBlock Text="{loc:Loc settings.unattendedLinuxHint}" Classes="hint" TextWrapping="Wrap"
+                   IsVisible="{Binding IsLinux}" Margin="0,4,0,0" />
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Spacing="8">
+          <Button Content="{loc:Loc settings.unattendedEnable}"
+                  Command="{Binding TurnOnUnattendedAccessCommand}"
+                  IsEnabled="{Binding !UnattendedAccessInstalled}" />
+          <Button Content="{loc:Loc settings.unattendedDisable}"
+                  Command="{Binding TurnOffUnattendedAccessCommand}"
+                  IsEnabled="{Binding UnattendedAccessInstalled}" />
+          <TextBlock Text="{loc:Loc settings.unattendedOnNow}" Classes="hint" VerticalAlignment="Center"
+                     IsVisible="{Binding UnattendedAccessInstalled}" />
+          <TextBlock Text="{loc:Loc settings.unattendedOffNow}" Classes="hint" VerticalAlignment="Center"
+                     IsVisible="{Binding !UnattendedAccessInstalled}" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- macOS gates capture and input behind consents that cannot be granted in code. -->
+      <StackPanel IsVisible="{Binding IsMacOS}">
+        <TextBlock Text="{loc:Loc settings.macPermissions}" Classes="section" Margin="0,14,0,0" />
+        <TextBlock Text="{loc:Loc settings.macPermissionsHint}" Classes="hint" TextWrapping="Wrap" />
+
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
+          <TextBlock Text="{loc:Loc settings.macScreenRecording}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.macGranted}" Foreground="#3FB950" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding ScreenRecordingGranted}" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.macNotGranted}" Foreground="#D29922" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding ScreenRecordingDenied}" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.macUnknown}" Foreground="#8B949E" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding PermissionsUnknown}" />
+          <Button Grid.Column="2" Content="{loc:Loc settings.macOpenSettings}" Command="{Binding RequestScreenRecordingCommand}" />
+        </Grid>
+
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
+          <TextBlock Text="{loc:Loc settings.macAccessibility}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.macGranted}" Foreground="#3FB950" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding AccessibilityGranted}" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.macNotGranted}" Foreground="#D29922" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding AccessibilityDenied}" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.macUnknown}" Foreground="#8B949E" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding PermissionsUnknown}" />
+          <Button Grid.Column="2" Content="{loc:Loc settings.macOpenSettings}" Command="{Binding RequestAccessibilityCommand}" />
+        </Grid>
+
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
+          <TextBlock Text="{loc:Loc settings.macLocalNetwork}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <!-- macOS has no API to read this consent, so it is reported as "look it up" rather than guessed. -->
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.macUnknown}" Foreground="#8B949E" VerticalAlignment="Center" Margin="12,0" />
+          <Button Grid.Column="2" Content="{loc:Loc settings.macOpenSettings}" Command="{Binding OpenLocalNetworkSettingsCommand}" />
+        </Grid>
+        <TextBlock Text="{loc:Loc settings.macLocalNetworkHint}" Classes="hint" TextWrapping="Wrap" Margin="0,2,0,0" />
+
+        <Button Content="{loc:Loc settings.macRecheck}" Command="{Binding RefreshPlatformPermissionsCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" />
+        <TextBlock Text="{loc:Loc settings.macRestartHint}" Classes="hint" TextWrapping="Wrap" Margin="0,4,0,0" />
+      </StackPanel>
+
+      <!-- A Wayland desktop asks its person before it is shared; asking here makes that a deliberate step. -->
+      <StackPanel IsVisible="{Binding ShowWaylandSharing}">
+        <TextBlock Text="{loc:Loc settings.waylandSharing}" Classes="section" Margin="0,14,0,0" />
+        <TextBlock Text="{loc:Loc settings.waylandSharingHint}" Classes="hint" TextWrapping="Wrap" IsVisible="{Binding !UnattendedAccessInstalled}" />
+        <TextBlock Text="{loc:Loc settings.waylandSharingHintUnattended}" Classes="hint" TextWrapping="Wrap" IsVisible="{Binding UnattendedAccessInstalled}" />
+
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
+          <TextBlock Text="{loc:Loc settings.waylandSharingRow}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.waylandSharingAllowed}" Foreground="#3FB950" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding WaylandSharingAllowed}" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.waylandSharingWatchOnlyState}" Foreground="#D29922" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding WaylandSharingWatchOnly}" />
+          <TextBlock Grid.Column="1" Text="{loc:Loc settings.waylandSharingNotYet}" Foreground="#8B949E" VerticalAlignment="Center" Margin="12,0"
+                     IsVisible="{Binding WaylandSharingNotYet}" />
+          <Button Grid.Column="2" Content="{loc:Loc settings.waylandSharingAllow}" Command="{Binding AllowWaylandSharingCommand}" />
+        </Grid>
+        <TextBlock Text="{loc:Loc settings.waylandSharingDialog}" Classes="hint" TextWrapping="Wrap" Margin="0,2,0,0" />
+        <TextBlock Text="{Binding WaylandSharingNotice}" TextWrapping="Wrap" Margin="0,4,0,0"
+                   IsVisible="{Binding WaylandSharingNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      </StackPanel>
+
+      <TextBlock Text="{loc:Loc settings.allowlist}" Classes="section" Margin="0,14,0,0" />
+      <CheckBox IsChecked="{Binding AllowlistEnabled}" Content="{loc:Loc settings.allowlistEnabled}" />
+      <TextBlock Text="{loc:Loc settings.allowlistHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap" />
+      <StackPanel Spacing="6" Margin="26,6,0,0" IsVisible="{Binding AllowlistEnabled}">
+        <TextBlock Text="{loc:Loc settings.allowlistEmpty}" Foreground="#E8C06A" IsVisible="{Binding !HasAllowedPeers}" TextWrapping="Wrap" />
+        <ItemsControl ItemsSource="{Binding AllowedPeers}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                <TextBlock Text="{Binding}" VerticalAlignment="Center" FontFamily="Consolas, Menlo, monospace" />
+                <Button Grid.Column="1" Content="{loc:Loc settings.remove}"
+                        Command="{Binding $parent[ItemsControl].((vm:SecuritySettingsViewModel)DataContext).RemoveAllowedPeerCommand}"
+                        CommandParameter="{Binding}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBox Text="{Binding NewAllowedPeer}" Watermark="{loc:Loc settings.allowlistPlaceholder}" />
+          <Button Grid.Column="1" Content="{loc:Loc settings.add}" Command="{Binding AddAllowedPeerCommand}" Margin="6,0,0,0" />
+        </Grid>
+        <CheckBox IsChecked="{Binding RefuseRelayed}" Content="{loc:Loc settings.allowlistNoRelay}" />
+        <TextBlock Text="{loc:Loc settings.allowlistNoRelayHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <TextBlock Text="{loc:Loc settings.knownHosts}" Classes="section" Margin="0,14,0,0" />
+      <TextBlock Text="{loc:Loc settings.knownHostsHint}" Classes="hint" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Loc settings.noKnownHosts}" Foreground="#666" IsVisible="{Binding !HasKnownHosts}" />
+      <ItemsControl ItemsSource="{Binding KnownHosts}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:KnownHostRow">
+            <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,2">
+              <TextBlock Text="{Binding Target}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding Fingerprint}" Classes="label" FontFamily="Consolas, Menlo, monospace" VerticalAlignment="Center" Margin="12,0" />
+              <Button Grid.Column="2" Content="{loc:Loc settings.forget}"
+                      Command="{Binding $parent[ItemsControl].((vm:SecuritySettingsViewModel)DataContext).ForgetHostCommand}"
+                      CommandParameter="{Binding}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Content="{loc:Loc settings.forgetAll}" Command="{Binding ForgetAllHostsCommand}" HorizontalAlignment="Left" IsVisible="{Binding HasKnownHosts}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

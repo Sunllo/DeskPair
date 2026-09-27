@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="coverlet.collector" PrivateAssets="all" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Core\DeskPair.Core.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Protocol\DeskPair.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Platform.Abstractions\DeskPair.Platform.Abstractions.csproj" />
+    <!-- For TestStreams: a pump needs something that behaves like a connection to be tested over. -->
+    <ProjectReference Include="..\DeskPair.Protocol.Tests\DeskPair.Protocol.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The terminal vectors are shared with the Kotlin parser; they live outside either project on purpose. -->
+    <None Include="..\fixtures\vt\*.json" Link="fixtures\vt\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Shouldly" />
+  </ItemGroup>
+
+</Project>

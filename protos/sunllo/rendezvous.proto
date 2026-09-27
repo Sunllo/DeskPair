@@ -1,0 +1,236 @@
+// Sunllo DeskPair rendezvous (signaling) protocol.
+// Carried as one message per UDP datagram (<= 1200 bytes, plaintext) or as
+// length-prefixed frames on the rendezvous TCP port. RequestRelay is also the
+// first frame a peer sends to the relay server.
+syntax = "proto3";
+
+package sunllo.rendezvous;
+
+option csharp_namespace = "DeskPair.Protocol.Rendezvous";
+
+enum NatType {
+  NAT_UNKNOWN = 0;
+  NAT_ASYMMETRIC = 1;
+  NAT_SYMMETRIC = 2;
+}
+
+enum ConnType {
+  CONN_REMOTE = 0;
+  CONN_FILE_TRANSFER = 1;
+  CONN_TERMINAL = 2;
+}
+
+// ip is 4 (IPv4) or 16 (IPv6) raw bytes in network order.
+message SocketAddress {
+  bytes ip = 1;
+  uint32 port = 2;
+}
+
+// Identity blob signed by the rendezvous server so a controller can verify a
+// host's long-term public key before the peer handshake.
+message PeerIdentity {
+  string id = 1;
+  bytes identity_pk = 2;       // SPKI DER, ECDSA P-256
+  int64 issued_at_unix = 3;
+}
+
+message SignedPeerIdentity {
+  bytes payload = 1;           // serialized PeerIdentity
+  bytes server_signature = 2;  // ECDSA P-256 over SHA-256(payload), r||s
+}
+
+// ---- relay admission ----
+
+// The rendezvous server's permission to open one relay session. Without it a relay took any two
+// sockets that agreed on a uuid, so anyone who could reach the relay port could use the machine as a
+// free TCP proxy. The relay is configured with the rendezvous server's public key and refuses a request
+// whose ticket does not verify, is past its expiry, or names a different uuid.
+message RelayTicketPayload {
+  string uuid = 1;             // the pairing uuid this ticket is for
+  string relay_server = 2;     // host:port the ticket is bound to; empty = any relay this rendezvous controls
+  int64 expires_unix = 3;      // seconds; long enough for both peers to dial, short enough not to be worth stealing
+}
+
+message RelayTicket {
+  bytes payload = 1;           // serialized RelayTicketPayload
+  bytes signature = 2;         // ECDSA P-256 over SHA-256(payload) by the rendezvous key, r||s
+}
+
+// ---- registration (UDP) ----
+
+message RegisterPeer {
+  string id = 1;
+  int32 serial = 2;
+  string version = 3;
+}
+
+message RegisterPeerResponse {
+  bool request_identity = 1;
+  int32 keep_alive_sec = 2;
+}
+
+message RegisterIdentity {
+  string id = 1;               // empty on first run -> server assigns
+  bytes uuid = 2;              // stable machine id
+  bytes identity_pk = 3;
+  string version = 4;
+}
+
+message RegisterIdentityResponse {
+  enum Result {
+    OK = 0;
+    UUID_MISMATCH = 1;
+    INVALID = 2;
+    TOO_FREQUENT = 3;
+    SERVER_ERROR = 4;
+  }
+  Result result = 1;
+  string id = 2;
+  int32 keep_alive_sec = 3;
+  SignedPeerIdentity identity = 4;
+}
+
+// ---- NAT test (TCP, two ports) ----
+
+message TestNatRequest {
+  int32 serial = 1;
+}
+
+message TestNatResponse {
+  uint32 observed_port = 1;
+  SocketAddress observed_addr = 2;   // the full public mapping, for UDP media candidates
+}
+
+// ---- controller -> server (TCP) ----
+
+message PunchHoleRequest {
+  string id = 1;
+  NatType nat_type = 2;
+  ConnType conn_type = 3;
+  bool force_relay = 4;
+  string version = 5;
+  // 6 was licence_key: a static shared secret compared with string.Equals, off whenever the server left it
+  // empty, which every shipped config did. It was never a licence. Admission belongs to accounts.
+  reserved 6;
+  reserved "licence_key";
+}
+
+// ---- server -> host (UDP or host's TCP mediator) ----
+
+message PunchHole {
+  SocketAddress controller_addr = 1;
+  string relay_server = 2;
+  NatType nat_type = 3;
+  ConnType conn_type = 4;
+  // Issued ahead of time for a uuid the server chose, so a host that has to fall back to the relay
+  // (symmetric NAT) opens its relay leg with this uuid and this ticket rather than minting its own.
+  RelayTicket relay_ticket = 5;
+}
+
+message FetchLocalAddr {
+  SocketAddress controller_addr = 1;
+  string relay_server = 2;
+  RelayTicket relay_ticket = 3;   // for the UDP media relay a LAN session may still fall back to
+}
+
+// Sent by the server to the host to ask it to open a relay session, and sent
+// by each peer as the first frame to the relay server.
+message RequestRelay {
+  string uuid = 1;
+  string id = 2;
+  SocketAddress controller_addr = 3;
+  string relay_server = 4;
+  ConnType conn_type = 5;
+  reserved 6;              // was licence_key; see PunchHoleRequest
+  reserved "licence_key";
+  // Signed by the portal, verified offline by the relay, and used only to attribute the session's usage to
+  // an account. Absent is normal and never refused: an install that is not linked to an account still has
+  // every right to a relay.
+  string usage_ticket = 7;
+  RelayTicket ticket = 8;  // required by a relay that has a rendezvous key configured
+}
+
+// ---- host -> server (fresh TCP connection) ----
+
+message PunchHoleSent {
+  SocketAddress controller_addr = 1;
+  string id = 2;
+  string relay_server = 3;
+  NatType nat_type = 4;
+  string version = 5;
+}
+
+message LocalAddr {
+  SocketAddress controller_addr = 1;
+  SocketAddress local_addr = 2;
+  string relay_server = 3;
+  string id = 4;
+  string version = 5;
+}
+
+message RelayResponse {
+  SocketAddress controller_addr = 1;
+  string uuid = 2;
+  string relay_server = 3;
+  string id = 4;
+  string version = 5;
+  SignedPeerIdentity identity = 6;
+  // Alternatives, best first, with relay_server repeating the first for older peers. A relay can die
+  // between being chosen and being dialled; without these the connection fails over a machine the server
+  // already knew was replaceable.
+  repeated string relay_servers = 7;
+  RelayTicket ticket = 8;
+}
+
+// ---- server -> controller ----
+
+message PunchHoleResponse {
+  enum Failure {
+    NONE = 0;
+    ID_NOT_EXIST = 1;
+    OFFLINE = 2;
+    reserved 3;            // was LICENCE_MISMATCH
+    SERVER_BUSY = 4;
+  }
+  SocketAddress host_addr = 1;
+  SignedPeerIdentity identity = 2;
+  string relay_server = 3;
+  NatType nat_type = 4;
+  bool is_local = 5;
+  Failure failure = 6;
+  string host_version = 7;
+  repeated string relay_servers = 8;   // see RelayResponse.relay_servers
+  RelayTicket relay_ticket = 9;        // for the UDP media relay, and for a relay fallback after a failed direct attempt
+}
+
+message QueryOnline {
+  repeated string ids = 1;
+}
+
+message QueryOnlineResponse {
+  repeated bool online = 1;
+}
+
+message KeepAlive {}
+
+message RendezvousMessage {
+  oneof union {
+    RegisterPeer register_peer = 1;
+    RegisterPeerResponse register_peer_response = 2;
+    RegisterIdentity register_identity = 3;
+    RegisterIdentityResponse register_identity_response = 4;
+    TestNatRequest test_nat_request = 5;
+    TestNatResponse test_nat_response = 6;
+    PunchHoleRequest punch_hole_request = 7;
+    PunchHole punch_hole = 8;
+    PunchHoleSent punch_hole_sent = 9;
+    PunchHoleResponse punch_hole_response = 10;
+    FetchLocalAddr fetch_local_addr = 11;
+    LocalAddr local_addr = 12;
+    RequestRelay request_relay = 13;
+    RelayResponse relay_response = 14;
+    QueryOnline query_online = 15;
+    QueryOnlineResponse query_online_response = 16;
+    KeepAlive keep_alive = 17;
+  }
+}

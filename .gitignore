@@ -1,0 +1,68 @@
+# Reference source (RustDesk) is kept locally only
+reference/
+
+# Build output
+bin/
+obj/
+out/
+artifacts/
+*.user
+*.suo
+.vs/
+.idea/
+*.swp
+TestResults/
+coverage*/
+*.nupkg
+*.snupkg
+
+# Native build output
+native/**/build/
+*.dylib
+*.so
+*.dll
+!src/**/runtimes/**
+
+# Secrets / local config
+*.key
+*.pem
+appsettings.*.local.json
+.env
+# Notes kept beside the code and never committed.
+/*.local.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# No exception here for native/openh264: the global *.dll rule above is what keeps a built OpenH264 out of
+# this repository, deliberately. Building it is fine (BSD-2), shipping it is not — H.264 is patented and
+# Cisco's royalty coverage follows only its own distributed binaries. See native/openh264/README.md.
+
+# The virtual display driver package, fetched pinned by tools/fetch-vdd.ps1. Shipping it is fine (MIT, signed
+# by its project); it is kept out of the tree only because it is a download. See native/vdd/README.md.
+native/vdd/win-*/
+
+# Built macOS shim (build on a Mac via native/macos/SunlloMacShim/build.sh)
+libSunlloMacShim.dylib
+native/macos/SunlloMacShim/*.dylib
+# Built Wayland shim (tools/build-wayland-shim.ps1 builds into artifacts/; build.sh run by hand builds here)
+native/linux/SunlloWaylandShim/*.so
+
+# Kotlin / Gradle (mobile/)
+mobile/**/build/
+mobile/.gradle/
+mobile/local.properties
+
+# Playwright MCP scratch output: screenshots and page snapshots from a debugging session.
+.playwright-mcp/
+
+# Signing material. A private key in a working tree is one `git add -A` away from being public, and an
+# App Store Connect key cannot be re-downloaded -- only revoked and replaced.
+AuthKey_*.p8
+*.p12
+*.mobileprovision
+*.certSigningRequest

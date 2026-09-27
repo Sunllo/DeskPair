@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(IsWindowsBuildHost)' == 'true'">net10.0;net10.0-windows</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Core\DeskPair.Core.csproj" />
+  </ItemGroup>
+
+  <!-- VP9 through libvpx, so save-frame can also verify a host that offers nothing else. A Linux host has
+       only the software encoders, so Media Foundation alone would leave the session with no common codec. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Codec.Vpx\DeskPair.Codec.Vpx.csproj" />
+  </ItemGroup>
+
+  <!-- On Windows a real decoder (Media Foundation) and SkiaSharp let the connect save-frame option write a PNG
+       of the remote desktop; the plain net10.0 build keeps the fake decoder and has no save-frame option. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <ProjectReference Include="..\..\src\DeskPair.Platform.Windows\DeskPair.Platform.Windows.csproj" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The portable platform projects, for the host verb's clipboard flag: the lab needs a host with a real system
+         clipboard on a Mac and on Linux, and the shipping app there must not be redeployed just to test one. -->
+    <ProjectReference Include="..\..\src\DeskPair.Platform.MacOS\DeskPair.Platform.MacOS.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Platform.Linux\DeskPair.Platform.Linux.csproj" />
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+</Project>

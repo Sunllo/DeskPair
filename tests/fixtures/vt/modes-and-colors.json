@@ -1,0 +1,40 @@
+[
+  { "name": "leaving the alternate screen restores the main one", "columns": 10, "rows": 2, "input": "main\u001b[?1049h\u001b[2Jalt\u001b[?1049l", "lines": ["main"], "cursor": [4, 0], "modes": { "alternateScreen": false } },
+  { "name": "the alternate screen starts clear", "columns": 10, "rows": 2, "input": "main\u001b[?1049halt", "lines": ["    alt"], "cursor": [7, 0], "modes": { "alternateScreen": true } },
+  { "name": "bracketed paste mode", "columns": 10, "rows": 1, "input": "\u001b[?2004h", "lines": [], "cursor": [0, 0], "modes": { "bracketedPaste": true } },
+  { "name": "application cursor keys", "columns": 10, "rows": 1, "input": "\u001b[?1h", "lines": [], "cursor": [0, 0], "modes": { "applicationCursorKeys": true } },
+  { "name": "hiding the cursor", "columns": 10, "rows": 1, "input": "\u001b[?25l", "lines": [], "cursor": [0, 0], "modes": { "cursorVisible": false } },
+  { "name": "the title ends with BEL", "columns": 10, "rows": 1, "input": "\u001b]0;hello\u0007", "lines": [], "cursor": [0, 0], "title": "hello" },
+  { "name": "the title ends with ST", "columns": 10, "rows": 1, "input": "\u001b]2;build — ok\u001b\\", "lines": [], "cursor": [0, 0], "title": "build — ok" },
+  {
+    "name": "bold red, then reset",
+    "columns": 10, "rows": 1, "input": "\u001b[1;31mA\u001b[0mB", "lines": ["AB"], "cursor": [2, 0],
+    "cells": [
+      { "row": 0, "column": 0, "foreground": "palette:1", "background": "default", "attributes": ["bold"] },
+      { "row": 0, "column": 1, "foreground": "default", "background": "default", "attributes": [] }
+    ]
+  },
+  {
+    "name": "256 colours and true colour",
+    "columns": 10, "rows": 1, "input": "\u001b[38;5;208mA\u001b[48;2;16;32;48mB", "lines": ["AB"], "cursor": [2, 0],
+    "cells": [
+      { "row": 0, "column": 0, "foreground": "palette:208", "background": "default", "attributes": [] },
+      { "row": 0, "column": 1, "foreground": "palette:208", "background": "rgb:102030", "attributes": [] }
+    ]
+  },
+  {
+    "name": "true colour with colon separators",
+    "columns": 10, "rows": 1, "input": "\u001b[38:2:255:128:0mA", "lines": ["A"], "cursor": [1, 0],
+    "cells": [ { "row": 0, "column": 0, "foreground": "rgb:ff8000", "background": "default", "attributes": [] } ]
+  },
+  {
+    "name": "bright colours are palette 8 to 15",
+    "columns": 10, "rows": 1, "input": "\u001b[94;101mA", "lines": ["A"], "cursor": [1, 0],
+    "cells": [ { "row": 0, "column": 0, "foreground": "palette:12", "background": "palette:9", "attributes": [] } ]
+  },
+  {
+    "name": "an erased cell keeps only the background",
+    "columns": 10, "rows": 1, "input": "\u001b[1;31;44m\u001b[K", "lines": [], "cursor": [0, 0],
+    "cells": [ { "row": 0, "column": 5, "foreground": "default", "background": "palette:4", "attributes": [] } ]
+  }
+]

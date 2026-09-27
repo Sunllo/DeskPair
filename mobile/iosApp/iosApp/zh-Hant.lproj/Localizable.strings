@@ -1,0 +1,245 @@
+/* 連線 */
+"connect.target" = "對方 ID 或位址";
+"connect.password" = "密碼";
+"connect.action" = "連線";
+"connect.retry" = "重試";
+
+"progress.lookingUp" = "正在尋找主機";
+"progress.measuring" = "正在檢查這個網路";
+"progress.punching" = "正在建立直連通道";
+"progress.connecting" = "連線中…";
+"progress.waiting" = "等待對方接受…";
+
+/* 工作階段中。用語沿用桌面端,兩邊說法一致。 */
+"session.disconnect" = "中斷";
+"session.tab.actions" = "操作";
+"session.tab.input" = "鍵鼠";
+"session.tab.screen" = "螢幕";
+"session.tab.keyboard" = "鍵盤";
+"session.gestures" = "手勢說明";
+"session.quality" = "畫質";
+"session.quality.low" = "流暢";
+"session.quality.balanced" = "平衡";
+"session.quality.best" = "高畫質";
+"session.fit" = "縮放";
+"session.original" = "1:1";
+"session.resolution" = "解析度";
+"session.resolution.original" = "原始";
+"session.resolution.failed" = "無法變更解析度：%@";
+"session.remoteCursor" = "遠端游標";
+"session.remoteCursorHint" = "同時顯示對方的滑鼠游標。";
+"session.ctrlAltDel" = "Ctrl+Alt+Del";
+"session.lock" = "鎖定";
+"session.refresh" = "重新整理";
+"session.stalled" = "連線中斷…正在等待";
+"session.stalledHint" = "畫面停在最後收到的那一張";
+"display.label" = "螢幕 %d";
+
+/* 指標模式。桌面端有真滑鼠,沒有對應項目。 */
+"mode.touch" = "觸控";
+"mode.mouse" = "滑鼠";
+
+"gesture.tap" = "單指輕點";
+"gesture.tapTouch" = "點在哪就按在哪";
+"gesture.tapMouse" = "在游標位置按下";
+"gesture.twoTap" = "雙指輕點";
+"gesture.twoTapAction" = "右鍵";
+"gesture.drag" = "單指拖曳";
+"gesture.dragTouch" = "移動畫面";
+"gesture.dragMouse" = "移動游標";
+"gesture.twoDrag" = "雙指拖曳";
+"gesture.twoDragAction" = "移動畫面";
+"gesture.pinch" = "雙指捏合";
+"gesture.pinchAction" = "縮放畫面";
+"gesture.three" = "三指上下滑";
+"gesture.threeAction" = "滾輪";
+
+/* 鍵盤 */
+"keyboard.type" = "在此輸入";
+"keyboard.pin" = "釘選";
+"keyboard.function" = "Fn";
+"keyboard.numpad" = "數字";
+"keyboard.more" = "更多";
+"keyboard.ime" = "輸入法";
+"clipboard.send" = "傳送剪貼簿";
+
+"audio.unavailable" = "沒有聲音:%@";
+"video.unavailable" = "沒有畫面:%@";
+
+/* 首頁。用語沿用桌面端的 Strings.cs，兩邊說同樣的話。 */
+"home.controlRemote" = "控制遠端電腦";
+"home.favouritesEmptyHint" = "在最近連線旁邊點一下愛心，就會留在這裡。";
+"home.noFavourites" = "尚無設備";
+"home.recent" = "最近連線";
+"presence.online" = "在線";
+"presence.offline" = "離線";
+"presence.unknown" = "未知";
+"home.noRecent" = "尚無最近連線";
+"home.forgetRecent" = "從最近連線移除";
+"home.noServer" = "尚未設定中繼伺服器，請到設定填寫後才能用 ID 連線。";
+
+"connect.cancel" = "取消";
+
+"settings.title" = "設定";
+"settings.section.general" = "基本";
+"settings.section.session" = "連線他人時";
+"settings.viewOnly" = "僅檢視";
+"settings.viewOnlyHint" = "只看，不能操作對方電腦。";
+"settings.lockAfterEnd" = "結束時鎖定";
+"settings.lockAfterEndHint" = "斷線後讓對方電腦保持鎖定。";
+"session.rtt" = "延遲";
+"session.waitingForPicture" = "正在接收 %@ 的畫面…";
+"session.pictureLate" = "還沒有畫面。對方電腦可能停在鎖定或登入畫面，這種畫面 Windows 不允許被擷取，需要有人解鎖後才會出現。";
+"session.signal.platform" = "系統";
+"session.signal.route" = "連線方式";
+"session.route.lan" = "區域網路直連";
+"session.route.direct" = "直接連線";
+"session.route.punched" = "P2P 直連";
+"session.route.relay" = "中繼伺服器";
+"session.inputRefused" = "對方電腦目前不接受操作。";
+"settings.section.network" = "網路";
+"settings.section.about" = "關於 DeskPair";
+"settings.language" = "語言";
+"settings.language.system" = "跟隨系統";
+"settings.recentLimit" = "最近連線";
+"settings.recentLimitHint" = "清單裡最多留幾筆。";
+"settings.clearRecent" = "清除最近連線";
+"settings.defaultQuality" = "畫質";
+"settings.defaultQualityHint" = "新連線從哪個畫質開始。";
+"settings.bitrate" = "碼率 (kbps)";
+"settings.bitrateInvalid" = "碼率請填 100 到 200000 kbps";
+"settings.fps" = "幀率";
+"settings.fpsInvalid" = "幀率請填 5 到 120";
+"settings.quality.custom" = "自訂";
+"settings.lossless" = "靜止後精修";
+"settings.losslessHint" = "畫面停止變動後，精修到逐像素清晰。";
+"settings.fitToWindow" = "縮放至畫面";
+"settings.fitToWindowHint" = "把遠端畫面縮小到一次看得完。";
+"settings.audio" = "聲音";
+"settings.audioHint" = "播放對方電腦正在播的聲音。";
+"settings.pointerMode" = "指標";
+"settings.server" = "中繼伺服器";
+"settings.serverKey" = "伺服器公鑰";
+"settings.fetchKey" = "從伺服器取得";
+"settings.keyFetched" = "已取得公鑰";
+"settings.keyInvalid" = "公鑰格式不正確，請按「從伺服器取得」";
+"settings.selfHosted" = "我自己架設伺服器";
+"settings.directoryHint" = "DeskPair 會向入口網站詢問要用哪一台訊令伺服器，這裡不需要填任何東西。";
+"settings.keyMissing" = "沒有伺服器公鑰，用 ID 連線時不會驗證對方身分";
+"settings.serverRequired" = "請先填寫中繼伺服器";
+"settings.udpMedia" = "影像走 UDP";
+"settings.udpMediaHint" = "網路好時比較順，不好時自動退回 TCP。";
+"settings.forceRelay" = "一律用中繼";
+"settings.forceRelayHint" = "即使在同一個網路也不直連。";
+"settings.version" = "版本";
+
+/* 三個分頁 */
+"nav.connect" = "連線";
+"nav.favourites" = "設備清單";
+"nav.settings" = "設定";
+
+/* 掃描配對條碼 */
+"home.scan" = "掃描條碼";
+"scan.applied" = "已帶入 %@ 的設定";
+"scan.notDeskPair" = "這不是 DeskPair 的條碼。";
+"scan.noVersion" = "這個條碼缺少版本資訊。";
+"scan.newerVersion" = "這個條碼是較新版本的 DeskPair 產生的 (v%d)，請先更新本 App。";
+"scan.noId" = "這個條碼沒有指名任何電腦。";
+"scan.damagedKey" = "條碼裡的金鑰已損毀。";
+"scan.cameraDenied" = "沒有相機權限";
+"scan.cameraDeniedHint" = "請到「設定」允許使用相機，才能掃描配對條碼。";
+"scan.unavailable" = "這台裝置上的掃描器無法啟動。";
+
+"clipboard.sendImage" = "傳送圖片";
+"clipboard.imageSent" = "圖片已送出 —— 在對方電腦按 Cmd+V(或 Ctrl+V)貼上";
+"clipboard.imageKnown" = "對方電腦已經有這張圖片了";
+"clipboard.imageFailed" = "無法傳送這張圖片";
+
+"settings.section.account" = "帳號";
+"settings.account.signedOut" = "尚未登入帳號";
+"settings.account.signedOutHint" = "登入後，設備清單會跟著帳號同步";
+"settings.account.devices" = "設備清單：%d";
+"settings.deviceName" = "這台裝置名稱";
+"settings.account.portal" = "入口網站位址";
+"settings.account.email" = "電子郵件";
+"settings.account.password" = "密碼";
+"settings.account.signInTitle" = "登入帳號";
+"settings.account.signIn" = "登入";
+"settings.account.register" = "建立帳號";
+"settings.account.needEmail" = "請輸入電子郵件。";
+"settings.account.needPassword" = "請輸入密碼。";
+"settings.account.verify" = "帳號已建立。請到 %@ 的信箱完成確認，然後登入。";
+"settings.account.unlink" = "登出";
+"settings.account.linked" = "已登入 %@。";
+"settings.account.unlinked" = "已登出。";
+"settings.account.unlinkedLocally" = "本機已登出，但沒有通知伺服器(%@)。請同時在網站上撤銷這台裝置。";
+"favourites.ungrouped" = "未分類";
+
+"devices.edit" = "編輯";
+"devices.edit.title" = "設備資料";
+"devices.edit.name" = "名稱";
+"devices.edit.password" = "密碼";
+"devices.edit.passwordHint" = "可不填。存在這裡的密碼會在連線時直接使用，適合常連的機器；留空則每次詢問。";
+"devices.edit.save" = "儲存";
+
+"keyChanged.title" = "這台電腦的金鑰變了";
+"keyChanged.body" = "%1$@ 這次出示的金鑰和之前不同。\n\n原本是 %2$@…\n現在是 %3$@…\n\n電腦重灌時會這樣。有東西在冒充它時也會這樣。只有在你知道它為什麼會變的時候，才信任新的金鑰。";
+"keyChanged.trust" = "信任新的金鑰";
+"keyChanged.cancel" = "先不要";
+"devices.signInRequired" = "登入後才能使用設備清單";
+"devices.signInRequiredHint" = "清單屬於你的帳號，所以會跟著你到其他裝置上。登入在「設定」裡。";
+
+"account.error.badCredentials" = "電子郵件或密碼錯誤。";
+"account.error.notVerified" = "請先到信箱完成電子郵件確認。";
+"account.error.disabled" = "這個帳號已被停用。";
+"account.error.closed" = "這台伺服器不開放註冊新帳號。";
+"account.error.emailTaken" = "這個電子郵件已經有帳號了，請直接登入。";
+"account.error.weakPassword" = "密碼太短了。";
+"account.error.badEmail" = "這看起來不像電子郵件地址。";
+"account.error.tooMany" = "嘗試次數過多，請等幾分鐘再試。";
+"devices.edit.group" = "群組";
+"devices.edit.noGroup" = "不分組";
+"devices.remove" = "移除";
+"devices.group.add" = "新增群組";
+"devices.group.rename" = "重新命名群組";
+"devices.group.delete" = "刪除群組";
+"devices.group.name" = "群組名稱";
+"devices.group.cancel" = "取消";
+"session.dropped" = "連線中斷。";
+"session.droppedRetrying" = "連線中斷，正在改用中繼伺服器重連。";
+"session.closedByHost" = "對方結束了這次連線。";
+
+/* Language */
+"settings.language.restart" = "下次開啟 DeskPair 時生效。也可以在「設定 › DeskPair › 語言」選擇。";
+
+/* Why a connection failed, by what the shared module reported */
+"session.hostTooOld" = "這台電腦的 DeskPair 版本太舊，這個 App 無法連上。請更新對方電腦上的 DeskPair。";
+"session.clientTooOld" = "這個 App 版本太舊，對方電腦的 DeskPair 無法接受。請更新這台裝置上的 DeskPair。";
+"session.unreachable.unknownId" = "中繼伺服器沒有 ID 為 %@ 的電腦。";
+"session.unreachable.offline" = "%@ 目前不在線上。";
+"session.unreachable.busy" = "中繼伺服器忙碌中，請稍後再試。";
+"session.unreachable.noRelay" = "無法直接連上 %@，伺服器也沒有提供中繼。";
+"session.unreachable.noAnswer" = "中繼伺服器沒有回應。";
+"session.failedDetail" = "連線失敗：%@";
+
+/* Video and audio problems shown over the picture */
+"video.unsupportedFormat" = "這台裝置無法讀取這種格式的影像串流";
+"video.noParameterSets" = "關鍵幀沒有可用的參數集";
+"video.parameterSetsFailed" = "無法讀取參數集（OSStatus %lld）";
+"video.blockBufferFailed" = "無法把畫面包裝給解碼器（%lld）";
+"video.copyFailed" = "無法把畫面複製到緩衝區（%lld）";
+"video.sampleBufferFailed" = "無法把畫面交給解碼器（%lld）";
+"audio.noOpus" = "這台裝置沒有 Opus 解碼器";
+
+/* Terminal */
+"terminal.open" = "開啟終端機";
+"terminal.close" = "關閉";
+"terminal.notAllowed" = "這台電腦不允許終端機。擁有者可以在「設定 › 安全」開啟；比這一版舊的 DeskPair 沒有終端機功能。";
+"terminal.opening" = "正在開啟 shell…";
+"terminal.ended" = "shell 已結束（結束代碼 %lld）。";
+"terminal.endedReason" = "shell 已結束：%@";
+"terminal.failed" = "無法開啟 shell：%@";
+"terminal.newShell" = "開一個新的 shell";
+"terminal.connectionLost" = "連線中斷了，shell 也隨之結束。shell 不會在連線結束後保留。";
+"terminal.paste" = "貼上";
+"terminal.pasteConfirm" = "要把 %lld 行貼到 shell 嗎？每一行都會當成指令執行。";

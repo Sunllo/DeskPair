@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      This theme is the launch window, and almost nothing else. Everything the user sees is drawn by
+      Compose, so the only job here is the frame between the launcher icon being tapped and the first
+      composition: without a matching windowBackground that frame is a white flash, which on a dark phone
+      is the most visible defect in the whole app.
+
+      Parent is AppCompat's, not Material Components': the activity is an AppCompatActivity so that the
+      language chosen in settings is applied on Android 12 and older (AppCompatDelegate.setApplicationLocales),
+      and AppCompat insists on one of its own themes. Nothing else of it is used; the light/night split of
+      the launch colour is done with resource qualifiers, which is what DayNight does underneath anyway.
+    -->
+    <style name="Theme.DeskPair" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/launch_background</item>
+    </style>
+</resources>

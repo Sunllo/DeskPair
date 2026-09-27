@@ -1,0 +1,38 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DeskPair.Codec.OpenH264/DeskPair.Codec.OpenH264.csproj" />
+    <Project Path="src/DeskPair.Codec.Vpx/DeskPair.Codec.Vpx.csproj" />
+    <Project Path="src/DeskPair.Core/DeskPair.Core.csproj" />
+    <Project Path="src/DeskPair.Desktop/DeskPair.Desktop.csproj" />
+    <Project Path="src/DeskPair.Platform.Abstractions/DeskPair.Platform.Abstractions.csproj" />
+    <Project Path="src/DeskPair.Platform.Linux/DeskPair.Platform.Linux.csproj" />
+    <Project Path="src/DeskPair.Platform.MacOS/DeskPair.Platform.MacOS.csproj" />
+    <Project Path="src/DeskPair.Platform.Windows/DeskPair.Platform.Windows.csproj" />
+    <Project Path="src/DeskPair.Protocol/DeskPair.Protocol.csproj" />
+    <Project Path="src/DeskPair.Relay/DeskPair.Relay.csproj" />
+    <Project Path="src/DeskPair.Rendezvous/DeskPair.Rendezvous.csproj" />
+    <Project Path="src/DeskPair.Server.Shared/DeskPair.Server.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DeskPair.Codec.OpenH264.Tests/DeskPair.Codec.OpenH264.Tests.csproj" />
+    <Project Path="tests/DeskPair.Codec.Vpx.Tests/DeskPair.Codec.Vpx.Tests.csproj" />
+    <Project Path="tests/DeskPair.Core.Tests/DeskPair.Core.Tests.csproj" />
+    <Project Path="tests/DeskPair.Desktop.Tests/DeskPair.Desktop.Tests.csproj" />
+    <Project Path="tests/DeskPair.Integration.Tests/DeskPair.Integration.Tests.csproj" />
+    <Project Path="tests/DeskPair.Platform.Linux.Tests/DeskPair.Platform.Linux.Tests.csproj" />
+    <Project Path="tests/DeskPair.Platform.Windows.Tests/DeskPair.Platform.Windows.Tests.csproj" />
+    <Project Path="tests/DeskPair.Protocol.Tests/DeskPair.Protocol.Tests.csproj" />
+    <Project Path="tests/DeskPair.Relay.Tests/DeskPair.Relay.Tests.csproj" />
+    <Project Path="tests/DeskPair.Rendezvous.Tests/DeskPair.Rendezvous.Tests.csproj" />
+    <Project Path="tests/DeskPair.Server.Shared.Tests/DeskPair.Server.Shared.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/DeskPair.Tools.ClipboardHarness/DeskPair.Tools.ClipboardHarness.csproj" />
+    <Project Path="tools/DeskPair.Tools.IconGen/DeskPair.Tools.IconGen.csproj" />
+    <Project Path="tools/DeskPair.Tools.KeyGen/DeskPair.Tools.KeyGen.csproj" />
+    <Project Path="tools/DeskPair.Tools.LinuxHarness/DeskPair.Tools.LinuxHarness.csproj" />
+    <Project Path="tools/DeskPair.Tools.PeerCli/DeskPair.Tools.PeerCli.csproj" />
+    <Project Path="tools/DeskPair.Tools.PlatformHarness/DeskPair.Tools.PlatformHarness.csproj" />
+    <Project Path="tools/DeskPair.Tools.Vectors/DeskPair.Tools.Vectors.csproj" />
+  </Folder>
+</Solution>

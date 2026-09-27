@@ -1,0 +1,52 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels"
+             xmlns:settings="using:DeskPair.Desktop.Views.Settings"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <UserControl.Styles>
+    <!-- Fluent sizes tab headings for a phone; here they are one row of seven and read as headings, not titles. -->
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="10,2" />
+      <Setter Property="Margin" Value="0,0,4,0" />
+    </Style>
+  </UserControl.Styles>
+
+  <DockPanel Margin="16,12,16,12">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Text="{loc:Loc settings.hostOffline}" Foreground="#E88" IsVisible="{Binding !IsHostAvailable}" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Loc settings.restartRequired}" Foreground="#E8C06A" IsVisible="{Binding NeedsRestart}" TextWrapping="Wrap" />
+    </StackPanel>
+    <Border DockPanel.Dock="Bottom" Height="22">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="{loc:Loc settings.savedLive}" Foreground="#8C8" IsVisible="{Binding RecentlySaved}" />
+      </StackPanel>
+    </Border>
+    <TabControl>
+      <TabItem Header="{loc:Loc settings.tab.general}">
+        <settings:GeneralSettingsView DataContext="{Binding General}" />
+      </TabItem>
+      <TabItem Header="{loc:Loc settings.tab.display}">
+        <settings:DisplaySettingsView DataContext="{Binding Display}" />
+      </TabItem>
+      <TabItem Header="{loc:Loc settings.tab.audio}">
+        <settings:AudioSettingsView DataContext="{Binding Audio}" />
+      </TabItem>
+      <TabItem Header="{loc:Loc settings.tab.input}">
+        <settings:InputSettingsView DataContext="{Binding Input}" />
+      </TabItem>
+      <TabItem Header="{loc:Loc settings.tab.security}">
+        <settings:SecuritySettingsView DataContext="{Binding Security}" />
+      </TabItem>
+      <TabItem Header="{loc:Loc settings.tab.network}">
+        <settings:NetworkSettingsView DataContext="{Binding Network}" />
+      </TabItem>
+      <TabItem Header="{loc:Loc settings.tab.about}">
+        <settings:AboutSettingsView DataContext="{Binding About}" />
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</UserControl>

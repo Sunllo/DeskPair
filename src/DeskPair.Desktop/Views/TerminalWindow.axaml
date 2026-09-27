@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DeskPair.Desktop.ViewModels"
+        xmlns:loc="using:DeskPair.Desktop.Localization"
+        xmlns:controls="using:DeskPair.Desktop.Controls"
+        Icon="/Assets/deskpair.ico"
+        x:Class="DeskPair.Desktop.Views.TerminalWindow"
+        x:DataType="vm:TerminalViewModel"
+        Title="{Binding Title}"
+        Background="#14171C"
+        Width="960" Height="620">
+  <Grid RowDefinitions="Auto,Auto,*">
+    <!-- Who the shell is: the one fact about a terminal on somebody else's computer that must never be ambiguous. -->
+    <Border Background="#1B1F26" BorderBrush="#262C35" BorderThickness="0,0,0,1" Padding="12,6" IsVisible="{Binding IsConnected}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Identity}" Foreground="#E8C06A" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding ShellName}" Foreground="#8A929E" FontSize="12" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding TransportName}" Foreground="#6F7885" FontSize="12" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="{loc:Loc session.disconnect}" Command="{Binding DisconnectCommand}" Padding="10,3" />
+      </Grid>
+    </Border>
+
+    <!-- A question about a paste, or a sentence about the shell; the terminal stays visible underneath. -->
+    <StackPanel Grid.Row="1">
+      <Border Background="#3A2F12" Padding="12,8" IsVisible="{Binding PastePending}">
+        <Grid ColumnDefinitions="*,Auto,Auto">
+          <TextBlock Text="{Binding PasteQuestion}" Foreground="#F3DFAE" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="{loc:Loc terminal.paste}" Command="{Binding ConfirmPasteCommand}" Margin="8,0,0,0" Classes="accent" />
+          <Button Grid.Column="2" Content="{loc:Loc session.cancel}" Command="{Binding CancelPasteCommand}" Margin="8,0,0,0" />
+        </Grid>
+      </Border>
+      <Border Background="#22262D" Padding="12,8" IsVisible="{Binding HasNotice}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding Notice}" Foreground="#D8DEE6" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="{loc:Loc terminal.newShell}" Command="{Binding OpenShellCommand}"
+                  IsVisible="{Binding CanOpenNewShell}" Margin="8,0,0,0" />
+        </Grid>
+      </Border>
+    </StackPanel>
+
+    <controls:TerminalControl Grid.Row="2" x:Name="Terminal" Margin="6,4,2,2" />
+
+    <!-- Connecting and the password, as in a remote-control tab. -->
+    <Border Grid.RowSpan="3" Background="#CC101010" IsVisible="{Binding ShowOverlay}">
+      <Border HorizontalAlignment="Center" VerticalAlignment="Center" Background="#2A2A2A" CornerRadius="8" Padding="28" MinWidth="360">
+        <StackPanel Spacing="12">
+          <TextBlock Text="{Binding Target}" FontSize="20" FontWeight="SemiBold" Foreground="White" />
+          <TextBlock Text="{loc:Loc terminal.title}" Foreground="#E8C06A" />
+          <TextBlock Text="{Binding Status}" Foreground="#CCC" />
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+          <StackPanel IsVisible="{Binding NeedsPassword}" Spacing="8">
+            <TextBox Text="{Binding Password}" PasswordChar="●" Watermark="{loc:Loc session.password}" x:Name="PasswordBox"
+                     InputMethod.IsInputMethodEnabled="False" TextInputOptions.ContentType="Password" />
+          </StackPanel>
+          <TextBlock Text="{Binding ErrorText}" Foreground="#F66" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="{loc:Loc session.cancel}" Command="{Binding CancelCommand}" />
+            <Button Content="{loc:Loc session.login}" Command="{Binding LoginCommand}" IsVisible="{Binding NeedsPassword}" IsDefault="True" Classes="accent" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+  </Grid>
+</Window>

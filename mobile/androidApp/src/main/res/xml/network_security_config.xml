@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permits plain HTTP, which Android has blocked by default since API 28. Two things in this app need it,
+  and they are not equally harmless.
+
+  The first is GET http://<rendezvous>:21114/key, which is plain HTTP by design; the desktop's
+  NetworkSettingsViewModel.FetchKeyFromServerAsync fetches the same URL the same way. What it returns is a
+  public key: intercepting it reveals nothing, and substituting it only lets an attacker impersonate hosts
+  on a server they would have to control anyway.
+
+  The second is the portal API, and that one carries a device token in an Authorization header. Over plain
+  HTTP that token is readable by anything on the path, and it is enough to read and rewrite the account's
+  saved list of computers. The portal's address is typed by the user, so this policy does not choose plain
+  HTTP for them; it only declines to forbid it, because a portal on a private network may have no
+  certificate to offer. https://deskpair.app, the one this app defaults to, is HTTPS.
+
+  Neither address can be named in a domain-config here, because both are whatever the user types.
+
+  None of this governs the session itself. A DeskPair session is a raw TCP socket carrying its own
+  ECDH + AES-GCM handshake, not HTTPS, so the cleartext policy never applied to it either way.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

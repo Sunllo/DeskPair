@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore DeskPair.slnx
+      - run: dotnet build DeskPair.slnx --no-restore -c Release
+      - run: dotnet test DeskPair.slnx --no-build -c Release --logger "trx" --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: TestResults
+
+  # The PipeWire half of Wayland screen sharing -- the C shim, the memfd buffers it hands on uncopied and the capturer
+  # that reads them -- against a pretend monitor in a container. The portal conversation in front of it asks a person,
+  # so that part is verified by hand; tools/wayland-ci says why no portal runs in here.
+  wayland:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: bash tools/wayland-ci/run.sh
+
+  # The phone apps share the protocol with the desktop but not the build, so until this existed a proto
+  # change or a Kotlin signature change could pass CI and break both apps. The iOS half builds for the
+  # simulator: a device build needs a signing identity, which a public runner has no business holding.
+  mobile:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Kotlin shared module and Android app
+        working-directory: mobile
+        run: ./gradlew --no-daemon :shared:jvmTest :androidApp:assembleDebug
+      - name: iOS app
+        working-directory: mobile
+        run: |
+          xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build

@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DeskPair.Desktop.ViewModels"
+        xmlns:controls="using:DeskPair.Desktop.Controls"
+        xmlns:views="using:DeskPair.Desktop.Views"
+        xmlns:loc="using:DeskPair.Desktop.Localization"
+        Icon="/Assets/deskpair.ico"
+        x:Class="DeskPair.Desktop.Views.RemoteSessionWindow"
+        x:DataType="vm:RemoteSessionsViewModel"
+        Title="{Binding Selected.Title}"
+        Width="1280" Height="800"
+        Background="#101010">
+  <DockPanel>
+    <!--
+      The tab strip appears only once there is something to switch between; a single session looks exactly as
+      it did before tabs existed, with no strip taking up the top of the picture.
+    -->
+    <Border DockPanel.Dock="Top" Background="#161616" BorderBrush="#2A2A2A" BorderThickness="0,0,0,1"
+            IsVisible="{Binding ShowTabs}">
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <ListBox ItemsSource="{Binding Sessions}" SelectedItem="{Binding Selected}"
+                 Background="Transparent" BorderThickness="0" Padding="4,2">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="2" />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:RemoteSessionViewModel">
+              <StackPanel Orientation="Horizontal" Spacing="7" MaxWidth="240">
+                <controls:PlatformIcon Platform="{Binding PeerPlatform}" Foreground="#9AA6B8" Width="15" Height="15"
+                                       VerticalAlignment="Center" ToolTip.Tip="{Binding PeerPlatform}" />
+                <!-- A session in trouble is worth seeing from whichever tab the user is on. -->
+                <Ellipse Width="7" Height="7" Fill="#E0524E" VerticalAlignment="Center" IsVisible="{Binding IsStalled}"
+                         ToolTip.Tip="{loc:Loc session.stalled}" />
+                <TextBlock Text="{Binding ShortTitle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Button Content="✕" FontSize="11" Padding="5,0" Background="Transparent" BorderThickness="0" Foreground="#8A929E"
+                        ToolTip.Tip="{loc:Loc session.closeTab}"
+                        Command="{Binding $parent[Window].((vm:RemoteSessionsViewModel)DataContext).CloseCommand}"
+                        CommandParameter="{Binding}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </ScrollViewer>
+    </Border>
+
+    <!--
+      Every session's view is built once and kept, with only the selected one visible. A TabControl would
+      hand its single content presenter from tab to tab, tearing down the display of whichever session was
+      showing before, which for a live session means rebuilding the picture on every switch.
+    -->
+    <ItemsControl ItemsSource="{Binding Sessions}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <Panel />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:RemoteSessionViewModel">
+          <views:RemoteSessionView IsVisible="{Binding IsActive}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </DockPanel>
+</Window>

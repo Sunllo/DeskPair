@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Manual verification of the Linux daemon pieces on a real machine: scanout capture through the product's own contract, as root and as the dropped child.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Platform.Linux\DeskPair.Platform.Linux.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\..\src\DeskPair.Platform.Linux\WaylandShim.targets" />
+
+</Project>

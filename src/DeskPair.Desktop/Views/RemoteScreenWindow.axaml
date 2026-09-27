@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DeskPair.Desktop.ViewModels"
+        xmlns:loc="using:DeskPair.Desktop.Localization"
+        xmlns:controls="using:DeskPair.Desktop.Controls"
+        Icon="/Assets/deskpair.ico"
+        x:Class="DeskPair.Desktop.Views.RemoteScreenWindow"
+        x:DataType="vm:RemoteScreenViewModel"
+        Title="{Binding Title}"
+        Background="#101010"
+        Width="1280" Height="800">
+  <DockPanel>
+    <!--
+      A thin bar, deliberately: quality, sound, recording and the rest are the session's, and stay on its tab.
+      This window only frames its own picture.
+    -->
+    <Border DockPanel.Dock="Top" Background="#1E1E1E" Padding="8,3">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <TextBlock Text="{Binding Title}" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <ToggleButton IsChecked="{Binding FitToWindow}" Content="{loc:Loc session.fit}" />
+        <Button Command="{Binding RefreshCommand}" Content="⟳" ToolTip.Tip="{loc:Loc screen.refresh}" />
+        <Button Command="{Binding ShowSessionCommand}" Content="{loc:Loc screen.showSession}" />
+      </StackPanel>
+    </Border>
+    <ScrollViewer x:Name="DisplayScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
+      <controls:RemoteDisplayView x:Name="Display" />
+    </ScrollViewer>
+  </DockPanel>
+</Window>

@@ -1,0 +1,73 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <Deterministic>true</Deterministic>
+    <Company>Sunllo</Company>
+    <Product>DeskPair</Product>
+    <VersionPrefix>0.4.1</VersionPrefix>
+    <SatelliteResourceLanguages>en;zh-TW</SatelliteResourceLanguages>
+    <!-- net10.0-windows projects still compile on Linux/macOS CI runners; they only run on Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <IsWindowsBuildHost>$([MSBuild]::IsOSPlatform('Windows'))</IsWindowsBuildHost>
+  </PropertyGroup>
+
+  <!--
+    The commit this build came from, appended by the SDK to InformationalVersion as "+sha".
+
+    Until 0.2.0 the version was a literal 0.1.0 that had never once been bumped, so two builds of different
+    commits were indistinguishable at runtime. That made an update channel untestable, because nothing could
+    tell "already newest" apart from "the check never worked", and it is why this exists. The version switch
+    now prints 0.2.0+abc1234, and the rendezvous server's peers.version column names the exact build a peer
+    is running.
+
+    Read out of .git rather than by running git: this file is evaluated once per project, and two dozen
+    process launches is a tax on every build, incremental ones included. The cost is that a branch whose ref
+    has been packed into .git/packed-refs is not found here, and such a build gets a bare 0.2.0 with no
+    commit: degraded, never wrong. Setting SourceRevisionId on the command line overrides all of it.
+
+    In a worktree, which is how a release is built from a commit while the main checkout is busy, .git is
+    a file holding "gitdir: <path>" rather than a directory, so none of the paths below exist. That is not
+    harmless in the way the packed-refs case is: the SDK's own source-link detection then fills
+    SourceRevisionId with the full forty-character sha, and a footer that reads 0.2.0+abc1234 everywhere
+    else suddenly reads 0.2.0+46505fbaf55b6e6b198fc6a418e608beb657263a. So the file is followed.
+  -->
+  <PropertyGroup Condition="'$(SourceRevisionId)' == '' And !Exists('$(MSBuildThisFileDirectory).git/HEAD') And Exists('$(MSBuildThisFileDirectory).git')">
+    <_GitDirText>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory).git'))</_GitDirText>
+    <_GitDir Condition="$(_GitDirText.StartsWith('gitdir:'))">$(_GitDirText.Substring(7).Trim())</_GitDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SourceRevisionId)' == '' And '$(_GitDir)' != '' And Exists('$(_GitDir)/HEAD')">
+    <_GitHeadText>$([System.IO.File]::ReadAllText('$(_GitDir)/HEAD'))</_GitHeadText>
+    <_GitHead>$(_GitHeadText.Trim())</_GitHead>
+    <!-- A worktree's HEAD is usually a bare sha, because that is what checking out a commit leaves. -->
+    <SourceRevisionId Condition="'$(_GitHead.Length)' == '40'">$(_GitHead.Substring(0, 7))</SourceRevisionId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SourceRevisionId)' == '' And Exists('$(MSBuildThisFileDirectory).git/HEAD')">
+    <_GitHeadText>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory).git/HEAD'))</_GitHeadText>
+    <_GitHead>$(_GitHeadText.Trim())</_GitHead>
+    <!-- "ref: refs/heads/main" on a branch; a bare sha when HEAD is detached. -->
+    <_GitRefPath Condition="$(_GitHead.StartsWith('ref: '))">$(MSBuildThisFileDirectory).git/$(_GitHead.Substring(5))</_GitRefPath>
+    <_GitRefText Condition="'$(_GitRefPath)' != '' And Exists('$(_GitRefPath)')">$([System.IO.File]::ReadAllText('$(_GitRefPath)'))</_GitRefText>
+    <_GitSha Condition="'$(_GitRefText)' != ''">$(_GitRefText.Trim())</_GitSha>
+    <_GitSha Condition="'$(_GitRefPath)' == ''">$(_GitHead)</_GitSha>
+    <SourceRevisionId Condition="'$(_GitSha)' != '' And '$(_GitSha.Length)' == '40'">$(_GitSha.Substring(0, 7))</SourceRevisionId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName.EndsWith(`.Tests`))' == 'true'">
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Software H.264 fallback through Cisco OpenH264 (BSD-2 licensed; binaries under native/openh264).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeskPair.Platform.Abstractions\DeskPair.Platform.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!--
+    No native library is copied into anyone's output any more, and none is kept in this repository.
+    H.264 is patented separately from this BSD-2 source: Cisco pays the AVC royalties only for the binaries
+    it distributes itself, downloaded at run time from ciscobinary.openh264.org, so a binary built from this
+    source carries that liability to whoever ships it. See native/openh264/README.md.
+
+    The loader still looks in runtimes/<rid>/native and at SUNLLO_OPENH264_PATH, so anyone who has their own
+    AVC licence, or who fetches Cisco's own binary, can drop one in and this encoder comes back by itself.
+  -->
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DeskPair.Codec.OpenH264.Tests" />
+  </ItemGroup>
+
+</Project>

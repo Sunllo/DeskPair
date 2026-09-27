@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels.Settings"
+             xmlns:audio="using:DeskPair.Platform.Abstractions.Audio"
+             xmlns:conv="using:DeskPair.Desktop.Converters"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.Settings.AudioSettingsView"
+             x:DataType="vm:AudioSettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="10" MaxWidth="600" HorizontalAlignment="Left">
+      <TextBlock Text="{loc:Loc settings.tab.audio}" Classes="title" />
+      <TextBlock Text="{loc:Loc settings.audioIntro}" Classes="hint" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Loc settings.audioNoDevices}" Foreground="#E88" IsVisible="{Binding !HasDevices}" TextWrapping="Wrap" />
+
+      <TextBlock Text="{loc:Loc settings.audioSend}" Classes="section" Margin="0,12,0,0" />
+      <RadioButton GroupName="audioSend" Content="{loc:Loc settings.audioOff}"
+                   IsChecked="{Binding TransmitIndex, Converter={x:Static conv:IndexConverter.Instance}, ConverterParameter=0}" />
+      <RadioButton GroupName="audioSend" Content="{loc:Loc settings.audioSendDevice}"
+                   IsChecked="{Binding TransmitIndex, Converter={x:Static conv:IndexConverter.Instance}, ConverterParameter=1}" />
+      <ComboBox ItemsSource="{Binding PlaybackDevices}" SelectedIndex="{Binding CaptureDeviceIndex}"
+                IsEnabled="{Binding IsTransmitting}" MinWidth="360" Margin="26,0,0,0">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="audio:AudioDeviceInfo">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <TextBlock Text="{loc:Loc settings.audioPlay}" Classes="section" Margin="0,16,0,0" />
+      <RadioButton GroupName="audioPlay" Content="{loc:Loc settings.audioOff}"
+                   IsChecked="{Binding PlaybackIndex, Converter={x:Static conv:IndexConverter.Instance}, ConverterParameter=0}" />
+      <RadioButton GroupName="audioPlay" Content="{loc:Loc settings.audioStandardDevice}"
+                   IsChecked="{Binding PlaybackIndex, Converter={x:Static conv:IndexConverter.Instance}, ConverterParameter=1}" />
+      <RadioButton GroupName="audioPlay" Content="{loc:Loc settings.audioChooseDevice}"
+                   IsChecked="{Binding PlaybackIndex, Converter={x:Static conv:IndexConverter.Instance}, ConverterParameter=2}" />
+      <ComboBox ItemsSource="{Binding PlaybackDevices}" SelectedIndex="{Binding PlaybackDeviceIndex}"
+                IsEnabled="{Binding IsChoosingPlayback}" MinWidth="360" Margin="26,0,0,0">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="audio:AudioDeviceInfo">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <CheckBox IsChecked="{Binding Exclusive}" Content="{loc:Loc settings.audioExclusive}" Margin="0,4,0,0" />
+      <TextBlock Text="{loc:Loc settings.audioExclusiveHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding DeviceHint}" Classes="hint" Margin="0,8,0,0" TextWrapping="Wrap" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,92 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DeskPair.Desktop.ViewModels"
+        xmlns:loc="using:DeskPair.Desktop.Localization"
+        Icon="/Assets/deskpair.ico"
+        x:Class="DeskPair.Desktop.Views.FileTransferWindow"
+        x:DataType="vm:FileTransferViewModel"
+        Title="{Binding Title}"
+        Width="1100" Height="700">
+  <Window.Resources>
+    <DataTemplate x:Key="FileRowTemplate" x:DataType="vm:FileRow">
+      <Grid ColumnDefinitions="24,*,90,130">
+        <TextBlock Text="{Binding Icon}" />
+        <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+        <TextBlock Grid.Column="2" Text="{Binding SizeText}" HorizontalAlignment="Right" Foreground="#888" />
+        <TextBlock Grid.Column="3" Text="{Binding ModifiedText}" HorizontalAlignment="Right" Foreground="#888" Margin="8,0,0,0" />
+      </Grid>
+    </DataTemplate>
+  </Window.Resources>
+  <Grid>
+    <Grid RowDefinitions="*,Auto" Margin="8">
+      <Grid ColumnDefinitions="*,Auto,*">
+        <!-- local -->
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="{loc:Loc files.local}" FontWeight="SemiBold" Margin="0,0,0,4" />
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,4">
+            <Button Content="{loc:Loc files.up}" Command="{Binding LocalUpCommand}" />
+            <TextBox Grid.Column="1" Text="{Binding LocalPath}" Margin="4,0" />
+            <Button Grid.Column="2" Content="{loc:Loc files.refresh}" Command="{Binding RefreshLocalCommand}" />
+          </Grid>
+          <TextBlock DockPanel.Dock="Bottom" Text="{Binding LocalError}" Foreground="#F66" />
+          <ListBox ItemsSource="{Binding LocalEntries}" SelectedItem="{Binding SelectedLocal}" ItemTemplate="{StaticResource FileRowTemplate}" x:Name="LocalList" />
+        </DockPanel>
+        <!-- transfer buttons -->
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8" Margin="8,0">
+          <Button Content="{loc:Loc files.send}" Command="{Binding SendCommand}" HorizontalAlignment="Stretch" />
+          <Button Content="{loc:Loc files.receive}" Command="{Binding ReceiveCommand}" HorizontalAlignment="Stretch" />
+        </StackPanel>
+        <!-- remote -->
+        <DockPanel Grid.Column="2">
+          <TextBlock DockPanel.Dock="Top" Text="{loc:Loc files.remote}" FontWeight="SemiBold" Margin="0,0,0,4" />
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,4">
+            <Button Content="{loc:Loc files.up}" Command="{Binding RemoteUpCommand}" />
+            <TextBox Grid.Column="1" Text="{Binding RemotePath}" Margin="4,0" />
+            <Button Grid.Column="2" Content="{loc:Loc files.refresh}" Command="{Binding RefreshRemoteCommand}" />
+            <Button Grid.Column="3" Content="{loc:Loc files.newFolder}" Command="{Binding NewRemoteFolderCommand}" Margin="4,0,0,0" />
+            <Button Grid.Column="4" Content="{loc:Loc files.delete}" Command="{Binding DeleteRemoteCommand}" Margin="4,0,0,0" />
+          </Grid>
+          <TextBlock DockPanel.Dock="Bottom" Text="{Binding RemoteError}" Foreground="#F66" />
+          <ListBox ItemsSource="{Binding RemoteEntries}" SelectedItem="{Binding SelectedRemote}" ItemTemplate="{StaticResource FileRowTemplate}" x:Name="RemoteList" />
+        </DockPanel>
+      </Grid>
+      <!-- jobs -->
+      <Border Grid.Row="1" BorderBrush="#444" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,8,0,0" MaxHeight="180">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="{loc:Loc files.jobs}" FontWeight="SemiBold" />
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Jobs}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TransferRow">
+                  <Grid ColumnDefinitions="*,160,Auto" Margin="0,2">
+                    <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <ProgressBar Grid.Column="1" Value="{Binding Progress}" Minimum="0" Maximum="100" Margin="8,0" />
+                    <Button Grid.Column="2" Content="{loc:Loc files.cancelJob}" IsVisible="{Binding IsActive}"
+                            Command="{Binding $parent[ItemsControl].((vm:FileTransferViewModel)DataContext).CancelJobCommand}" CommandParameter="{Binding}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+    <!-- login overlay -->
+    <Border Background="#CC202020" IsVisible="{Binding ShowOverlay}">
+      <Border HorizontalAlignment="Center" VerticalAlignment="Center" Background="#2A2A2A" CornerRadius="8" Padding="28" MinWidth="360">
+        <StackPanel Spacing="12">
+          <TextBlock Text="{Binding Target}" FontSize="20" FontWeight="SemiBold" Foreground="White" />
+          <TextBlock Text="{Binding Status}" Foreground="#CCC" />
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+          <TextBox Text="{Binding Password}" PasswordChar="●" Watermark="{loc:Loc session.password}" IsVisible="{Binding NeedsPassword}" x:Name="PasswordBox"
+                   InputMethod.IsInputMethodEnabled="False" TextInputOptions.ContentType="Password" />
+          <TextBlock Text="{Binding ErrorText}" Foreground="#F66" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="{loc:Loc session.cancel}" Command="{Binding CancelCommand}" />
+            <Button Content="{loc:Loc session.login}" Command="{Binding LoginCommand}" IsVisible="{Binding NeedsPassword}" IsDefault="True" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+  </Grid>
+</Window>

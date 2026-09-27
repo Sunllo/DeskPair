@@ -1,0 +1,87 @@
+# Versions are pinned, never ranges: the point of the conformance vectors is that a build is reproducible,
+# and a floating dependency would undo that.
+
+[versions]
+kotlin = "2.4.20"
+agp = "8.13.2"
+coroutines = "1.11.0"
+serialization = "1.11.0"
+cryptography = "0.6.0"
+wire = "7.0.3"
+ktor = "3.6.0"
+# Compose 1.12 and later require compileSdk 37, which AGP 8.13 will not compile against. 1.11.x is the
+# last line that builds here, and nothing in this app needs what came after it.
+codeScanner = "16.1.0"
+composeBom = "2026.06.01"
+activityCompose = "1.12.4"
+# For AppCompatDelegate.setApplicationLocales, the per-app language that works below Android 13.
+appcompat = "1.7.1"
+junit = "4.13.2"
+lifecycle = "2.9.4"
+
+[libraries]
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+
+# The one third-party dependency that reaches platform crypto. It sits behind com.sunllo.deskpair.crypto.Crypto
+# so it can be replaced without the protocol code noticing.
+cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptography" }
+cryptography-provider-jdk = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk", version.ref = "cryptography" }
+cryptography-provider-apple = { module = "dev.whyoleg.cryptography:cryptography-provider-apple", version.ref = "cryptography" }
+cryptography-provider-cryptokit = { module = "dev.whyoleg.cryptography:cryptography-provider-cryptokit", version.ref = "cryptography" }
+
+# protos/sunllo/*.proto stays the single source of truth for all four platforms; Wire reads it directly and
+# needs no protoc on the build machine.
+wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
+
+# Raw TCP and UDP sockets that exist on the JVM, Android and Kotlin/Native alike.
+ktor-network = { module = "io.ktor:ktor-network", version.ref = "ktor" }
+
+# The HTTP half of the same library, for the portal's JSON API. Ktor rather than HttpURLConnection and
+# NSURLSession behind an expect/actual, because that is two hand-written HTTP clients to keep in step for
+# three endpoints, and ktor is already here at a pinned version. Ktor has no common engine, so naming one
+# per platform is not a choice.
+#
+# CIO rather than OkHttp on Android and the JVM. The OkHttp engine drags in okhttp-android 5.5.0, which
+# refuses to be compiled against anything below compileSdk 37 -- and AGP 8.13 will not compile against 37,
+# which is the same ceiling that pins Compose to 1.11.x above. CIO is pure Kotlin on ktor-network, which is
+# already here, so it adds an engine without adding a platform dependency or moving that ceiling.
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+# Icons. material3 no longer brings either of these transitively.
+#
+# This was material-icons-core alone while the app used six glyphs. The redesign gives every settings row
+# and every tab a leading icon, and core carries about forty in total — none of them a monitor, a shield, a
+# network or a keyboard. Extended is the rest of the Material set, and it is large: several megabytes of
+# generated Kotlin, all of it unused objects that R8 removes from a minified build. This app has only a
+# debug build type today, so the size is currently real. That is the accepted cost; the alternative is
+# hand-drawing twenty vectors and maintaining them.
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+
+# QR scanning. Chosen over ML Kit + CameraX for three reasons that all matter for a feature nobody uses
+# twice: the module is downloaded on demand rather than bundled, it brings its own scanning UI, and it
+# needs no CAMERA permission in the manifest because the scan happens in Play Services' own activity.
+play-services-code-scanner = { module = "com.google.android.gms:play-services-code-scanner", version.ref = "codeScanner" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+junit = { module = "junit:junit", version.ref = "junit" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+wire = { id = "com.squareup.wire", version.ref = "wire" }

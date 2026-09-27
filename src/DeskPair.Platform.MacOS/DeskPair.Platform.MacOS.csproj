@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>MacOS implementation of the platform contracts (in progress).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <!-- Labels a cursor shape by its pixels when the private seed that normally identifies it is unavailable. -->
+    <PackageReference Include="System.IO.Hashing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeskPair.Platform.Abstractions\DeskPair.Platform.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The pseudo-terminal code both Unix systems share; internal to each assembly, so the two copies never meet. -->
+    <Compile Include="..\Shared\UnixTerminal\*.cs" Link="Terminal\Unix\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

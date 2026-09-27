@@ -1,0 +1,97 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:DeskPair.Desktop.Controls"
+        xmlns:vm="using:DeskPair.Desktop.ViewModels"
+        xmlns:views="using:DeskPair.Desktop.Views"
+        xmlns:loc="using:DeskPair.Desktop.Localization"
+        Icon="/Assets/deskpair.ico"
+        x:Class="DeskPair.Desktop.Views.ConnectionManagerWindow"
+        x:DataType="vm:ConnectionManagerViewModel"
+        Title="{loc:Loc cm.title}"
+        SizeToContent="Height" MinHeight="56"
+        WindowStartupLocation="Manual" CanResize="False" ShowInTaskbar="False"
+        SystemDecorations="None" TransparencyLevelHint="Transparent" Background="Transparent">
+  <Panel>
+   <!-- collapsed: just the handle in the corner, so the card never sits on top of the work -->
+   <Border IsVisible="{Binding IsCollapsed}" Width="44" Height="44" Margin="6" CornerRadius="22"
+           Background="#2E7CF6" BoxShadow="0 4 18 0 #66000000"
+           HorizontalAlignment="Right" VerticalAlignment="Bottom">
+     <Button Content="▲" Command="{Binding ToggleCollapsedCommand}" ToolTip.Tip="{loc:Loc cm.expand}"
+             Background="Transparent" BorderThickness="0" Foreground="White" FontSize="15"
+             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+             HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+   </Border>
+   <Border Background="#F7F7F9" CornerRadius="14" Padding="14" Margin="6" BoxShadow="0 4 18 0 #66000000"
+           IsVisible="{Binding !IsCollapsed}">
+    <StackPanel Spacing="10">
+      <!-- header: draggable -->
+      <Grid ColumnDefinitions="*,Auto" x:Name="Header" Background="Transparent">
+        <TextBlock Text="{loc:Loc cm.title}" Foreground="#666" FontSize="12" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="▼" Command="{Binding CollapseCommand}" ToolTip.Tip="{loc:Loc cm.collapse}"
+                Background="Transparent" Foreground="#666" Padding="6,0" BorderThickness="0" />
+      </Grid>
+      <TextBlock Text="{loc:Loc cm.noConnections}" Foreground="#888" HorizontalAlignment="Center" IsVisible="{Binding !HasConnections}" />
+      <ItemsControl ItemsSource="{Binding Connections}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CmConnection">
+            <Border Background="White" CornerRadius="10" Padding="12" Margin="0,0,0,8" BorderBrush="#E3E3E8" BorderThickness="1">
+              <StackPanel Spacing="8">
+                <!-- peer -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Border Width="56" Height="56" CornerRadius="28" Background="#2E7CF6" VerticalAlignment="Top">
+                    <TextBlock Text="👤" FontSize="26" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Margin="12,0" Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <controls:PlatformIcon Platform="{Binding PeerPlatform}" Foreground="#555" Width="15" Height="15" VerticalAlignment="Center"
+                                             ToolTip.Tip="{Binding PeerPlatform}" />
+                      <TextBlock Text="{Binding PeerName}" FontSize="16" FontWeight="Bold" Foreground="#222" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <TextBlock Foreground="#777" FontSize="12"><Run Text="{loc:Loc cm.deviceId}" /><Run Text="{Binding PeerIdSpaced}" /></TextBlock>
+                    <TextBlock Foreground="#777" FontSize="12" Text="{Binding Address}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Foreground="#777" FontSize="12" Text="{Binding Description}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Top">
+                    <Button Content="{loc:Loc cm.accept}" Command="{Binding AcceptCommand}" IsVisible="{Binding IsPending}" IsEnabled="{Binding CanAccept}" Background="#2E7CF6" Foreground="White" Padding="12,4" CornerRadius="6" />
+                    <Button Content="{loc:Loc cm.reject}" Command="{Binding RejectCommand}" IsVisible="{Binding IsPending}" Background="#E8E8EC" Foreground="#333" Padding="12,4" CornerRadius="6" />
+                    <Button Content="{loc:Loc cm.disconnect}" Command="{Binding CloseCommand}" IsVisible="{Binding IsAuthorized}" Background="#F05A5A" Foreground="White" Padding="12,4" CornerRadius="6" />
+                  </StackPanel>
+                </Grid>
+                <Border Height="1" Background="#ECECF0" />
+                <!-- permissions -->
+                <TextBlock Text="{loc:Loc cm.allowAccess}" Foreground="#555" FontSize="13" />
+                <!-- A shell: its own switch, saying whose shell it is. Unticked until somebody here ticks it. -->
+                <StackPanel IsVisible="{Binding IsTerminal}" Spacing="4">
+                  <CheckBox IsChecked="{Binding Terminal}" Foreground="#333">
+                    <TextBlock Text="{Binding TerminalLabel}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                  </CheckBox>
+                  <TextBlock Text="{loc:Loc cm.terminalHint}" Foreground="#8A5A00" FontSize="12" TextWrapping="Wrap" Margin="26,0,0,0" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" IsVisible="{Binding ShowStandardPermissions}">
+                  <CheckBox Grid.Row="0" Grid.Column="0" IsChecked="{Binding Audio}" Foreground="#333"><TextBlock Text="{loc:Loc cm.perm.audio}" /></CheckBox>
+                  <CheckBox Grid.Row="0" Grid.Column="1" IsChecked="{Binding Keyboard}" Foreground="#333"><TextBlock Text="{loc:Loc cm.perm.input}" /></CheckBox>
+                  <CheckBox Grid.Row="1" Grid.Column="0" IsChecked="{Binding Files}" Foreground="#333"><TextBlock Text="{loc:Loc cm.perm.files}" /></CheckBox>
+                  <CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding Clipboard}" Foreground="#333"><TextBlock Text="{loc:Loc cm.perm.clipboard}" /></CheckBox>
+                </Grid>
+                <!-- chat (collapsible) -->
+                <ToggleButton Content="{loc:Loc session.chat}" IsChecked="{Binding ChatOpen}" IsVisible="{Binding IsAuthorized}" HorizontalAlignment="Left" Background="#E8E8EC" Foreground="#333" Padding="10,3" CornerRadius="6" />
+                <Border Height="170" IsVisible="{Binding ChatOpen}" Background="#F3F3F6" CornerRadius="8" Padding="4">
+                  <views:ChatView DataContext="{Binding Chat}" Foreground="#222" />
+                </Border>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Border BorderBrush="#E3E3E8" BorderThickness="0,1,0,0" Padding="0,6,0,0" MaxHeight="120" IsVisible="{Binding Transfers.Count}">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="{loc:Loc cm.transfers}" FontWeight="SemiBold" Foreground="#333" />
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Transfers}" Foreground="#333" />
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </StackPanel>
+   </Border>
+  </Panel>
+</Window>

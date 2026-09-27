@@ -1,0 +1,152 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:DeskPair.Desktop.Controls"
+        xmlns:vm="using:DeskPair.Desktop.ViewModels"
+        xmlns:views="using:DeskPair.Desktop.Views"
+        xmlns:conv="using:DeskPair.Desktop.Converters"
+        xmlns:loc="using:DeskPair.Desktop.Localization"
+        Icon="/Assets/deskpair.ico"
+        x:Class="DeskPair.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{loc:Loc app.title}"
+        Width="900" Height="620" MinWidth="720" MinHeight="480"
+        Background="#12151A"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="34">
+  <!-- The client area reaches the top of the window, so the app's own colours run edge to edge and only the
+       system's minimise/maximise/close float above them. OffScreenMargin keeps a maximised window unclipped. -->
+  <Panel Margin="{Binding $parent[Window].OffScreenMargin}">
+    <Grid ColumnDefinitions="188,*">
+    <Border Background="#171A1F" Padding="0,40,0,14">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="18,0,18,22" Spacing="8">
+          <Image Source="/Assets/deskpair.ico" Width="40" Height="40" HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Loc app.title}" FontSize="15" FontWeight="SemiBold"
+                     HorizontalAlignment="Center" TextAlignment="Center" />
+        </StackPanel>
+        <!--
+          Who is signed in, at the foot of the rail.
+
+          It used to be readable only by opening the account tab and reading a sentence there, so the
+          window could not answer "whose account is this" without being navigated. Down here it is answered
+          by looking, and clicking it opens the tab that changes it.
+        -->
+        <Button DockPanel.Dock="Bottom" Classes="account" Command="{Binding OpenAccountCommand}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                Margin="10,14,10,0" Padding="8,7">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Width="30" Height="30" CornerRadius="8" VerticalAlignment="Center"
+                    Background="{Binding IsSignedIn, Converter={x:Static conv:BoolColour.BlueGrey}}">
+              <Path Fill="#FFFFFF" Stretch="Uniform" Margin="7"
+                    Data="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.5-8 5.5V22h16v-2.5c0-3-3.6-5.5-8-5.5Z" />
+            </Border>
+            <StackPanel VerticalAlignment="Center" Spacing="1" MaxWidth="110">
+              <TextBlock Text="{Binding AccountLine}" FontSize="12.5" Foreground="#E6EAF0"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding AccountDetail}" FontSize="11" Foreground="#8A929E"
+                         TextTrimming="CharacterEllipsis"
+                         IsVisible="{Binding AccountDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+          </StackPanel>
+        </Button>
+        <ListBox SelectedIndex="{Binding SelectedSection}" Background="Transparent" BorderThickness="0" VerticalAlignment="Top">
+          <ListBoxItem Content="{loc:Loc nav.remote}" />
+          <ListBoxItem Content="{loc:Loc nav.devices}" />
+          <ListBoxItem Content="{loc:Loc nav.history}" />
+          <ListBoxItem Content="{loc:Loc nav.settings}" />
+        </ListBox>
+      </DockPanel>
+    </Border>
+    <Grid Grid.Column="1" Margin="0,34,0,0" RowDefinitions="Auto,*">
+      <views:HomeView Grid.Row="1" DataContext="{Binding Home}" IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsHomeSelected}" />
+      <views:DeviceListView Grid.Row="1" DataContext="{Binding Devices}" IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsDevicesSelected}" />
+      <views:ConnectionHistoryView Grid.Row="1" DataContext="{Binding History}" IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsHistorySelected}" />
+      <views:SettingsView Grid.Row="1" DataContext="{Binding Settings}" IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsSettingsSelected}" />
+
+      <!-- A newer version exists. Above every page rather than on the home view, because the reader may
+           be anywhere; and never a modal, because this is news rather than something to decide now.
+           In its own row, not floating: floating covered the ID and the one-time password, which are the
+           two things somebody opens this window to read. -->
+      <Border Grid.Row="0" DataContext="{Binding Update}" IsVisible="{Binding IsVisible}"
+              HorizontalAlignment="Stretch" Margin="16,0,16,12"
+              Background="#243044" BorderBrush="#3A4A66" BorderThickness="1" CornerRadius="10"
+              Padding="14,10" BoxShadow="0 4 16 0 #66000000">
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+            <TextBlock Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <!-- Two buttons, one shown: install when the manifest is signed and names a file for this
+                 machine, otherwise the download page. -->
+            <Button Grid.Column="1" Content="{loc:Loc update.install}" Command="{Binding InstallCommand}" Classes="accent"
+                    IsVisible="{Binding CanInstall}" Margin="12,0,0,0" />
+            <Button Grid.Column="2" Content="{loc:Loc update.get}" Command="{Binding GetCommand}"
+                    IsVisible="{Binding !CanInstall}" Margin="12,0,0,0" />
+            <Button Grid.Column="3" Content="{loc:Loc update.dismiss}" Command="{Binding DismissCommand}"
+                    Classes="flat" Margin="8,0,0,0" IsVisible="{Binding !IsInstalling}" />
+          </Grid>
+          <!-- Said out loud either way: what the button will and will not do. -->
+          <TextBlock Text="{loc:Loc update.manual}" Classes="hint" TextWrapping="Wrap" IsVisible="{Binding !CanInstall}" />
+          <TextBlock Text="{loc:Loc update.signed}" Classes="hint" TextWrapping="Wrap" IsVisible="{Binding CanInstall}" />
+          <TextBlock Text="{Binding Progress}" Classes="hint" TextWrapping="Wrap"
+                     IsVisible="{Binding Progress, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="{Binding Notice}" Classes="hint" TextWrapping="Wrap"
+                     IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Someone is connecting to this computer: say so without stealing the screen. -->
+      <ItemsControl Grid.Row="1" DataContext="{Binding Incoming}" ItemsSource="{Binding Items}" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="16,0,16,16">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:IncomingConnection">
+            <Border Background="#243044" BorderBrush="#3A4A66" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,6,0,0"
+                    BoxShadow="0 4 16 0 #66000000">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,10,0">
+                  <Ellipse Width="9" Height="9" VerticalAlignment="Center"
+                           Fill="{Binding IsAuthorized, Converter={x:Static conv:BoolColour.GreenAmber}}" />
+                  <controls:PlatformIcon Platform="{Binding Platform}" Foreground="#9FB0C8" Width="16" Height="16"
+                                         VerticalAlignment="Center" ToolTip.Tip="{Binding Platform}" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <Button Grid.Column="2" Content="{loc:Loc incoming.dismiss}" Background="Transparent" BorderThickness="0" Foreground="#8A929E"
+                        Command="{Binding $parent[ItemsControl].((vm:IncomingConnectionsViewModel)DataContext).DismissCommand}"
+                        CommandParameter="{Binding}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Grid>
+    </Grid>
+
+    <!-- Drag the window by the strip the title bar used to occupy. -->
+    <Border x:Name="TitleStrip" Height="34" VerticalAlignment="Top" Background="Transparent" />
+
+    <!--
+      What just happened, in one place, for ten seconds.
+
+      Every screen used to keep its own line of text under whatever control it belonged to, set when
+      something happened and cleared when the next thing happened. On a page somebody sets once and
+      leaves, the next thing never happens, so a confirmation stayed there reading as a description of
+      the page: a language notice sitting under the recording settings, for instance, looking like a
+      warning about them.
+
+      Over the content rather than in it, so nothing moves when it appears and nothing is left behind
+      when it goes.
+    -->
+    <Border DataContext="{Binding Toasts}"
+            IsVisible="{Binding IsVisible}"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,24"
+            MaxWidth="560" CornerRadius="8" Padding="16,11"
+            Background="#242A33" BorderThickness="1" BorderBrush="#3A424E"
+            BoxShadow="0 6 20 0 #60000000">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <!-- The same red the rest of the app uses for bad news, so a failure does not look like a receipt. -->
+        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   Foreground="#E6EAF0" Classes.problem="{Binding IsProblem}" />
+        <Button Content="✕" Command="{Binding HideCommand}" Classes="flat"
+                VerticalAlignment="Center" Padding="6,2" FontSize="12" />
+      </StackPanel>
+    </Border>
+  </Panel>
+</Window>

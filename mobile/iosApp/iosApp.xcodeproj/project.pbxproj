@@ -1,0 +1,330 @@
+// !$*UTF8*$!
+// Written by hand rather than generated, because nothing on the build machine generates Xcode projects and
+// a project this small does not need one. It uses a file-system synchronised group, so adding a Swift file
+// under iosApp/ needs no change here.
+//
+// The Kotlin framework is built by a run-script phase, so no separate Gradle step is needed before a build.
+// It is a static framework: it is linked into the binary rather than embedded, so nothing has to sign it.
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		5000000000000000000000A1 /* iosApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = iosApp;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFileReference section */
+		5000000000000000000000B1 /* DeskPair.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeskPair.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5000000000000000000000C1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5000000000000000000000D1 = {
+			isa = PBXGroup;
+			children = (
+				5000000000000000000000A1 /* iosApp */,
+				5000000000000000000000D2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5000000000000000000000D2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5000000000000000000000B1 /* DeskPair.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5000000000000000000000E1 /* iosApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5000000000000000000000F2 /* Build configuration list for PBXNativeTarget "iosApp" */;
+			buildPhases = (
+				5000000000000000000000C4 /* Build Kotlin framework */,
+				5000000000000000000000C2 /* Sources */,
+				5000000000000000000000C1 /* Frameworks */,
+				5000000000000000000000C3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5000000000000000000000A1 /* iosApp */,
+			);
+			name = iosApp;
+			productName = iosApp;
+			productReference = 5000000000000000000000B1 /* DeskPair.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5000000000000000000000E2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					5000000000000000000000E1 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = 5000000000000000000000F1 /* Build configuration list for PBXProject "iosApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				"zh-Hant",
+				"zh-Hans",
+				ja,
+				ko,
+				de,
+				fr,
+				es,
+				"pt-BR",
+				ru,
+				Base,
+			);
+			mainGroup = 5000000000000000000000D1;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5000000000000000000000D2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5000000000000000000000E1 /* iosApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5000000000000000000000C3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5000000000000000000000C4 /* Build Kotlin framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build Kotlin framework";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Builds the Kotlin framework this target links against, for whichever SDK Xcode is building. Doing it\n# here rather than by hand beforehand is what makes a device build possible at all: the two SDKs need\n# different slices, and the project this replaced named the simulator one in a setting.\n#\n# Gradle does its own up-to-date checking, so this phase is declared always out of date and a no-op build\n# costs about a second.\nif [ \"$ACTION\" = \"indexbuild\" ]; then exit 0; fi\nif [ -z \"$JAVA_HOME\" ] && [ -x /usr/libexec/java_home ]; then\n  JAVA_HOME=$(/usr/libexec/java_home 2>/dev/null) && export JAVA_HOME\nfi\ncase \"$SDK_NAME\" in\n  iphonesimulator*) KOTLIN_TARGET=IosSimulatorArm64 ;;\n  *) KOTLIN_TARGET=IosArm64 ;;\nesac\ncd \"$SRCROOT/..\" || exit 1\nexec ./gradlew --quiet \":shared:link${CONFIGURATION}Framework${KOTLIN_TARGET}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5000000000000000000000C2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5000000000000000000000FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		5000000000000000000000FB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		5000000000000000000000FC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_TEAM = F27AC4MJ76;
+				// The shared module declares iosSimulatorArm64 and no Intel simulator, so an x86_64 slice has
+				// nothing to link against. Saying so here fails the build honestly rather than at the linker,
+				// which is what a generic simulator destination used to do. An Intel Mac would need iosX64()
+				// adding to shared/build.gradle.kts first.
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				ENABLE_PREVIEWS = YES;
+				// Where the run-script phase leaves the Kotlin framework. Two slices, because a device and a
+				// simulator need different ones and a single path can only ever serve one of them.
+				"FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/bin/iosSimulatorArm64/debugFramework",
+				);
+				"FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/bin/iosArm64/debugFramework",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "DeskPair uses the camera only to read the pairing code shown by DeskPair on a computer.";
+				// Answered once here so App Store Connect stops asking on every upload. The claim is that
+				// this app's encryption is exempt: it is mass-market software using only standard published
+				// algorithms -- AES-256-GCM, ECDH P-256, ECDSA P-256 -- and none of its own invention.
+				// That is a declaration the publisher makes, not something the build can decide; it was made
+				// on 2026-09-21. Changing the crypto means revisiting it.
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				// A computer on the same Wi-Fi is reached directly, without a relay. iOS blocks that silently
+				// unless the app says why it wants the local network.
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "DeskPair connects directly to computers on the same network, which is faster and keeps the screen off the internet.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				// Split per device because Apple requires an iPad app to accept all four orientations for
+				// multitasking -- a three-orientation list is rejected at upload with error 90474. An iPhone
+				// held upside down is a different matter: nothing here benefits from it and the camera for
+				// the pairing code ends up at the bottom of the screen.
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				MARKETING_VERSION = 0.4.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					DeskPairShared,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sunllo.deskpair;
+				PRODUCT_NAME = DeskPair;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5000000000000000000000FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_TEAM = F27AC4MJ76;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				ENABLE_PREVIEWS = YES;
+				"FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/bin/iosSimulatorArm64/releaseFramework",
+				);
+				"FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/bin/iosArm64/releaseFramework",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "DeskPair uses the camera only to read the pairing code shown by DeskPair on a computer.";
+				// Answered once here so App Store Connect stops asking on every upload. The claim is that
+				// this app's encryption is exempt: it is mass-market software using only standard published
+				// algorithms -- AES-256-GCM, ECDH P-256, ECDSA P-256 -- and none of its own invention.
+				// That is a declaration the publisher makes, not something the build can decide; it was made
+				// on 2026-09-21. Changing the crypto means revisiting it.
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "DeskPair connects directly to computers on the same network, which is faster and keeps the screen off the internet.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				// Split per device because Apple requires an iPad app to accept all four orientations for
+				// multitasking -- a three-orientation list is rejected at upload with error 90474. An iPhone
+				// held upside down is a different matter: nothing here benefits from it and the camera for
+				// the pairing code ends up at the bottom of the screen.
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				MARKETING_VERSION = 0.4.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					DeskPairShared,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sunllo.deskpair;
+				PRODUCT_NAME = DeskPair;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5000000000000000000000F1 /* Build configuration list for PBXProject "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5000000000000000000000FA /* Debug */,
+				5000000000000000000000FB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5000000000000000000000F2 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5000000000000000000000FC /* Debug */,
+				5000000000000000000000FD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5000000000000000000000E2 /* Project object */;
+}

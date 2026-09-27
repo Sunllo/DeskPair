@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="coverlet.collector" PrivateAssets="all" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Core\DeskPair.Core.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Relay\DeskPair.Relay.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Rendezvous\DeskPair.Rendezvous.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Protocol\DeskPair.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\DeskPair.Platform.Abstractions\DeskPair.Platform.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Shouldly" />
+  </ItemGroup>
+
+</Project>

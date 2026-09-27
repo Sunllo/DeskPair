@@ -1,0 +1,6 @@
+Connecting to another computer works again when no server is configured. The app asked the published directory where to signal when it was being connected to, and never when it was doing the connecting, so with the settings everybody has out of the box every attempt went to this machine and came back refused. This is the reason to update.
+Windows can now be reached while it is locked or nobody is signed in, if you turn it on in Settings. It needs a permanent password, because the temporary one is read off a screen that is not being shown. This replaces what earlier notes said about unattended access not existing.
+On macOS, a machine that had been running the product under its previous name keeps its identity: the same id, the same saved fingerprint on every device that trusted it, and the same permanent password.
+The macOS app itself is now notarised and stapled, not only the disk image it arrives in, so the first launch needs no network.
+Messages appear once, at the foot of the window, and clear themselves after ten seconds. Some of them used to stay until the window was closed.
+The name shown to the other side is the one from Settings in both directions. When this computer was the one calling, it used to send the operating system's account name instead.

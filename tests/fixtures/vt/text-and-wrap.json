@@ -1,0 +1,21 @@
+[
+  { "name": "plain text", "columns": 10, "rows": 3, "input": "hello", "lines": ["hello"], "cursor": [5, 0] },
+  { "name": "CR LF starts the next line", "columns": 10, "rows": 3, "input": "ab\r\ncd", "lines": ["ab", "cd"], "cursor": [2, 1] },
+  { "name": "LF alone keeps the column", "columns": 10, "rows": 3, "input": "ab\ncd", "lines": ["ab", "  cd"], "cursor": [4, 1] },
+  { "name": "backspace then overwrite", "columns": 10, "rows": 1, "input": "abc\bX", "lines": ["abX"], "cursor": [3, 0] },
+  { "name": "tab goes to the next stop of eight", "columns": 20, "rows": 1, "input": "a\tb", "lines": ["a       b"], "cursor": [9, 0] },
+  { "name": "a full screen scrolls into the scrollback", "columns": 5, "rows": 2, "input": "1\r\n2\r\n3", "lines": ["2", "3"], "cursor": [1, 1], "scrollback": ["1"] },
+  { "name": "CJK is two cells each", "columns": 10, "rows": 1, "input": "中文ab", "lines": ["中文ab"], "cursor": [6, 0] },
+  { "name": "an invalid byte is one replacement character", "columns": 10, "rows": 1, "inputHex": "61ff62", "lines": ["a�b"], "cursor": [3, 0] },
+  { "name": "a truncated UTF-8 sequence is one replacement character", "columns": 10, "rows": 1, "inputHex": "e4b862", "lines": ["�b"], "cursor": [2, 0] },
+  { "name": "printing in the last column leaves a pending wrap", "columns": 5, "rows": 2, "input": "abcde", "lines": ["abcde"], "cursor": [4, 0] },
+  { "name": "the next character after a pending wrap goes to the next line", "columns": 5, "rows": 2, "input": "abcdef", "lines": ["abcde", "f"], "cursor": [1, 1] },
+  { "name": "CR cancels a pending wrap", "columns": 5, "rows": 2, "input": "abcde\rX", "lines": ["Xbcde"], "cursor": [1, 0] },
+  { "name": "a wide character that does not fit wraps first", "columns": 5, "rows": 2, "input": "abcd中", "lines": ["abcd", "中"], "cursor": [2, 1] },
+  { "name": "without autowrap the last column is overwritten", "columns": 5, "rows": 2, "input": "\u001b[?7labcdefg", "lines": ["abcdg"], "cursor": [4, 0] },
+  { "name": "overwriting half of a wide character erases the other half", "columns": 10, "rows": 1, "input": "中\ra", "lines": ["a"], "cursor": [1, 0] },
+  { "name": "insert mode shifts the line right", "columns": 10, "rows": 1, "input": "abc\u001b[1G\u001b[4hX", "lines": ["Xabc"], "cursor": [1, 0] },
+  { "name": "new line mode makes LF return the carriage", "columns": 10, "rows": 2, "input": "\u001b[20hab\ncd", "lines": ["ab", "cd"], "cursor": [2, 1] },
+  { "name": "DEC line drawing", "columns": 10, "rows": 1, "input": "\u001b(0lqk\u001b(Bq", "lines": ["┌─┐q"], "cursor": [4, 0] },
+  { "name": "a DCS string is swallowed, not printed", "columns": 10, "rows": 1, "input": "a\u001bPq#0;1;2\u001b\\b", "lines": ["ab"], "cursor": [2, 0] }
+]

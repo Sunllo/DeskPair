@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "DeskPair usa la cámara solo para leer el código de emparejamiento que se muestra en una computadora.";
+"NSLocalNetworkUsageDescription" = "DeskPair se conecta directamente a las computadoras de esta red, sin pasar por un servidor.";

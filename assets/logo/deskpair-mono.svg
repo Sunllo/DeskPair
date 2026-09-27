@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" role="img" aria-label="Sunllo DeskPair">
+  <title>Sunllo DeskPair</title>
+  <defs>
+    <mask id="monoArrows">
+      <g transform="rotate(45 128 128)">
+        <rect x="40" y="40" width="176" height="176" rx="30" fill="#fff"/>
+      </g>
+      <g fill="none" stroke="#000" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M117 100 74 144l43 44"/>
+        <path d="M139 68l43 44-43 44"/>
+      </g>
+    </mask>
+  </defs>
+  <rect x="0" y="0" width="256" height="256" mask="url(#monoArrows)"/>
+</svg>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeskPair.Protocol\DeskPair.Protocol.csproj" />
+    <ProjectReference Include="..\DeskPair.Server.Shared\DeskPair.Server.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+[
+  { "name": "CUP is one-based row then column", "columns": 10, "rows": 3, "input": "\u001b[2;3HX", "lines": ["", "  X"], "cursor": [3, 1] },
+  { "name": "CUP clamps to the screen", "columns": 5, "rows": 2, "input": "\u001b[99;99HX", "lines": ["", "    X"], "cursor": [4, 1] },
+  { "name": "an empty parameter takes the default", "columns": 10, "rows": 2, "input": "\u001b[;5HX", "lines": ["    X"], "cursor": [5, 0] },
+  { "name": "relative moves", "columns": 10, "rows": 1, "input": "\u001b[3CA\u001b[1DB", "lines": ["   B"], "cursor": [4, 0] },
+  { "name": "save and restore the cursor", "columns": 10, "rows": 3, "input": "ab\u001b7\u001b[3;1Hc\u001b8d", "lines": ["abd", "", "c"], "cursor": [3, 0] },
+  { "name": "the cursor position report", "columns": 10, "rows": 3, "input": "\u001b[2;4H\u001b[6n", "lines": [], "cursor": [3, 1], "replies": ["\u001b[2;4R"] },
+  { "name": "device attributes", "columns": 10, "rows": 1, "input": "\u001b[c", "lines": [], "cursor": [0, 0], "replies": ["\u001b[?1;2c"] },
+  { "name": "erase to the end of the line", "columns": 10, "rows": 1, "input": "abcdef\u001b[4G\u001b[K", "lines": ["abc"], "cursor": [3, 0] },
+  { "name": "erase to the start of the line", "columns": 10, "rows": 1, "input": "abcdef\u001b[3G\u001b[1K", "lines": ["   def"], "cursor": [2, 0] },
+  { "name": "erase the whole display keeps the cursor", "columns": 5, "rows": 2, "input": "ab\r\ncd\u001b[2J", "lines": [], "cursor": [2, 1] },
+  { "name": "delete characters", "columns": 10, "rows": 1, "input": "abcdef\u001b[2G\u001b[2P", "lines": ["adef"], "cursor": [1, 0] },
+  { "name": "insert characters", "columns": 10, "rows": 1, "input": "abcdef\u001b[2G\u001b[2@", "lines": ["a  bcdef"], "cursor": [1, 0] },
+  { "name": "erase characters", "columns": 10, "rows": 1, "input": "abcdef\u001b[2G\u001b[3X", "lines": ["a   ef"], "cursor": [1, 0] },
+  { "name": "a line feed at the bottom of a region scrolls only the region", "columns": 5, "rows": 4, "input": "1\r\n2\r\n3\r\n4\u001b[2;3r\u001b[3;1H\n", "lines": ["1", "3", "", "4"], "cursor": [0, 2], "scrollback": [] },
+  { "name": "insert a line", "columns": 5, "rows": 3, "input": "a\r\nb\r\nc\u001b[2;1H\u001b[L", "lines": ["a", "", "b"], "cursor": [0, 1] },
+  { "name": "delete a line", "columns": 5, "rows": 3, "input": "a\r\nb\r\nc\u001b[1;1H\u001b[M", "lines": ["b", "c"], "cursor": [0, 0] },
+  { "name": "reverse index at the top scrolls down", "columns": 5, "rows": 2, "input": "a\u001b[1;1H\u001bMx", "lines": ["x", "a"], "cursor": [1, 0] },
+  { "name": "origin mode counts rows from the region", "columns": 5, "rows": 4, "input": "\u001b[2;3r\u001b[?6h\u001b[1;1HX", "lines": ["", "X"], "cursor": [1, 1] }
+]

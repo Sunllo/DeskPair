@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels.Settings"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.Settings.InputSettingsView"
+             x:DataType="vm:InputSettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="10" MaxWidth="600" HorizontalAlignment="Left">
+      <TextBlock Text="{loc:Loc settings.tab.input}" Classes="title" />
+      <TextBlock Text="{loc:Loc settings.inputIntro}" Classes="hint" TextWrapping="Wrap" />
+
+      <TextBlock Text="{loc:Loc settings.whenConnecting}" Classes="section" Margin="0,8,0,0" />
+      <CheckBox IsChecked="{Binding KeyboardTranslate}" Content="{loc:Loc session.keyboard.translate}" />
+      <TextBlock Text="{loc:Loc settings.keyboardTranslateHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap" />
+      <CheckBox IsChecked="{Binding LockAfterSessionEnd}" Content="{loc:Loc settings.lockAfterEnd}" />
+
+      <TextBlock Text="{loc:Loc settings.thisComputer}" Classes="section" Margin="0,14,0,0" />
+      <CheckBox IsChecked="{Binding KeyboardEnabled}" Content="{loc:Loc settings.allowKeyboard}" />
+      <CheckBox IsChecked="{Binding ClipboardEnabled}" Content="{loc:Loc settings.allowClipboard}" />
+      <CheckBox IsChecked="{Binding RestartEnabled}" Content="{loc:Loc settings.allowRestart}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

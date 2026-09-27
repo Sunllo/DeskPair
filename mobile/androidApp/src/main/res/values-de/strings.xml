@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DeskPair</string>
+
+    <!-- Verbinden -->
+    <string name="connect_title">Mit einem Computer verbinden</string>
+    <string name="connect_target">ID oder Adresse des anderen Computers</string>
+    <string name="connect_password">Passwort</string>
+    <string name="connect_action">Verbinden</string>
+    <string name="connect_retry">Erneut versuchen</string>
+
+    <string name="progress_looking_up">Computer wird gesucht</string>
+    <string name="progress_measuring">Dieses Netzwerk wird geprüft</string>
+    <string name="progress_punching">Direkter Weg wird geöffnet</string>
+    <string name="progress_connecting">Verbindung wird hergestellt …</string>
+    <string name="progress_waiting">Warten, bis die andere Person annimmt …</string>
+
+    <!-- In der Sitzung. Folgt dem Wortlaut des Desktops, damit beide Produkte dasselbe sagen. -->
+    <string name="session_disconnect">Trennen</string>
+    <string name="session_picture">Bild</string>
+    <string name="session_more">Mehr</string>
+    <!-- Über dem Bild angezeigt, wenn ein Teil der Sitzung stillschweigend nicht funktioniert. -->
+    <string name="audio_unavailable">Kein Ton: %1$s</string>
+    <string name="video_unavailable">Kein Bild: Dieses Smartphone hat keinen funktionierenden H.264-Decoder (%1$s)</string>
+    <!-- Die vier Bereiche der Sitzungsleiste. Kurz: sie stehen unter einem Symbol in einem schmalen Tab. -->
+    <string name="session_tab_actions">Aktionen</string>
+    <string name="session_tab_input">Touch</string>
+    <string name="session_tab_screen">Bildschirm</string>
+    <string name="session_tab_keyboard">Tasten</string>
+    <string name="session_gestures">So funktionieren Gesten</string>
+    <string name="session_hide">Ausblenden</string>
+    <string name="session_quality">Qualität</string>
+    <string name="session_display">Bildschirm</string>
+    <string name="session_scale">Skalierung</string>
+    <string name="session_fit">Einpassen</string>
+    <string name="session_original">1:1</string>
+    <string name="session_resolution">Auflösung</string>
+    <string name="session_resolution_original">Original</string>
+    <string name="session_resolution_failed">Die Auflösung konnte nicht geändert werden: %1$s</string>
+    <string name="session_remote_cursor">Zeiger der Gegenstelle</string>
+    <string name="session_remote_cursor_hint">Den Zeiger des anderen Computers zusätzlich zu Ihrem eigenen anzeigen.</string>
+    <string name="session_ctrl_alt_del">Strg+Alt+Entf</string>
+    <string name="session_lock">Sperren</string>
+    <string name="session_refresh">Aktualisieren</string>
+    <string name="session_reset_canvas">Ansicht zurücksetzen</string>
+    <string name="session_rtt">RTT</string>
+    <string name="session_waiting_for_picture">Warten auf den Bildschirm von %1$s …</string>
+    <string name="session_picture_late">Immer noch nichts. Der andere Computer steht möglicherweise am Sperr- oder Anmeldebildschirm, dessen Aufnahme Windows nicht zulässt – jemand muss ihn entsperren, bevor ein Bild erscheint.</string>
+    <string name="session_signal_platform">System</string>
+    <string name="session_signal_route">Route</string>
+    <string name="session_route_lan">Direkt, gleiches Netzwerk</string>
+    <string name="session_route_direct">Direkt</string>
+    <string name="session_route_punched">Peer-to-Peer</string>
+    <string name="session_route_relay">Über das Relay</string>
+    <string name="session_stalled">Verbindung verloren – warten</string>
+    <string name="session_stalled_hint">Das Bild ist das zuletzt angekommene</string>
+
+    <string name="quality_low">Niedrig</string>
+    <string name="quality_balanced">Ausgewogen</string>
+    <string name="quality_best">Beste</string>
+    <string name="display_label">Bildschirm %1$d</string>
+
+    <!-- Zeigermodi. Der Desktop hat eine echte Maus und daher keine Entsprechung. -->
+    <string name="mode_touch">Touch</string>
+    <string name="mode_mouse">Maus</string>
+
+    <string name="gesture_tap">Tippen mit einem Finger</string>
+    <string name="gesture_tap_touch">Klick an der berührten Stelle</string>
+    <string name="gesture_tap_mouse">Klick an der Zeigerposition</string>
+    <string name="gesture_two_tap">Tippen mit zwei Fingern</string>
+    <string name="gesture_two_tap_action">Rechtsklick</string>
+    <string name="gesture_drag">Ziehen mit einem Finger</string>
+    <string name="gesture_drag_touch">Bild verschieben</string>
+    <string name="gesture_drag_mouse">Zeiger bewegen</string>
+    <string name="gesture_two_drag">Ziehen mit zwei Fingern</string>
+    <string name="gesture_two_drag_action">Bild verschieben</string>
+    <string name="gesture_pinch">Auf- oder Zuziehen</string>
+    <string name="gesture_pinch_action">Bild zoomen</string>
+    <string name="gesture_three">Drei Finger nach oben oder unten</string>
+    <string name="gesture_three_action">Scrollrad</string>
+
+    <!-- Tastatur -->
+    <string name="keyboard_tab">Tastatur</string>
+    <string name="keyboard_type">Hier tippen</string>
+    <string name="keyboard_pin">Anheften</string>
+    <string name="keyboard_function">Fn</string>
+    <!-- Gruppennamen auf der Tastenleiste. Bewusst knapp: sie stehen in einer scrollenden Reihe von Tastenkappen. -->
+    <string name="keyboard_numpad">123</string>
+    <string name="keyboard_more">Mehr</string>
+    <string name="keyboard_ime">IME</string>
+    <string name="clipboard_send">Zwischenablage senden</string>
+
+    <string name="dialog_done">Fertig</string>
+
+    <!-- Startseite. Wortlaut aus der Strings.cs des Desktops übernommen, damit beide Produkte dasselbe sagen. -->
+    <string name="home_control_remote">Computer fernsteuern</string>
+    <string name="home_settings">Einstellungen</string>
+    <string name="home_favourites">Geräte</string>
+    <string name="home_no_favourites">Noch keine Geräte</string>
+    <string name="home_favourites_empty_hint">Tippen Sie auf das Herz neben einer der letzten Verbindungen, um sie hier zu behalten.</string>
+    <string name="home_recent">Zuletzt verbunden</string>
+    <string name="presence_online">Online</string>
+    <string name="presence_offline">Offline</string>
+    <string name="presence_unknown">Unbekannt</string>
+    <string name="home_no_recent">Noch keine Verbindungen</string>
+    <string name="home_add_favourite">In Geräten speichern</string>
+    <string name="home_remove_favourite">Aus Geräten entfernen</string>
+    <string name="home_forget_recent">Aus den letzten Verbindungen entfernen</string>
+    <string name="home_no_server">Kein Signalisierungsserver festgelegt. Öffnen Sie die Einstellungen, um sich per ID zu verbinden.</string>
+
+    <!-- Das Passwortblatt -->
+    <string name="connect_remember">Dieses Passwort merken</string>
+    <string name="connect_show_password">Passwort anzeigen</string>
+    <string name="connect_hide_password">Passwort ausblenden</string>
+    <string name="connect_cancel">Abbrechen</string>
+
+    <!-- Einstellungen -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_section_general">Allgemein</string>
+    <string name="settings_section_session">Bei Verbindungen zu anderen</string>
+    <string name="settings_view_only">Nur ansehen</string>
+    <string name="settings_view_only_hint">Zusehen, ohne etwas berühren zu können.</string>
+    <string name="settings_lock_after_end">Sperren, wenn die Sitzung endet</string>
+    <string name="settings_lock_after_end_hint">Den anderen Computer beim Trennen gesperrt lassen.</string>
+    <string name="session_input_refused">Der andere Computer nimmt keine Eingaben an.</string>
+    <string name="settings_section_network">Netzwerk</string>
+    <string name="favourites_ungrouped">Ohne Gruppe</string>
+    <string name="settings_section_account">Konto</string>
+    <string name="settings_account_signed_out">Nicht angemeldet</string>
+    <string name="settings_account_signed_out_hint">Melden Sie sich an, um Ihre Geräteliste zu synchronisieren</string>
+    <string name="settings_account_devices">Geräte: %1$d</string>
+    <string name="settings_portal">Portaladresse</string>
+    <string name="settings_portal_hint">Wo Ihr DeskPair-Konto liegt. Durch das Verknüpfen bleiben Ihre gespeicherten Computer auf allen Ihren Geräten dieselben.</string>
+    <string name="settings_device_name">Name für dieses Gerät</string>
+    <string name="settings_account_email">E-Mail-Adresse</string>
+    <string name="settings_account_password">Passwort</string>
+    <string name="settings_account_sign_in">Anmelden</string>
+    <string name="settings_account_register">Konto erstellen</string>
+    <string name="settings_account_email_required">Geben Sie Ihre E-Mail-Adresse ein.</string>
+    <string name="settings_account_password_required">Geben Sie Ihr Passwort ein.</string>
+    <string name="settings_account_verify">Konto erstellt. Bestätigen Sie %1$s über Ihren Posteingang und melden Sie sich dann an.</string>
+    <string name="settings_linked_to">Angemeldet als</string>
+    <string name="settings_linked">Angemeldet als %1$s.</string>
+    <string name="settings_unlink">Abmelden</string>
+    <string name="settings_unlinked">Abgemeldet.</string>
+    <string name="settings_unlinked_locally">Hier abgemeldet, aber der Server hat davon nichts erfahren (%1$s). Widerrufen Sie dieses Gerät auch auf der Website.</string>
+    <string name="settings_section_security">Sicherheit</string>
+    <string name="settings_section_about">Über DeskPair</string>
+
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system">System</string>
+    <string name="settings_recent_limit">Letzte Verbindungen</string>
+    <string name="settings_recent_limit_hint">Wie viele in der Liste bleiben.</string>
+    <string name="settings_recent_limit_invalid">Zwischen 1 und 200 Verbindungen</string>
+    <string name="settings_clear_recent">Letzte Verbindungen löschen</string>
+
+    <string name="settings_default_quality">Qualität</string>
+    <string name="settings_default_quality_hint">Womit neue Sitzungen beginnen.</string>
+    <string name="settings_quality_custom">Benutzerdefiniert</string>
+    <string name="settings_bitrate">Bitrate (kbps)</string>
+    <string name="settings_bitrate_invalid">Verwenden Sie eine Bitrate zwischen 100 und 200.000 kbps</string>
+    <string name="settings_fps">Bildrate</string>
+    <string name="settings_fps_invalid">Verwenden Sie eine Bildrate zwischen 5 und 120</string>
+    <string name="settings_lossless">Nachschärfen bei Stillstand</string>
+    <string name="settings_lossless_hint">Bis zur Pixelgenauigkeit nachschärfen, sobald sich das Bild nicht mehr bewegt.</string>
+    <string name="settings_fit_to_window">Einpassen</string>
+    <string name="settings_fit_to_window_hint">Den entfernten Bildschirm verkleinern, sodass er ganz sichtbar ist.</string>
+    <string name="settings_audio">Ton</string>
+    <string name="settings_audio_hint">Wiedergeben, was der entfernte Computer abspielt.</string>
+    <string name="settings_pointer_mode">Zeiger</string>
+
+    <string name="settings_server">Signalisierungsserver</string>
+    <string name="settings_self_hosted">Ich betreibe eigene Server</string>
+    <string name="settings_directory_hint">DeskPair fragt das Portal, welcher Signalisierungsserver zu verwenden ist; hier muss nichts eingetragen werden.</string>
+    <string name="settings_server_key">Öffentlicher Schlüssel des Servers</string>
+    <string name="settings_fetch_key">Vom Server abrufen</string>
+    <string name="settings_key_fetched">Öffentlicher Schlüssel abgerufen</string>
+    <string name="settings_key_fetch_failed">Der Schlüssel konnte nicht abgerufen werden: %1$s</string>
+    <string name="settings_key_invalid">Der öffentliche Schlüssel ist kein gültiges Base64; verwenden Sie „Vom Server abrufen“</string>
+    <string name="settings_key_missing">Ohne Serverschlüssel prüft eine Verbindung per ID nichts</string>
+    <string name="settings_server_required">Geben Sie zuerst den Signalisierungsserver ein</string>
+    <string name="settings_udp_media">Video über UDP</string>
+    <string name="settings_udp_media_hint">Flüssiger in einem guten Netzwerk, und fällt auf TCP zurück, wenn es das nicht ist.</string>
+    <string name="settings_force_relay">Immer ein Relay verwenden</string>
+    <string name="settings_force_relay_hint">Nie direkt verbinden, auch nicht im selben Netzwerk.</string>
+
+    <string name="settings_known_hosts">Vertraute Computer</string>
+    <string name="settings_known_hosts_hint">Entfernen Sie einen, um beim nächsten Wechsel seines Schlüssels erneut gefragt zu werden</string>
+    <string name="settings_forget">Vergessen</string>
+    <string name="settings_forget_all">Alle vergessen</string>
+    <string name="settings_no_known_hosts">Noch nichts vertraut</string>
+    <string name="settings_passwords">Gemerkte Passwörter</string>
+    <string name="settings_no_passwords">Keine Passwörter gemerkt</string>
+    <string name="settings_forget_passwords">Alle Passwörter vergessen</string>
+
+    <string name="settings_version">Version %1$s</string>
+
+    <!-- Die drei Tabs. Kurz genug, um bei keiner Schriftgröße unter einem Symbol der unteren Leiste umzubrechen. -->
+    <string name="nav_connect">Verbinden</string>
+    <string name="nav_favourites">Geräte</string>
+    <string name="nav_settings">Einstellungen</string>
+    <string name="nav_back">Zurück</string>
+    <string name="home_scan">Code scannen</string>
+    <string name="scan_not_deskpair">Das ist kein DeskPair-Code.</string>
+    <string name="scan_no_version">Diesem Code fehlt seine Version.</string>
+    <string name="scan_newer_version">Dieser Code stammt von einer neueren Version von DeskPair (v%1$d). Aktualisieren Sie diese App.</string>
+    <string name="scan_no_id">Dieser Code nennt keinen Computer.</string>
+    <string name="scan_damaged_key">Der Schlüssel in diesem Code ist beschädigt.</string>
+    <string name="scan_applied">Einstellungen von %1$s übernommen</string>
+    <string name="scan_unavailable">Der Scanner konnte auf diesem Gerät nicht gestartet werden.</string>
+    <string name="clipboard_send_image">Bild senden</string>
+    <string name="clipboard_image_sent">Bild gesendet – drücken Sie Strg+V (oder Cmd+V) auf dem entfernten Computer</string>
+    <string name="clipboard_image_known">Der entfernte Computer hat dieses Bild bereits</string>
+    <string name="clipboard_image_failed">Dieses Bild konnte nicht gesendet werden</string>
+    <string name="devices_edit">Bearbeiten</string>
+    <string name="devices_edit_title">Gespeichertes Gerät</string>
+    <string name="devices_edit_name">Name</string>
+    <string name="devices_edit_password">Passwort</string>
+    <string name="devices_edit_password_hint">Optional. Ein hier hinterlegtes Passwort wird verwendet, statt zu fragen – für einen Computer, den Sie oft erreichen.</string>
+    <string name="devices_edit_save">Speichern</string>
+    <string name="key_changed_title">Der Schlüssel dieses Computers hat sich geändert</string>
+    <string name="key_changed_body">%1$s zeigt nicht den Schlüssel vor, den er zuvor vorgezeigt hat.\n\nEr war %2$s…\nEr ist jetzt %3$s…\n\nDas passiert, wenn ein Computer neu installiert wird. Es passiert auch, wenn sich etwas für ihn ausgibt. Vertrauen Sie dem neuen Schlüssel nur, wenn Sie wissen, warum er sich geändert hat.</string>
+    <string name="key_changed_trust">Dem neuen Schlüssel vertrauen</string>
+    <string name="key_changed_cancel">Nicht jetzt</string>
+    <string name="devices_sign_in_required">Melden Sie sich an, um eine Geräteliste zu führen</string>
+    <string name="devices_sign_in_required_hint">Die Liste gehört zu Ihrem Konto und begleitet Sie daher auf Ihre anderen Geräte. Die Anmeldung finden Sie in den Einstellungen.</string>
+    <string name="account_error_bad_credentials">Zu dieser E-Mail-Adresse und diesem Passwort gibt es kein passendes Konto.</string>
+    <string name="account_error_not_verified">Bestätigen Sie zuerst Ihre E-Mail-Adresse. Sehen Sie in Ihrem Posteingang nach.</string>
+    <string name="account_error_disabled">Dieses Konto wurde deaktiviert.</string>
+    <string name="account_error_closed">Dieser Server nimmt keine neuen Konten an.</string>
+    <string name="account_error_email_taken">Zu dieser Adresse gibt es bereits ein Konto. Melden Sie sich stattdessen an.</string>
+    <string name="account_error_weak_password">Dieses Passwort ist zu kurz.</string>
+    <string name="account_error_bad_email">Das sieht nicht nach einer E-Mail-Adresse aus.</string>
+    <string name="account_error_too_many">Zu viele Versuche. Warten Sie ein paar Minuten und versuchen Sie es erneut.</string>
+    <string name="devices_edit_group">Gruppe</string>
+    <string name="devices_group_add">Neue Gruppe</string>
+    <string name="devices_group_rename">Gruppe umbenennen</string>
+    <string name="devices_group_delete">Gruppe löschen</string>
+    <string name="devices_group_name">Gruppenname</string>
+    <string name="devices_group_cancel">Abbrechen</string>
+    <string name="session_dropped">Die Verbindung ist abgebrochen.</string>
+    <string name="session_dropped_retrying">Die Verbindung ist abgebrochen. Neuer Versuch über das Relay.</string>
+    <string name="session_host_too_old">Das DeskPair auf diesem Computer ist älter, als diese App benötigt. Aktualisieren Sie DeskPair auf dem Computer, mit dem Sie sich verbinden.</string>
+    <string name="session_client_too_old">Diese App ist älter, als das DeskPair des Computers benötigt. Aktualisieren Sie DeskPair auf diesem Smartphone.</string>
+    <string name="session_unreachable_unknown_id">Beim Signalisierungsserver ist kein Computer mit der ID %1$s registriert.</string>
+    <string name="session_unreachable_offline">%1$s ist gerade nicht online.</string>
+    <string name="session_unreachable_busy">Der Signalisierungsserver ist ausgelastet. Versuchen Sie es gleich noch einmal.</string>
+    <string name="session_unreachable_no_relay">%1$s war nicht direkt erreichbar, und der Server hat kein Relay angeboten.</string>
+    <string name="session_unreachable_no_answer">Der Signalisierungsserver hat nicht geantwortet.</string>
+    <string name="session_failed_detail">Die Verbindung ist fehlgeschlagen: %1$s</string>
+    <string name="clipboard_too_large">Dieses Bild ist zu groß für die Zwischenablage, selbst verkleinert.</string>
+
+    <!-- Terminal -->
+    <string name="terminal_open">Terminal öffnen</string>
+    <string name="terminal_close">Schließen</string>
+    <string name="terminal_not_allowed">Dieser Computer erlaubt kein Terminal. Der Besitzer kann es unter Einstellungen › Sicherheit einschalten; ältere DeskPair-Versionen haben kein Terminal.</string>
+    <string name="terminal_opening">Shell wird geöffnet…</string>
+    <string name="terminal_ended">Die Shell wurde beendet (Exit-Code %1$d).</string>
+    <string name="terminal_ended_reason">Die Shell wurde beendet: %1$s</string>
+    <string name="terminal_failed">Die Shell konnte nicht geöffnet werden: %1$s</string>
+    <string name="terminal_new_shell">Neue Shell öffnen</string>
+    <string name="terminal_connection_lost">Die Verbindung wurde getrennt und die Shell mit ihr. Eine Shell überlebt ihre Verbindung nicht.</string>
+    <string name="terminal_paste">Einfügen</string>
+    <string name="terminal_paste_confirm">%1$d Zeilen in die Shell einfügen? Jede Zeile wird als Befehl ausgeführt.</string>
+</resources>

@@ -1,0 +1,46 @@
+# The servers on one machine, which is where a deployment starts and not where it should stay.
+#
+# The rendezvous must use host networking: bridge mode rewrites UDP source ports, and the rendezvous decides
+# NAT type and hole-punching from exactly those ports, so behind a bridge every peer looks symmetric and
+# every connection falls back to the relay. The relay shares that choice because it carries UDP media.
+services:
+  rendezvous:
+    build:
+      context: ..
+      dockerfile: deploy/rendezvous/Dockerfile
+    image: sunllo/deskpair-rendezvous:latest
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - rendezvous-data:/data
+    environment:
+      # Address peers dial, and where to poll it for health and load. StatsAddress is separate because the
+      # relay's admin port is not reachable at its public address here.
+      Rendezvous__Relays__0__Address: "relay.example.com:21117"
+      Rendezvous__Relays__0__StatsAddress: "127.0.0.1:21124"
+      Rendezvous__Relays__0__Region: "tw"
+      Rendezvous__Relays__0__AdminKey: "${RELAY_ADMIN_KEY:?set RELAY_ADMIN_KEY}"
+      Admin__ApiKey: "${RENDEZVOUS_ADMIN_KEY:?set RENDEZVOUS_ADMIN_KEY}"
+      Logging__Json: "true"
+
+  relay:
+    build:
+      context: ..
+      dockerfile: deploy/relay/Dockerfile
+    image: sunllo/deskpair-relay:latest
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      # 21124 only because the rendezvous holds 21114 on this machine. A relay with a box to itself keeps
+      # the default, and then the rendezvous needs no StatsAddress at all.
+      Relay__HttpPort: "21124"
+      Relay__Region: "tw"
+      # What this machine is willing to carry. Without it a full relay refuses nothing: it saturates the
+      # link, every session's quality collapses together, and the stats endpoint goes on reporting a
+      # comfortable session count.
+      Relay__MaxBitrateKbps: "100000"
+      Admin__ApiKey: "${RELAY_ADMIN_KEY:?set RELAY_ADMIN_KEY}"
+      Logging__Json: "true"
+
+volumes:
+  rendezvous-data:

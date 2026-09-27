@@ -1,0 +1,66 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DeskPair.Desktop.ViewModels.Settings"
+        xmlns:loc="using:DeskPair.Desktop.Localization"
+        x:Class="DeskPair.Desktop.Views.SignInWindow"
+        x:DataType="vm:AccountSettingsViewModel"
+        Icon="/Assets/deskpair.ico"
+        Title="{loc:Loc signIn.title}"
+        Width="400" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#12151A">
+  <StackPanel Margin="26,22,26,22" Spacing="10">
+    <!-- The same avatar as the rail, so the window that opens is plainly the thing that was clicked. -->
+    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,6">
+      <Border Width="40" Height="40" CornerRadius="10" Background="#2E6BD6">
+        <Path Fill="#FFFFFF" Stretch="Uniform" Margin="10"
+              Data="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.5-8 5.5V22h16v-2.5c0-3-3.6-5.5-8-5.5Z" />
+      </Border>
+      <StackPanel VerticalAlignment="Center" Spacing="2">
+        <TextBlock Text="{loc:Loc signIn.title}" Classes="section" />
+        <TextBlock Text="{loc:Loc settings.account.intro}" Classes="hint" TextWrapping="Wrap" MaxWidth="270" />
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Signed in: say who, and offer the way out. -->
+    <StackPanel Spacing="10" IsVisible="{Binding IsLinked}">
+      <TextBlock Text="{Binding AccountText}" TextWrapping="Wrap" />
+      <Button Content="{loc:Loc settings.account.unlink}"
+              Command="{Binding UnlinkCommand}"
+              IsEnabled="{Binding !Busy}"
+              HorizontalAlignment="Left" />
+    </StackPanel>
+
+    <!-- Signed out: an email and a password, and nothing to fetch from anywhere else first. -->
+    <StackPanel Spacing="6" IsVisible="{Binding !IsLinked}">
+      <TextBlock Text="{loc:Loc signIn.email}" Classes="label" />
+      <TextBox x:Name="EmailBox" Text="{Binding Email}" Watermark="you@example.com" />
+
+      <TextBlock Text="{loc:Loc signIn.password}" Classes="label" Margin="0,6,0,0" />
+      <TextBox Text="{Binding Password}" PasswordChar="●" />
+
+      <TextBlock Text="{loc:Loc signIn.forgot}" Classes="hint" TextWrapping="Wrap" Margin="0,6,0,0" />
+    </StackPanel>
+
+    <!-- The reason it did not work, next to the button that did not work: a toast is behind this window. -->
+    <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" Margin="0,4,0,0"
+               Classes.problem="{Binding !NoticeIsGood}" Classes.hint="{Binding NoticeIsGood}"
+               IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+    <!-- No close button: the title bar has one, and Escape closes the window. The whole row goes when
+         somebody is signed in, since both of its buttons are for signing in. -->
+    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0" IsVisible="{Binding !IsLinked}">
+      <!-- Hidden when a self-hoster has turned sign-ups off. -->
+      <Button Grid.Column="0" Content="{loc:Loc signIn.register}"
+              Command="{Binding RegisterCommand}"
+              IsEnabled="{Binding !Busy}"
+              IsVisible="{Binding CanCreateAccount}"
+              HorizontalAlignment="Left" />
+      <Button Grid.Column="2" Content="{loc:Loc signIn.signIn}" Classes="accent"
+              Command="{Binding SignInCommand}"
+              IsEnabled="{Binding !Busy}"
+              IsDefault="True" />
+    </Grid>
+  </StackPanel>
+</Window>

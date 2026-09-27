@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>DeskPair.Tools.IconGen</RootNamespace>
+    <AssemblyName>DeskPair.Tools.IconGen</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Renders the DeskPair logo to PNG sizes and to the Windows .ico used by the app.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+  </ItemGroup>
+
+</Project>

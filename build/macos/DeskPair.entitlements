@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  What the hardened runtime has to be told to allow. Notarisation requires the hardened runtime, and the
+  hardened runtime forbids each of these by default.
+
+  There is no App Sandbox entitlement and there should not be: a sandboxed app cannot record the screen of
+  the machine it runs on or post input events into other applications, which is the whole product.
+-->
+<plist version="1.0">
+<dict>
+	<!-- The .NET runtime compiles managed code at run time, into memory it then executes. Without these
+	     two the app is killed at start-up by the kernel, before any of its own code runs. -->
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+
+	<!-- The software codecs are loaded by path at run time and may be supplied by whoever installs the app:
+	     libvpx from SUNLLO_LIBVPX_PATH, and an OpenH264 binary that this project deliberately does not ship
+	     because its patents are licensed to the binaries Cisco itself distributes. Neither is signed by us,
+	     so library validation would refuse to load them. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

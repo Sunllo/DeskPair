@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "DeskPair 只用相機讀取電腦上顯示的配對條碼。";
+"NSLocalNetworkUsageDescription" = "DeskPair 會直接連線同一個網路上的電腦，不經過伺服器。";

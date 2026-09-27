@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DeskPair</string>
+
+    <!-- Conectando -->
+    <string name="connect_title">Conectar a um computador</string>
+    <string name="connect_target">ID ou endereço remoto</string>
+    <string name="connect_password">Senha</string>
+    <string name="connect_action">Conectar</string>
+    <string name="connect_retry">Tentar de novo</string>
+
+    <string name="progress_looking_up">Procurando o computador</string>
+    <string name="progress_measuring">Verificando esta rede</string>
+    <string name="progress_punching">Abrindo um caminho direto</string>
+    <string name="progress_connecting">Conectando…</string>
+    <string name="progress_waiting">Aguardando o usuário remoto aceitar…</string>
+
+    <!-- Na sessão. Segue as palavras do desktop para que os dois produtos digam as mesmas coisas. -->
+    <string name="session_disconnect">Desconectar</string>
+    <string name="session_picture">Imagem</string>
+    <string name="session_more">Mais</string>
+    <!-- Mostrado sobre a imagem quando parte da sessão silenciosamente não funciona. -->
+    <string name="audio_unavailable">Sem som: %1$s</string>
+    <string name="video_unavailable">Sem imagem: este celular não tem um decodificador H.264 funcional (%1$s)</string>
+    <!-- Os quatro painéis da barra de sessão. Curtos: ficam sob um ícone em uma aba estreita. -->
+    <string name="session_tab_actions">Ações</string>
+    <string name="session_tab_input">Toque</string>
+    <string name="session_tab_screen">Tela</string>
+    <string name="session_tab_keyboard">Teclas</string>
+    <string name="session_gestures">Como funcionam os gestos</string>
+    <string name="session_hide">Ocultar</string>
+    <string name="session_quality">Qualidade</string>
+    <string name="session_display">Monitor</string>
+    <string name="session_scale">Escala</string>
+    <string name="session_fit">Ajustar</string>
+    <string name="session_original">1:1</string>
+    <string name="session_resolution">Resolução</string>
+    <string name="session_resolution_original">Original</string>
+    <string name="session_resolution_failed">Não foi possível alterar a resolução: %1$s</string>
+    <string name="session_remote_cursor">Ponteiro remoto</string>
+    <string name="session_remote_cursor_hint">Mostrar o ponteiro da outra máquina além do seu.</string>
+    <string name="session_ctrl_alt_del">Ctrl+Alt+Del</string>
+    <string name="session_lock">Bloquear</string>
+    <string name="session_refresh">Atualizar</string>
+    <string name="session_reset_canvas">Redefinir a visualização</string>
+    <string name="session_rtt">RTT</string>
+    <string name="session_waiting_for_picture">Aguardando a tela de %1$s…</string>
+    <string name="session_picture_late">Ainda nada. O outro computador pode estar na tela de bloqueio ou de login, que o Windows não permite capturar — alguém precisa desbloqueá-lo para que a imagem apareça.</string>
+    <string name="session_signal_platform">Sistema</string>
+    <string name="session_signal_route">Rota</string>
+    <string name="session_route_lan">Direto, mesma rede</string>
+    <string name="session_route_direct">Direto</string>
+    <string name="session_route_punched">Ponto a ponto</string>
+    <string name="session_route_relay">Pelo servidor de retransmissão</string>
+    <string name="session_stalled">Conexão perdida — aguardando</string>
+    <string name="session_stalled_hint">A imagem é a última que chegou</string>
+
+    <string name="quality_low">Baixa</string>
+    <string name="quality_balanced">Equilibrada</string>
+    <string name="quality_best">Máxima</string>
+    <string name="display_label">Tela %1$d</string>
+
+    <!-- Modos de ponteiro. O desktop tem um mouse de verdade e por isso não tem equivalente. -->
+    <string name="mode_touch">Toque</string>
+    <string name="mode_mouse">Mouse</string>
+
+    <string name="gesture_tap">Toque com um dedo</string>
+    <string name="gesture_tap_touch">Clica onde você toca</string>
+    <string name="gesture_tap_mouse">Clica onde o ponteiro está</string>
+    <string name="gesture_two_tap">Toque com dois dedos</string>
+    <string name="gesture_two_tap_action">Clique direito</string>
+    <string name="gesture_drag">Arrastar com um dedo</string>
+    <string name="gesture_drag_touch">Move a imagem</string>
+    <string name="gesture_drag_mouse">Move o ponteiro</string>
+    <string name="gesture_two_drag">Arrastar com dois dedos</string>
+    <string name="gesture_two_drag_action">Move a imagem</string>
+    <string name="gesture_pinch">Pinça</string>
+    <string name="gesture_pinch_action">Amplia ou reduz a imagem</string>
+    <string name="gesture_three">Três dedos para cima ou para baixo</string>
+    <string name="gesture_three_action">Roda de rolagem</string>
+
+    <!-- Teclado -->
+    <string name="keyboard_tab">Teclado</string>
+    <string name="keyboard_type">Digite aqui</string>
+    <string name="keyboard_pin">Fixar</string>
+    <string name="keyboard_function">Fn</string>
+    <!-- Nomes dos grupos na barra de teclas. Deliberadamente curtos: ficam em uma fileira rolável de teclas. -->
+    <string name="keyboard_numpad">123</string>
+    <string name="keyboard_more">Mais</string>
+    <string name="keyboard_ime">IME</string>
+    <string name="clipboard_send">Enviar área de transferência</string>
+
+    <string name="dialog_done">Concluído</string>
+
+    <!-- Início. Palavras tiradas do Strings.cs do desktop para que os dois produtos digam as mesmas coisas. -->
+    <string name="home_control_remote">Controlar outro computador</string>
+    <string name="home_settings">Configurações</string>
+    <string name="home_favourites">Dispositivos</string>
+    <string name="home_no_favourites">Nenhum dispositivo ainda</string>
+    <string name="home_favourites_empty_hint">Toque no coração ao lado de uma conexão recente para mantê-la aqui.</string>
+    <string name="home_recent">Recentes</string>
+    <string name="presence_online">Online</string>
+    <string name="presence_offline">Offline</string>
+    <string name="presence_unknown">Desconhecido</string>
+    <string name="home_no_recent">Nenhuma conexão recente</string>
+    <string name="home_add_favourite">Salvar nos dispositivos</string>
+    <string name="home_remove_favourite">Remover dos dispositivos</string>
+    <string name="home_forget_recent">Remover dos recentes</string>
+    <string name="home_no_server">Nenhum servidor de sinalização definido. Abra Configurações para conectar por ID.</string>
+
+    <!-- A folha de senha -->
+    <string name="connect_remember">Lembrar esta senha</string>
+    <string name="connect_show_password">Mostrar a senha</string>
+    <string name="connect_hide_password">Ocultar a senha</string>
+    <string name="connect_cancel">Cancelar</string>
+
+    <!-- Configurações -->
+    <string name="settings_title">Configurações</string>
+    <string name="settings_section_general">Geral</string>
+    <string name="settings_section_session">Ao conectar a outros</string>
+    <string name="settings_view_only">Somente visualizar</string>
+    <string name="settings_view_only_hint">Assistir sem poder mexer em nada.</string>
+    <string name="settings_lock_after_end">Bloquear ao encerrar a sessão</string>
+    <string name="settings_lock_after_end_hint">Deixa o outro computador bloqueado ao desconectar.</string>
+    <string name="session_input_refused">O outro computador não está aceitando comandos.</string>
+    <string name="settings_section_network">Rede</string>
+    <string name="favourites_ungrouped">Sem pasta</string>
+    <string name="settings_section_account">Conta</string>
+    <string name="settings_account_signed_out">Não entrou na conta</string>
+    <string name="settings_account_signed_out_hint">Entre para sincronizar a sua lista de dispositivos</string>
+    <string name="settings_account_devices">Dispositivos: %1$d</string>
+    <string name="settings_portal">Endereço do portal</string>
+    <string name="settings_portal_hint">Onde fica a sua conta DeskPair. Vincular mantém os seus computadores salvos sincronizados entre os seus dispositivos.</string>
+    <string name="settings_device_name">Nome deste dispositivo</string>
+    <string name="settings_account_email">E-mail</string>
+    <string name="settings_account_password">Senha</string>
+    <string name="settings_account_sign_in">Entrar</string>
+    <string name="settings_account_register">Criar uma conta</string>
+    <string name="settings_account_email_required">Digite o seu endereço de e-mail.</string>
+    <string name="settings_account_password_required">Digite a sua senha.</string>
+    <string name="settings_account_verify">Conta criada. Confirme %1$s pela sua caixa de entrada e depois entre.</string>
+    <string name="settings_linked_to">Entrou como</string>
+    <string name="settings_linked">Você entrou como %1$s.</string>
+    <string name="settings_unlink">Sair</string>
+    <string name="settings_unlinked">Você saiu.</string>
+    <string name="settings_unlinked_locally">Você saiu aqui, mas o servidor não foi avisado (%1$s). Revogue este dispositivo também pelo site.</string>
+    <string name="settings_section_security">Segurança</string>
+    <string name="settings_section_about">Sobre o DeskPair</string>
+
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_system">Sistema</string>
+    <string name="settings_recent_limit">Conexões recentes</string>
+    <string name="settings_recent_limit_hint">Quantas manter na lista.</string>
+    <string name="settings_recent_limit_invalid">Lembre entre 1 e 200 conexões</string>
+    <string name="settings_clear_recent">Limpar conexões recentes</string>
+
+    <string name="settings_default_quality">Qualidade</string>
+    <string name="settings_default_quality_hint">Com que qualidade as novas sessões começam.</string>
+    <string name="settings_quality_custom">Personalizada</string>
+    <string name="settings_bitrate">Taxa de bits (kbps)</string>
+    <string name="settings_bitrate_invalid">Use uma taxa de bits entre 100 e 200000 kbps</string>
+    <string name="settings_fps">Taxa de quadros</string>
+    <string name="settings_fps_invalid">Use uma taxa de quadros entre 5 e 120</string>
+    <string name="settings_lossless">Nitidez ao parar</string>
+    <string name="settings_lossless_hint">Refina até ficar nítido pixel a pixel quando a imagem para de se mover.</string>
+    <string name="settings_fit_to_window">Ajustar à tela</string>
+    <string name="settings_fit_to_window_hint">Reduz a tela remota para que toda ela fique visível de uma vez.</string>
+    <string name="settings_audio">Som</string>
+    <string name="settings_audio_hint">Reproduz o que o computador remoto está tocando.</string>
+    <string name="settings_pointer_mode">Ponteiro</string>
+
+    <string name="settings_server">Servidor de sinalização</string>
+    <string name="settings_self_hosted">Eu rodo os meus próprios servidores</string>
+    <string name="settings_directory_hint">O DeskPair pergunta ao portal qual servidor de sinalização usar, então nada aqui precisa ser preenchido.</string>
+    <string name="settings_server_key">Chave pública do servidor</string>
+    <string name="settings_fetch_key">Obter do servidor</string>
+    <string name="settings_key_fetched">Chave pública obtida</string>
+    <string name="settings_key_fetch_failed">Não foi possível obter a chave: %1$s</string>
+    <string name="settings_key_invalid">A chave pública não é base64 válido; use “Obter do servidor”</string>
+    <string name="settings_key_missing">Sem a chave do servidor, uma conexão por ID não verifica nada</string>
+    <string name="settings_server_required">Informe o servidor de sinalização primeiro</string>
+    <string name="settings_udp_media">Vídeo por UDP</string>
+    <string name="settings_udp_media_hint">Mais fluido em uma boa rede, e volta ao TCP quando ela não é.</string>
+    <string name="settings_force_relay">Sempre usar retransmissão</string>
+    <string name="settings_force_relay_hint">Nunca conectar diretamente, nem na mesma rede.</string>
+
+    <string name="settings_known_hosts">Computadores confiáveis</string>
+    <string name="settings_known_hosts_hint">Esqueça um para ser perguntado de novo na próxima vez que a chave dele mudar</string>
+    <string name="settings_forget">Esquecer</string>
+    <string name="settings_forget_all">Esquecer todos</string>
+    <string name="settings_no_known_hosts">Nada confiado ainda</string>
+    <string name="settings_passwords">Senhas lembradas</string>
+    <string name="settings_no_passwords">Nenhuma senha lembrada</string>
+    <string name="settings_forget_passwords">Esquecer todas as senhas</string>
+
+    <string name="settings_version">Versão %1$s</string>
+
+    <!-- As três abas. Curtas o bastante para não quebrar sob um ícone da barra inferior em nenhuma escala de fonte. -->
+    <string name="nav_connect">Conectar</string>
+    <string name="nav_favourites">Dispositivos</string>
+    <string name="nav_settings">Configurações</string>
+    <string name="nav_back">Voltar</string>
+    <string name="home_scan">Escanear um código</string>
+    <string name="scan_not_deskpair">Isso não é um código do DeskPair.</string>
+    <string name="scan_no_version">Esse código está sem a versão.</string>
+    <string name="scan_newer_version">Esse código foi feito por uma versão mais nova do DeskPair (v%1$d). Atualize este aplicativo.</string>
+    <string name="scan_no_id">Esse código não indica nenhum computador.</string>
+    <string name="scan_damaged_key">A chave nesse código está danificada.</string>
+    <string name="scan_applied">Configurações aplicadas a partir de %1$s</string>
+    <string name="scan_unavailable">O leitor não pôde iniciar neste dispositivo.</string>
+    <string name="clipboard_send_image">Enviar uma imagem</string>
+    <string name="clipboard_image_sent">Imagem enviada — pressione Ctrl+V (ou Cmd+V) no computador remoto</string>
+    <string name="clipboard_image_known">O computador remoto já tem essa imagem</string>
+    <string name="clipboard_image_failed">Não foi possível enviar essa imagem</string>
+    <string name="devices_edit">Editar</string>
+    <string name="devices_edit_title">Dispositivo salvo</string>
+    <string name="devices_edit_name">Nome</string>
+    <string name="devices_edit_password">Senha</string>
+    <string name="devices_edit_password_hint">Opcional. Uma senha guardada aqui é usada em vez de perguntar, para uma máquina que você acessa com frequência.</string>
+    <string name="devices_edit_save">Salvar</string>
+    <string name="key_changed_title">A chave deste computador mudou</string>
+    <string name="key_changed_body">%1$s não está apresentando a chave que apresentou antes.\n\nEra %2$s…\nAgora é %3$s…\n\nIsso acontece quando um computador é reinstalado. Também acontece quando algo está se passando por ele. Só confie na nova chave se souber por que ela mudou.</string>
+    <string name="key_changed_trust">Confiar na nova chave</string>
+    <string name="key_changed_cancel">Agora não</string>
+    <string name="devices_sign_in_required">Entre para manter uma lista de dispositivos</string>
+    <string name="devices_sign_in_required_hint">A lista pertence à sua conta, então acompanha você até os seus outros dispositivos. A entrada na conta está em Configurações.</string>
+    <string name="account_error_bad_credentials">Esse e-mail e essa senha não correspondem a nenhuma conta.</string>
+    <string name="account_error_not_verified">Confirme o seu endereço de e-mail primeiro. Verifique a sua caixa de entrada.</string>
+    <string name="account_error_disabled">Essa conta foi desativada.</string>
+    <string name="account_error_closed">Este servidor não aceita novas contas.</string>
+    <string name="account_error_email_taken">Esse endereço já tem uma conta. Entre em vez disso.</string>
+    <string name="account_error_weak_password">Essa senha é muito curta.</string>
+    <string name="account_error_bad_email">Isso não parece um endereço de e-mail.</string>
+    <string name="account_error_too_many">Tentativas demais. Aguarde alguns minutos e tente de novo.</string>
+    <string name="devices_edit_group">Grupo</string>
+    <string name="devices_group_add">Novo grupo</string>
+    <string name="devices_group_rename">Renomear grupo</string>
+    <string name="devices_group_delete">Excluir grupo</string>
+    <string name="devices_group_name">Nome do grupo</string>
+    <string name="devices_group_cancel">Cancelar</string>
+    <string name="session_dropped">A conexão caiu.</string>
+    <string name="session_dropped_retrying">A conexão caiu. Tentando de novo pelo servidor de retransmissão.</string>
+    <string name="session_host_too_old">O DeskPair deste computador é mais antigo do que este aplicativo precisa. Atualize o DeskPair no computador ao qual você está se conectando.</string>
+    <string name="session_client_too_old">Este aplicativo é mais antigo do que o DeskPair do computador precisa. Atualize o DeskPair neste celular.</string>
+    <string name="session_unreachable_unknown_id">Nenhum computador com o ID %1$s está registrado no servidor de sinalização.</string>
+    <string name="session_unreachable_offline">%1$s não está online agora.</string>
+    <string name="session_unreachable_busy">O servidor de sinalização está ocupado. Tente de novo em instantes.</string>
+    <string name="session_unreachable_no_relay">%1$s não pôde ser alcançado diretamente e o servidor não ofereceu retransmissão.</string>
+    <string name="session_unreachable_no_answer">O servidor de sinalização não respondeu.</string>
+    <string name="session_failed_detail">A conexão falhou: %1$s</string>
+    <string name="clipboard_too_large">Essa imagem é grande demais para a área de transferência, mesmo reduzida.</string>
+
+    <!-- Terminal -->
+    <string name="terminal_open">Abrir um terminal</string>
+    <string name="terminal_close">Fechar</string>
+    <string name="terminal_not_allowed">Este computador não permite terminal. O proprietário pode ativá-lo em Configurações › Segurança; um DeskPair mais antigo que esta versão não tem terminal.</string>
+    <string name="terminal_opening">Abrindo um shell…</string>
+    <string name="terminal_ended">O shell terminou (código de saída %1$d).</string>
+    <string name="terminal_ended_reason">O shell terminou: %1$s</string>
+    <string name="terminal_failed">Não foi possível abrir um shell: %1$s</string>
+    <string name="terminal_new_shell">Abrir um novo shell</string>
+    <string name="terminal_connection_lost">A conexão caiu, e o shell junto com ela. Um shell não sobrevive à sua conexão.</string>
+    <string name="terminal_paste">Colar</string>
+    <string name="terminal_paste_confirm">Colar %1$d linhas no shell? Cada linha é executada como um comando.</string>
+</resources>

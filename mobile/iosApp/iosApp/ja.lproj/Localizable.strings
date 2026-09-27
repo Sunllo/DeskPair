@@ -1,0 +1,248 @@
+/* Connecting */
+"connect.target" = "相手のIDまたはアドレス";
+"connect.password" = "パスワード";
+"connect.action" = "接続";
+"connect.retry" = "もう一度試す";
+
+"progress.lookingUp" = "ホストを探しています";
+"progress.measuring" = "このネットワークを確認しています";
+"progress.punching" = "直接の経路を開いています";
+"progress.connecting" = "接続しています…";
+"progress.waiting" = "相手が受け入れるのを待っています…";
+
+/* In session. These follow the desktop's wording so the two products say the same things. */
+"session.disconnect" = "切断";
+/* The four panels of the session bar. Short: they sit under an icon in a narrow tab. */
+"session.tab.actions" = "操作";
+"session.tab.input" = "タッチ";
+"session.tab.screen" = "画面";
+"session.tab.keyboard" = "キー";
+"session.gestures" = "ジェスチャーの使い方";
+"session.quality" = "画質";
+"session.quality.low" = "低画質";
+"session.quality.balanced" = "バランス";
+"session.quality.best" = "高画質";
+"session.fit" = "全体表示";
+"session.original" = "1:1";
+"session.resolution" = "解像度";
+"session.resolution.original" = "元のサイズ";
+"session.resolution.failed" = "解像度を変更できませんでした：%@";
+"session.remoteCursor" = "リモートのポインター";
+"session.remoteCursorHint" = "自分のポインターに加えて、相手のマシンのポインターも表示します。";
+"session.ctrlAltDel" = "Ctrl+Alt+Del";
+"session.lock" = "ロック";
+"session.refresh" = "更新";
+"session.stalled" = "接続が切れました。待機しています";
+"session.stalledHint" = "表示されているのは最後に届いた画面です";
+"display.label" = "画面%d";
+
+/* Pointer modes. The desktop has a real mouse and so has no equivalent. */
+"mode.touch" = "タッチ";
+"mode.mouse" = "マウス";
+
+"gesture.tap" = "1本指でタップ";
+"gesture.tapTouch" = "触れた場所をクリック";
+"gesture.tapMouse" = "ポインターの位置をクリック";
+"gesture.twoTap" = "2本指でタップ";
+"gesture.twoTapAction" = "右クリック";
+"gesture.drag" = "1本指でドラッグ";
+"gesture.dragTouch" = "画面を動かす";
+"gesture.dragMouse" = "ポインターを動かす";
+"gesture.twoDrag" = "2本指でドラッグ";
+"gesture.twoDragAction" = "画面を動かす";
+"gesture.pinch" = "ピンチ";
+"gesture.pinchAction" = "画面を拡大縮小";
+"gesture.three" = "3本指で上下";
+"gesture.threeAction" = "スクロールホイール";
+
+/* Keyboard */
+"keyboard.type" = "ここに入力";
+"keyboard.pin" = "固定";
+"keyboard.function" = "Fn";
+"keyboard.numpad" = "123";
+"keyboard.more" = "その他";
+"keyboard.ime" = "IME";
+"clipboard.send" = "クリップボードを送信";
+
+"audio.unavailable" = "音が出ません：%@";
+"video.unavailable" = "画面が出ません：%@";
+
+/* Home. Wording taken from the desktop's Strings.cs so the two products say the same things. */
+"home.controlRemote" = "リモートのコンピューターを操作";
+"home.favouritesEmptyHint" = "最近の接続の横にあるハートをタップすると、ここに残ります。";
+"home.noFavourites" = "まだデバイスがありません";
+"home.recent" = "最近の接続";
+"presence.online" = "オンライン";
+"presence.offline" = "オフライン";
+"presence.unknown" = "不明";
+"home.noRecent" = "最近の接続はありません";
+"home.forgetRecent" = "最近の接続から削除";
+"home.noServer" = "シグナリングサーバーが設定されていません。IDで接続するには「設定」を開いてください。";
+
+/* The password sheet */
+"connect.cancel" = "キャンセル";
+
+/* Settings */
+"settings.title" = "設定";
+"settings.section.general" = "一般";
+"settings.section.session" = "ほかのコンピューターに接続するとき";
+"settings.viewOnly" = "表示のみ";
+"settings.viewOnlyHint" = "何も操作せずに見るだけにします。";
+"settings.lockAfterEnd" = "セッション終了時にロック";
+"settings.lockAfterEndHint" = "切断後、相手のコンピューターをロックしたままにします。";
+"session.rtt" = "往復";
+"session.waitingForPicture" = "%@の画面を待っています…";
+"session.pictureLate" = "まだ何も届きません。相手のコンピューターはロック画面かサインイン画面のままかもしれません。Windowsはその画面の取り込みを許可しないため、誰かがロックを解除するまで画面は表示されません。";
+"session.signal.platform" = "システム";
+"session.signal.route" = "経路";
+"session.route.lan" = "直接、同じネットワーク";
+"session.route.direct" = "直接";
+"session.route.punched" = "ピアツーピア";
+"session.route.relay" = "リレー経由";
+"session.inputRefused" = "相手のコンピューターが入力を受け付けていません。";
+"settings.section.network" = "ネットワーク";
+"settings.section.about" = "DeskPairについて";
+"settings.language" = "言語";
+"settings.language.system" = "システム";
+"settings.recentLimit" = "最近の接続";
+"settings.recentLimitHint" = "一覧に残す件数。";
+"settings.clearRecent" = "最近の接続を消去";
+"settings.defaultQuality" = "画質";
+"settings.defaultQualityHint" = "新しいセッションの開始時の画質。";
+"settings.bitrate" = "ビットレート（kbps）";
+"settings.bitrateInvalid" = "ビットレートは100から200000kbpsの間で指定してください";
+"settings.fps" = "フレームレート";
+"settings.fpsInvalid" = "フレームレートは5から120の間で指定してください";
+"settings.quality.custom" = "カスタム";
+"settings.lossless" = "静止時に鮮明化";
+"settings.losslessHint" = "画面の動きが止まったら、ピクセル単位まで鮮明にします。";
+"settings.fitToWindow" = "全体表示";
+"settings.fitToWindowHint" = "リモートの画面を縮小して、全体が一度に見えるようにします。";
+"settings.audio" = "サウンド";
+"settings.audioHint" = "リモートのコンピューターで再生されている音を再生します。";
+"settings.pointerMode" = "ポインター";
+"settings.server" = "シグナリングサーバー";
+"settings.serverKey" = "サーバーの公開鍵";
+"settings.fetchKey" = "サーバーから取得";
+"settings.keyFetched" = "公開鍵を取得しました";
+"settings.keyInvalid" = "公開鍵が正しいbase64ではありません。「サーバーから取得」を使ってください";
+"settings.selfHosted" = "自分のサーバーで運用する";
+"settings.directoryHint" = "DeskPairはどのシグナリングサーバーを使うかをポータルに問い合わせるため、ここに入力するものはありません。";
+"settings.keyMissing" = "サーバーの鍵がないと、IDでの接続では何も検証されません";
+"settings.serverRequired" = "先にシグナリングサーバーを入力してください";
+"settings.udpMedia" = "動画をUDPで送る";
+"settings.udpMediaHint" = "良いネットワークではなめらかになり、そうでないときはTCPに戻ります。";
+"settings.forceRelay" = "常にリレーを使う";
+"settings.forceRelayHint" = "同じネットワーク上でも直接には接続しません。";
+"settings.version" = "バージョン";
+
+/* The three tabs */
+"nav.connect" = "接続";
+"nav.favourites" = "デバイス";
+"nav.settings" = "設定";
+
+/* Scanning a pairing code */
+"home.scan" = "コードをスキャン";
+"scan.applied" = "%@から設定を取り込みました";
+"scan.notDeskPair" = "DeskPairのコードではありません。";
+"scan.noVersion" = "このコードにはバージョンがありません。";
+"scan.newerVersion" = "このコードは新しいバージョンのDeskPair（v%d）で作られたものです。このアプリを更新してください。";
+"scan.noId" = "このコードはコンピューターを指定していません。";
+"scan.damagedKey" = "このコードに含まれる鍵が壊れています。";
+"scan.cameraDenied" = "カメラへのアクセスがありません";
+"scan.cameraDeniedHint" = "ペアリングコードをスキャンするには、「設定」でカメラを許可してください。";
+"scan.unavailable" = "このデバイスではスキャナーを起動できませんでした。";
+
+"clipboard.sendImage" = "画像を送信";
+"clipboard.imageSent" = "画像を送信しました。リモートのコンピューターでCmd+V（またはCtrl+V）を押してください";
+"clipboard.imageKnown" = "リモートのコンピューターにはすでにその画像があります";
+"clipboard.imageFailed" = "その画像を送信できませんでした";
+
+"settings.section.account" = "アカウント";
+"settings.account.signedOut" = "サインインしていません";
+"settings.account.signedOutHint" = "サインインするとデバイスの一覧が同期されます";
+"settings.account.devices" = "デバイス：%d";
+"settings.deviceName" = "このデバイスの名前";
+"settings.account.portal" = "ポータルのアドレス";
+"settings.account.email" = "メールアドレス";
+"settings.account.password" = "パスワード";
+"settings.account.signInTitle" = "アカウントにサインイン";
+"settings.account.signIn" = "サインイン";
+"settings.account.register" = "アカウントを作成";
+"settings.account.needEmail" = "メールアドレスを入力してください。";
+"settings.account.needPassword" = "パスワードを入力してください。";
+"settings.account.verify" = "アカウントを作成しました。受信トレイから%@を確認してから、サインインしてください。";
+"settings.account.unlink" = "サインアウト";
+"settings.account.linked" = "%@としてサインインしています。";
+"settings.account.unlinked" = "サインアウトしました。";
+"settings.account.unlinkedLocally" = "ここではサインアウトしましたが、サーバーには伝わっていません（%@）。ウェブサイトからもこのデバイスを取り消してください。";
+"favourites.ungrouped" = "フォルダーなし";
+
+"devices.edit" = "編集";
+"devices.edit.title" = "保存したデバイス";
+"devices.edit.name" = "名前";
+"devices.edit.password" = "パスワード";
+"devices.edit.passwordHint" = "任意。ここに保存したパスワードは、よく接続するマシンに対して、確認の代わりに使われます。空欄のままにすると毎回確認されます。";
+"devices.edit.save" = "保存";
+
+"keyChanged.title" = "このコンピューターの鍵が変わりました";
+"keyChanged.body" = "%1$@が以前と異なる鍵を提示しています。\n\n以前：%2$@…\n現在：%3$@…\n\nコンピューターを再インストールするとこうなります。何かがそのコンピューターになりすましているときにもこうなります。なぜ変わったのか分かっている場合にだけ、新しい鍵を信頼してください。";
+"keyChanged.trust" = "新しい鍵を信頼する";
+"keyChanged.cancel" = "今はしない";
+"devices.signInRequired" = "デバイスの一覧を使うにはサインインしてください";
+"devices.signInRequiredHint" = "この一覧はアカウントのものなので、ほかのデバイスにもついてきます。サインインは「設定」にあります。";
+
+"account.error.badCredentials" = "そのメールアドレスとパスワードに一致するアカウントがありません。";
+"account.error.notVerified" = "先にメールアドレスを確認してください。受信トレイを確認してください。";
+"account.error.disabled" = "そのアカウントは無効になっています。";
+"account.error.closed" = "このサーバーでは新しいアカウントを受け付けていません。";
+"account.error.emailTaken" = "そのアドレスにはすでにアカウントがあります。サインインしてください。";
+"account.error.weakPassword" = "そのパスワードは短すぎます。";
+"account.error.badEmail" = "メールアドレスの形式ではないようです。";
+"account.error.tooMany" = "試行回数が多すぎます。数分待ってからもう一度お試しください。";
+"devices.edit.group" = "グループ";
+"devices.edit.noGroup" = "グループなし";
+"devices.remove" = "削除";
+"devices.group.add" = "新しいグループ";
+"devices.group.rename" = "グループの名前を変更";
+"devices.group.delete" = "グループを削除";
+"devices.group.name" = "グループ名";
+"devices.group.cancel" = "キャンセル";
+"session.dropped" = "接続が切れました。";
+"session.droppedRetrying" = "接続が切れました。リレー経由でもう一度試しています。";
+"session.closedByHost" = "相手のコンピューターがセッションを終了しました。";
+
+/* Language */
+"settings.language.restart" = "次にDeskPairを開いたときに有効になります。同じ設定は「設定」>「DeskPair」>「言語」にもあります。";
+
+/* Why a connection failed, by what the shared module reported */
+"session.hostTooOld" = "このコンピューターのDeskPairは、このアプリに必要なものより古いバージョンです。接続先のコンピューターでDeskPairを更新してください。";
+"session.clientTooOld" = "このアプリは、コンピューターのDeskPairに必要なものより古いバージョンです。このデバイスでDeskPairを更新してください。";
+"session.unreachable.unknownId" = "IDが%@のコンピューターはシグナリングサーバーに登録されていません。";
+"session.unreachable.offline" = "%@は今オンラインではありません。";
+"session.unreachable.busy" = "シグナリングサーバーが混み合っています。しばらくしてからもう一度お試しください。";
+"session.unreachable.noRelay" = "%@に直接到達できず、サーバーもリレーを提供しませんでした。";
+"session.unreachable.noAnswer" = "シグナリングサーバーが応答しませんでした。";
+"session.failedDetail" = "接続に失敗しました：%@";
+
+/* Video and audio problems shown over the picture */
+"video.unsupportedFormat" = "この動画ストリームは、このデバイスで読める形式ではありません";
+"video.noParameterSets" = "キーフレームに使えるパラメーターセットが含まれていませんでした";
+"video.parameterSetsFailed" = "パラメーターセットを読み取れませんでした（OSStatus %lld）";
+"video.blockBufferFailed" = "フレームをデコーダー用に包めませんでした（%lld）";
+"video.copyFailed" = "フレームをバッファーにコピーできませんでした（%lld）";
+"video.sampleBufferFailed" = "フレームをデコーダーに渡せませんでした（%lld）";
+"audio.noOpus" = "このデバイスにはOpusデコーダーがありません";
+
+/* Terminal */
+"terminal.open" = "ターミナルを開く";
+"terminal.close" = "閉じる";
+"terminal.notAllowed" = "このコンピューターはターミナルを許可していません。所有者は「設定 › セキュリティ」で有効にできます。このバージョンより古い DeskPair にはターミナルがありません。";
+"terminal.opening" = "シェルを開いています…";
+"terminal.ended" = "シェルが終了しました（終了コード %lld）。";
+"terminal.endedReason" = "シェルが終了しました：%@";
+"terminal.failed" = "シェルを開けませんでした：%@";
+"terminal.newShell" = "新しいシェルを開く";
+"terminal.connectionLost" = "接続が切れ、シェルも終了しました。シェルは接続が切れると残りません。";
+"terminal.paste" = "貼り付け";
+"terminal.pasteConfirm" = "%lld 行をシェルに貼り付けますか？各行がコマンドとして実行されます。";

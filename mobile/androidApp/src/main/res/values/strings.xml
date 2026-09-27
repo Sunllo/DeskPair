@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DeskPair</string>
+
+    <!-- Connecting -->
+    <string name="connect_title">Connect to a computer</string>
+    <string name="connect_target">Remote ID or address</string>
+    <string name="connect_password">Password</string>
+    <string name="connect_action">Connect</string>
+    <string name="connect_retry">Try again</string>
+
+    <string name="progress_looking_up">Looking up the host</string>
+    <string name="progress_measuring">Checking this network</string>
+    <string name="progress_punching">Opening a direct path</string>
+    <string name="progress_connecting">Connecting…</string>
+    <string name="progress_waiting">Waiting for the remote user to accept…</string>
+
+    <!-- In session. These follow the desktop's wording so the two products say the same things. -->
+    <string name="session_disconnect">Disconnect</string>
+    <string name="session_picture">Picture</string>
+    <string name="session_more">More</string>
+    <!-- Shown over the picture when part of the session quietly does not work. -->
+    <string name="audio_unavailable">No sound: %1$s</string>
+    <string name="video_unavailable">No picture: this phone has no working H.264 decoder (%1$s)</string>
+    <!-- The four panels of the session bar. Short: they sit under an icon in a narrow tab. -->
+    <string name="session_tab_actions">Actions</string>
+    <string name="session_tab_input">Touch</string>
+    <string name="session_tab_screen">Screen</string>
+    <string name="session_tab_keyboard">Keys</string>
+    <string name="session_gestures">How gestures work</string>
+    <string name="session_hide">Hide</string>
+    <string name="session_quality">Quality</string>
+    <string name="session_display">Display</string>
+    <string name="session_scale">Scale</string>
+    <string name="session_fit">Fit</string>
+    <string name="session_original">1:1</string>
+    <string name="session_resolution">Resolution</string>
+    <string name="session_resolution_original">Original</string>
+    <string name="session_resolution_failed">The resolution could not be changed: %1$s</string>
+    <string name="session_remote_cursor">Remote pointer</string>
+    <string name="session_remote_cursor_hint">Show the pointer from the other machine as well as your own.</string>
+    <string name="session_ctrl_alt_del">Ctrl+Alt+Del</string>
+    <string name="session_lock">Lock</string>
+    <string name="session_refresh">Refresh</string>
+    <string name="session_reset_canvas">Reset the view</string>
+    <string name="session_rtt">RTT</string>
+    <string name="session_waiting_for_picture">Waiting for %1$s’s screen…</string>
+    <string name="session_picture_late">Still nothing. The other computer may be sitting at its lock or sign-in screen, which Windows does not allow to be captured — someone has to unlock it before a picture appears.</string>
+    <string name="session_signal_platform">System</string>
+    <string name="session_signal_route">Route</string>
+    <string name="session_route_lan">Direct, same network</string>
+    <string name="session_route_direct">Direct</string>
+    <string name="session_route_punched">Peer to peer</string>
+    <string name="session_route_relay">Through the relay</string>
+    <string name="session_stalled">Connection lost — waiting</string>
+    <string name="session_stalled_hint">The picture is the last one that arrived</string>
+
+    <string name="quality_low">Low</string>
+    <string name="quality_balanced">Balanced</string>
+    <string name="quality_best">Best</string>
+    <string name="display_label">Screen %1$d</string>
+
+    <!-- Pointer modes. The desktop has a real mouse and so has no equivalent. -->
+    <string name="mode_touch">Touch</string>
+    <string name="mode_mouse">Mouse</string>
+
+    <string name="gesture_tap">One finger tap</string>
+    <string name="gesture_tap_touch">Click where you touch</string>
+    <string name="gesture_tap_mouse">Click where the pointer is</string>
+    <string name="gesture_two_tap">Two finger tap</string>
+    <string name="gesture_two_tap_action">Right click</string>
+    <string name="gesture_drag">One finger drag</string>
+    <string name="gesture_drag_touch">Move the picture</string>
+    <string name="gesture_drag_mouse">Move the pointer</string>
+    <string name="gesture_two_drag">Two finger drag</string>
+    <string name="gesture_two_drag_action">Move the picture</string>
+    <string name="gesture_pinch">Pinch</string>
+    <string name="gesture_pinch_action">Zoom the picture</string>
+    <string name="gesture_three">Three fingers up or down</string>
+    <string name="gesture_three_action">Scroll wheel</string>
+
+    <!-- Keyboard -->
+    <string name="keyboard_tab">Keyboard</string>
+    <string name="keyboard_type">Type here</string>
+    <string name="keyboard_pin">Pin</string>
+    <string name="keyboard_function">Fn</string>
+    <!-- Group names on the key bar. Deliberately terse: they sit in a scrolling row of key caps. -->
+    <string name="keyboard_numpad">123</string>
+    <string name="keyboard_more">More</string>
+    <string name="keyboard_ime">IME</string>
+    <string name="clipboard_send">Send clipboard</string>
+
+    <string name="dialog_done">Done</string>
+
+    <!-- Home. Wording taken from the desktop's Strings.cs so the two products say the same things. -->
+    <string name="home_control_remote">Control a remote desk</string>
+    <string name="home_settings">Settings</string>
+    <string name="home_favourites">Devices</string>
+    <string name="home_no_favourites">No devices yet</string>
+    <string name="home_favourites_empty_hint">Tap the heart beside a recent connection to keep it here.</string>
+    <string name="home_recent">Recent</string>
+    <string name="presence_online">Online</string>
+    <string name="presence_offline">Offline</string>
+    <string name="presence_unknown">Unknown</string>
+    <string name="home_no_recent">No recent connections</string>
+    <string name="home_add_favourite">Save to devices</string>
+    <string name="home_remove_favourite">Remove from devices</string>
+    <string name="home_forget_recent">Remove from recent</string>
+    <string name="home_no_server">No rendezvous server set. Open Settings to connect by ID.</string>
+
+    <!-- The password sheet -->
+    <string name="connect_remember">Remember this password</string>
+    <string name="connect_show_password">Show the password</string>
+    <string name="connect_hide_password">Hide the password</string>
+    <string name="connect_cancel">Cancel</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_section_session">When connecting to others</string>
+    <string name="settings_view_only">View only</string>
+    <string name="settings_view_only_hint">Watch without being able to touch anything.</string>
+    <string name="settings_lock_after_end">Lock when the session ends</string>
+    <string name="settings_lock_after_end_hint">Leave the other computer locked on disconnect.</string>
+    <string name="session_input_refused">The other computer is not accepting input.</string>
+    <string name="settings_section_network">Network</string>
+    <string name="favourites_ungrouped">Not in a folder</string>
+    <string name="settings_section_account">Account</string>
+    <string name="settings_account_signed_out">Not signed in</string>
+    <string name="settings_account_signed_out_hint">Sign in to sync your device list</string>
+    <string name="settings_account_devices">Devices: %1$d</string>
+    <string name="settings_portal">Portal address</string>
+    <string name="settings_portal_hint">Where your DeskPair account lives. Linking keeps your saved computers in step across your devices.</string>
+    <string name="settings_device_name">Name for this device</string>
+    <string name="settings_account_email">Email</string>
+    <string name="settings_account_password">Password</string>
+    <string name="settings_account_sign_in">Sign in</string>
+    <string name="settings_account_register">Create an account</string>
+    <string name="settings_account_email_required">Enter your email address.</string>
+    <string name="settings_account_password_required">Enter your password.</string>
+    <string name="settings_account_verify">Account created. Confirm %1$s from your inbox, then sign in.</string>
+    <string name="settings_linked_to">Signed in as</string>
+    <string name="settings_linked">Signed in as %1$s.</string>
+    <string name="settings_unlink">Sign out</string>
+    <string name="settings_unlinked">Signed out.</string>
+    <string name="settings_unlinked_locally">Signed out here, but the server was not told (%1$s). Revoke this device from the website as well.</string>
+    <string name="settings_section_security">Security</string>
+    <string name="settings_section_about">About DeskPair</string>
+
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System</string>
+    <string name="settings_recent_limit">Recent connections</string>
+    <string name="settings_recent_limit_hint">How many to keep in the list.</string>
+    <string name="settings_recent_limit_invalid">Remember between 1 and 200 connections</string>
+    <string name="settings_clear_recent">Clear recent connections</string>
+
+    <string name="settings_default_quality">Quality</string>
+    <string name="settings_default_quality_hint">What new sessions start at.</string>
+    <string name="settings_quality_custom">Custom</string>
+    <string name="settings_bitrate">Bitrate (kbps)</string>
+    <string name="settings_bitrate_invalid">Use a bitrate between 100 and 200000 kbps</string>
+    <string name="settings_fps">Frame rate</string>
+    <string name="settings_fps_invalid">Use a frame rate between 5 and 120</string>
+    <string name="settings_lossless">Sharpen when still</string>
+    <string name="settings_lossless_hint">Refine to pixel-perfect once the picture stops moving.</string>
+    <string name="settings_fit_to_window">Scale to fit</string>
+    <string name="settings_fit_to_window_hint">Shrink the remote screen so all of it is visible at once.</string>
+    <string name="settings_audio">Sound</string>
+    <string name="settings_audio_hint">Play what the remote computer is playing.</string>
+    <string name="settings_pointer_mode">Pointer</string>
+
+    <string name="settings_server">Rendezvous server</string>
+    <string name="settings_self_hosted">I run my own servers</string>
+    <string name="settings_directory_hint">DeskPair asks the portal which signalling server to use, so nothing here needs filling in.</string>
+    <string name="settings_server_key">Server public key</string>
+    <string name="settings_fetch_key">Fetch from server</string>
+    <string name="settings_key_fetched">Public key fetched</string>
+    <string name="settings_key_fetch_failed">Could not fetch the key: %1$s</string>
+    <string name="settings_key_invalid">The public key is not valid base64; use “Fetch from server”</string>
+    <string name="settings_key_missing">Without a server key, a connection by ID verifies nothing</string>
+    <string name="settings_server_required">Enter the rendezvous server first</string>
+    <string name="settings_udp_media">Video over UDP</string>
+    <string name="settings_udp_media_hint">Smoother on a good network, and falls back to TCP when it is not.</string>
+    <string name="settings_force_relay">Always use a relay</string>
+    <string name="settings_force_relay_hint">Never connect directly, even on the same network.</string>
+
+    <string name="settings_known_hosts">Trusted computers</string>
+    <string name="settings_known_hosts_hint">Forget one to be asked again the next time its key changes</string>
+    <string name="settings_forget">Forget</string>
+    <string name="settings_forget_all">Forget all</string>
+    <string name="settings_no_known_hosts">Nothing trusted yet</string>
+    <string name="settings_passwords">Remembered passwords</string>
+    <string name="settings_no_passwords">No passwords remembered</string>
+    <string name="settings_forget_passwords">Forget all passwords</string>
+
+    <string name="settings_version">Version %1$s</string>
+
+    <!-- The three tabs. Short enough not to wrap under a bottom-bar icon at any font scale. -->
+    <string name="nav_connect">Connect</string>
+    <string name="nav_favourites">Devices</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_back">Back</string>
+    <string name="home_scan">Scan a code</string>
+    <string name="scan_not_deskpair">That is not a DeskPair code.</string>
+    <string name="scan_no_version">That code is missing its version.</string>
+    <string name="scan_newer_version">That code was made by a newer version of DeskPair (v%1$d). Update this app.</string>
+    <string name="scan_no_id">That code names no computer.</string>
+    <string name="scan_damaged_key">The key in that code is damaged.</string>
+    <string name="scan_applied">Settings taken from %1$s</string>
+    <string name="scan_unavailable">The scanner could not start on this device.</string>
+    <string name="clipboard_send_image">Send a picture</string>
+    <string name="clipboard_image_sent">Picture sent — press Ctrl+V (or Cmd+V) on the remote computer</string>
+    <string name="clipboard_image_known">The remote computer already has that picture</string>
+    <string name="clipboard_image_failed">Could not send that picture</string>
+    <string name="devices_edit">Edit</string>
+    <string name="devices_edit_title">Saved device</string>
+    <string name="devices_edit_name">Name</string>
+    <string name="devices_edit_password">Password</string>
+    <string name="devices_edit_password_hint">Optional. A password kept here is used instead of asking, for a machine you reach often.</string>
+    <string name="devices_edit_save">Save</string>
+    <string name="key_changed_title">This computer\'s key has changed</string>
+    <string name="key_changed_body">%1$s is not presenting the key it presented before.\n\nIt was %2$s…\nIt is now %3$s…\n\nThat happens when a computer is reinstalled. It also happens when something is pretending to be it. Only trust the new key if you know why it changed.</string>
+    <string name="key_changed_trust">Trust the new key</string>
+    <string name="key_changed_cancel">Not now</string>
+    <string name="devices_sign_in_required">Sign in to keep a device list</string>
+    <string name="devices_sign_in_required_hint">The list belongs to your account, so it follows you to your other devices. Settings has the sign-in.</string>
+    <string name="account_error_bad_credentials">That email address and password do not match.</string>
+    <string name="account_error_not_verified">Confirm your email address first. Check your inbox.</string>
+    <string name="account_error_disabled">That account has been turned off.</string>
+    <string name="account_error_closed">This server does not take new accounts.</string>
+    <string name="account_error_email_taken">That address already has an account. Sign in instead.</string>
+    <string name="account_error_weak_password">That password is too short.</string>
+    <string name="account_error_bad_email">That does not look like an email address.</string>
+    <string name="account_error_too_many">Too many attempts. Wait a few minutes and try again.</string>
+    <string name="devices_edit_group">Group</string>
+    <string name="devices_group_add">New group</string>
+    <string name="devices_group_rename">Rename group</string>
+    <string name="devices_group_delete">Delete group</string>
+    <string name="devices_group_name">Group name</string>
+    <string name="devices_group_cancel">Cancel</string>
+    <string name="session_dropped">The connection dropped.</string>
+    <string name="session_dropped_retrying">The connection dropped. Trying again through the relay.</string>
+    <string name="session_host_too_old">This computer\'s DeskPair is older than this app needs. Update DeskPair on the computer you are connecting to.</string>
+    <string name="session_client_too_old">This app is older than the computer\'s DeskPair needs. Update DeskPair on this phone.</string>
+    <string name="session_unreachable_unknown_id">No computer with the ID %1$s is registered with the signalling server.</string>
+    <string name="session_unreachable_offline">%1$s is not online right now.</string>
+    <string name="session_unreachable_busy">The signalling server is busy. Try again in a moment.</string>
+    <string name="session_unreachable_no_relay">%1$s could not be reached directly and the server offered no relay.</string>
+    <string name="session_unreachable_no_answer">The signalling server did not answer.</string>
+    <string name="session_failed_detail">The connection failed: %1$s</string>
+    <string name="clipboard_too_large">That picture is too large to put on the clipboard, even scaled down.</string>
+
+    <!-- Terminal -->
+    <string name="terminal_open">Open a terminal</string>
+    <string name="terminal_close">Close</string>
+    <string name="terminal_not_allowed">This computer does not allow a terminal. Its owner can turn one on in Settings, under Security; a DeskPair older than this one has no terminal at all.</string>
+    <string name="terminal_opening">Opening a shell…</string>
+    <string name="terminal_ended">The shell ended (exit code %1$d).</string>
+    <string name="terminal_ended_reason">The shell ended: %1$s</string>
+    <string name="terminal_failed">Could not open a shell: %1$s</string>
+    <string name="terminal_new_shell">Open a new shell</string>
+    <string name="terminal_connection_lost">The connection was lost, and the shell with it. A shell does not survive its connection.</string>
+    <string name="terminal_paste">Paste</string>
+    <string name="terminal_paste_confirm">Paste %1$d lines into the shell? Each line runs as a command.</string>
+</resources>

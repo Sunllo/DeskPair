@@ -1,0 +1,68 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup Label="Protocol">
+    <PackageVersion Include="Google.Protobuf" Version="3.36.1" />
+    <PackageVersion Include="Grpc.Tools" Version="2.84.0" />
+  </ItemGroup>
+  <ItemGroup Label="Hosting">
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="System.IO.Hashing" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.12" />
+    <PackageVersion Include="Concentus" Version="2.2.2" />
+    <PackageVersion Include="Wcwidth" Version="4.0.1" />
+  </ItemGroup>
+  <ItemGroup Label="Platform">
+    <PackageVersion Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageVersion Include="Vortice.DXGI" Version="3.8.3" />
+    <PackageVersion Include="Vortice.MediaFoundation" Version="3.8.3" />
+    <!-- Wasapi only: the NAudio metapackage also drags in WinForms, ASIO, DMO and MIDI, none of which we use. -->
+    <PackageVersion Include="NAudio.Wasapi" Version="3.1.0" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
+    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.12" />
+    <!-- The xdg-desktop-portal conversation on Wayland: the low-level half of Tmds.DBus (no Reflection.Emit, passes
+         the Unix fds OpenPipeWireRemote answers with). MIT.
+
+         Pinned to the version Avalonia.FreeDesktop is built against, and it has to stay there: an application gets one
+         copy of an assembly, so a newer one here replaces Avalonia's, and Avalonia reaches for types the newer one
+         renamed. 0.95.1 did exactly that: the Linux app died at start-up in X11DBusImeHelper with "Could not load
+         type Tmds.DBus.Protocol.Connection" while the headless engine, which never loads Avalonia, ran fine.
+         Move it only with Avalonia; TmdsVersionTests fails when the two disagree. -->
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.21.3" />
+  </ItemGroup>
+  <ItemGroup Label="Tools">
+    <PackageVersion Include="SkiaSharp" Version="2.88.9" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
+  </ItemGroup>
+  <ItemGroup Label="Desktop">
+    <PackageVersion Include="Avalonia" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Headless" Version="11.3.22" />
+    <!-- Runs a test on Avalonia's own UI thread and sets the platform up once for the assembly. Both are
+         needed the moment a test builds a window: the platform may only be initialised once per process,
+         and a Window verifies it is being built on the thread that did it. -->
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.22" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- QR encoding for the home screen's pairing code. A port of Nayuki's reference implementation, MIT,
+         one assembly with no transitive dependencies. It hands back a module matrix, so the code is drawn
+         as Avalonia geometry and never becomes a bitmap: no SkiaSharp, and nothing to blur at high DPI. -->
+    <PackageVersion Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1" />
+  </ItemGroup>
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
+    <PackageVersion Include="NSubstitute" Version="6.2.0" />
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,231 @@
+// Sunllo DeskPair local IPC between the host service/server process and the
+// user-facing Desktop process (main UI, connection manager, tray).
+// Transport: named pipe (Windows) / Unix domain socket, 4-byte LE length prefix.
+syntax = "proto3";
+
+package sunllo.ipc;
+
+import "sunllo/message.proto";
+import "sunllo/rendezvous.proto";
+
+option csharp_namespace = "DeskPair.Protocol.Ipc";
+
+message IpcHello {
+  bytes token = 1;             // one-time token handed to the child process at spawn
+  string role = 2;             // "ui", "cm", "tray"
+  string version = 3;
+}
+
+message IpcHelloAck {
+  bool accepted = 1;
+  string server_version = 2;
+}
+
+message GetConfig {}
+
+message SetConfig {
+  string json = 1;
+}
+
+message ConfigSnapshot {
+  string json = 1;
+  bool restart_required = 2;   // some changed fields only take effect when the engine restarts
+}
+
+message GetId {}
+
+message IdChanged {
+  string id = 1;
+}
+
+message GetServerState {}
+
+// Whether the engine's registration with the rendezvous server is being answered: 0 connecting, 1 registered,
+// 2 unreachable. Pushed on every change and answered on request, so the app can say "no network" instead of
+// showing an id nobody can dial.
+message ServerState {
+  int32 state = 1;
+}
+
+message GetTempPassword {}
+
+message TempPassword {
+  string password = 1;
+}
+
+message GetPasswordState {}
+
+// Everything the UI shows about the host's passwords; pushed whenever any of it changes.
+message PasswordState {
+  bool has_permanent = 1;
+  bool temporary_enabled = 2;
+  string temporary_password = 3;   // empty while disabled
+  uint32 temporary_length = 4;
+  bool temporary_pinned = 5;       // chosen by the user, so failures do not rotate it
+  // The secret inside the QR code, which is not the temporary password and is never typed. It is spent
+  // by the first connection that uses it, so the code on screen stops working the moment it has worked
+  // once. Empty when temporary passwords are switched off, because that switch means "permanent only".
+  string link_password = 6;
+}
+
+message RotateTemporaryPassword {}
+
+message SetTemporaryPassword {
+  string password = 1;             // empty restores a random rotating password
+}
+
+message SetPermanentPassword {
+  string password = 1;         // empty clears
+}
+
+message PasswordAck {
+  bool ok = 1;
+  string error = 2;
+}
+
+message ConnectionOpened {
+  int32 conn_id = 1;
+  string peer_id = 2;
+  string peer_name = 3;
+  string peer_platform = 4;
+  string remote_address = 5;
+  sunllo.rendezvous.ConnType conn_type = 6;
+  bool authorized = 7;
+}
+
+message ApprovalRequest {
+  int32 conn_id = 1;
+  string peer_id = 2;
+  string peer_name = 3;
+  sunllo.rendezvous.ConnType conn_type = 4;
+  uint32 timeout_ms = 5;
+  string peer_platform = 6;
+  string terminal_identity = 7;   // for a terminal request: the account the shell would run as ("root", "NT AUTHORITY\SYSTEM")
+}
+
+message ApprovalDecision {
+  int32 conn_id = 1;
+  bool accept = 2;
+  repeated sunllo.messages.Permission granted = 3;
+}
+
+message ConnectionClosed {
+  int32 conn_id = 1;
+  string reason = 2;
+}
+
+message PermissionChange {
+  int32 conn_id = 1;
+  sunllo.messages.Permission permission = 2;
+  bool enabled = 3;
+}
+
+message ChatRelay {
+  int32 conn_id = 1;
+  string text = 2;
+  bool from_peer = 3;
+}
+
+message FileJobProgress {
+  int32 conn_id = 1;
+  int32 job_id = 2;
+  int32 file_num = 3;
+  int32 total_files = 4;
+  uint64 total_bytes = 5;
+  uint64 transferred_bytes = 6;
+  string state = 7;
+  string error = 8;
+}
+
+message SendSas {}
+
+message Ping {}
+
+message Pong {}
+
+message CloseConnection {
+  int32 conn_id = 1;
+}
+
+// Unattended Linux: whether the engine may share the asking user's Wayland desktop through the portal without asking
+// them each time, and asking them now. The engine answers for the account of the app that asks, and asks through that
+// account's session agent, which shows the desktop's own dialog on its screen; the answer is kept by the engine.
+message DesktopSharingRequest {
+  bool ask = 1;   // show the dialog and answer when the person has; otherwise only say what is remembered
+}
+
+message DesktopSharingState {
+  // 0 unavailable (no desktop of this account's is being served), 1 not yet, 2 watch only, 3 allowed
+  int32 state = 1;
+  // after asking: 0 not asked, 1 allowed, 2 watch only, 3 declined, 4 unanswered, 5 failed
+  int32 outcome = 2;
+  string detail = 3;   // with a failure, the reason in words
+}
+
+// The connection record the engine keeps: who reached this computer, when, and what they were allowed to do.
+message ConnectionHistoryRequest {
+  int32 limit = 1;    // 0 means a sensible default
+  bool clear = 2;     // forget everything first; the clearing is itself recorded
+}
+
+message ConnectionHistoryEntry {
+  string id = 1;
+  int64 started_utc_ms = 2;
+  int64 ended_utc_ms = 3;      // 0 while it is open, or when the host never saw it end
+  string peer_id = 4;
+  string peer_name = 5;
+  string peer_platform = 6;
+  string address = 7;
+  bool address_reported = 8;   // the rendezvous server's word, not the socket's (a relayed connection)
+  string transport = 9;
+  string kind = 10;            // "remote", "file-transfer", "cleared"
+  string authenticated = 11;   // "temporary", "permanent", "approval", "none"
+  repeated string granted = 12;
+  string reason = 13;
+  int32 terminal_opens = 14;
+  string terminal_identity = 15;
+}
+
+message ConnectionHistory {
+  repeated ConnectionHistoryEntry entries = 1;   // newest first
+}
+
+message IpcMessage {
+  // Non-zero on requests that expect a reply; the reply echoes it. Pushes use 0.
+  uint32 request_id = 100;
+  oneof union {
+    IpcHello hello = 1;
+    IpcHelloAck hello_ack = 2;
+    GetConfig get_config = 3;
+    SetConfig set_config = 4;
+    ConfigSnapshot config_snapshot = 5;
+    GetId get_id = 6;
+    IdChanged id_changed = 7;
+    GetTempPassword get_temp_password = 8;
+    TempPassword temp_password = 9;
+    SetPermanentPassword set_permanent_password = 10;
+    PasswordAck password_ack = 11;
+    ConnectionOpened connection_opened = 12;
+    ApprovalRequest approval_request = 13;
+    ApprovalDecision approval_decision = 14;
+    ConnectionClosed connection_closed = 15;
+    PermissionChange permission_change = 16;
+    ChatRelay chat = 17;
+    FileJobProgress file_job_progress = 18;
+    SendSas send_sas = 19;
+    Ping ping = 20;
+    Pong pong = 21;
+    CloseConnection close_connection = 22;
+    GetPasswordState get_password_state = 23;
+    PasswordState password_state = 24;
+    RotateTemporaryPassword rotate_temporary_password = 25;
+    SetTemporaryPassword set_temporary_password = 26;
+    GetServerState get_server_state = 27;
+    ServerState server_state = 28;
+    // 29 is reserved for the terminal's state push.
+    ConnectionHistoryRequest connection_history_request = 30;
+    ConnectionHistory connection_history = 31;
+    DesktopSharingRequest desktop_sharing_request = 32;
+    DesktopSharingState desktop_sharing_state = 33;
+  }
+}

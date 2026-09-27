@@ -1,0 +1,43 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels.Settings"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.Settings.NetworkSettingsView"
+             x:DataType="vm:NetworkSettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="10" MaxWidth="600" HorizontalAlignment="Left">
+      <TextBlock Text="{loc:Loc settings.tab.network}" Classes="title" />
+      <TextBlock Text="{loc:Loc settings.networkIntro}" Classes="hint" TextWrapping="Wrap" />
+
+      <!-- Off, there is nothing on this page about where the servers are, because there is nothing here
+           for that person to decide. On, the two fields below are theirs and nothing overwrites them. -->
+      <CheckBox IsChecked="{Binding SelfHosted}" Content="{loc:Loc settings.selfHosted}" Margin="0,8,0,0" />
+      <TextBlock Text="{loc:Loc settings.directoryHint}" Classes="hint" TextWrapping="Wrap"
+                 IsVisible="{Binding UsesDirectory}" />
+
+      <StackPanel Spacing="10" IsVisible="{Binding SelfHosted}">
+        <TextBlock Text="{loc:Loc settings.server}" Classes="label" />
+        <TextBox Text="{Binding RendezvousServer}" Watermark="host[:port]" />
+        <TextBlock Text="{loc:Loc settings.serverKey}" Classes="label" />
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBox Text="{Binding ServerPublicKey}" />
+          <Button Grid.Column="1" Content="{loc:Loc settings.fetchKey}" Command="{Binding FetchKeyCommand}" Margin="8,0,0,0" />
+        </Grid>
+        <TextBlock Text="{loc:Loc settings.account.portal}" Classes="label" />
+        <TextBox Text="{Binding PortalServer}" Watermark="{loc:Loc settings.portalHint}" />
+      </StackPanel>
+
+      <TextBlock Text="{loc:Loc settings.thisComputer}" Classes="section" Margin="0,14,0,0" />
+      <TextBlock Text="{loc:Loc settings.directPort}" Classes="label" />
+      <TextBox Text="{Binding DirectAccessPort.Text}" Width="100" HorizontalAlignment="Left" />
+      <TextBlock Text="{Binding DirectAccessPort.Problem}" Classes="problem" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Loc settings.directPortHint}" Classes="hint" TextWrapping="Wrap" />
+      <CheckBox IsChecked="{Binding HostUdpMedia}" Content="{loc:Loc settings.udpMedia}" />
+      <CheckBox IsChecked="{Binding HostForceRelay}" Content="{loc:Loc settings.forceRelayHost}" />
+
+      <TextBlock Text="{loc:Loc settings.whenConnecting}" Classes="section" Margin="0,14,0,0" />
+      <CheckBox IsChecked="{Binding ViewerUdpMedia}" Content="{loc:Loc settings.udpMediaViewer}" />
+      <CheckBox IsChecked="{Binding ViewerForceRelay}" Content="{loc:Loc settings.forceRelay}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

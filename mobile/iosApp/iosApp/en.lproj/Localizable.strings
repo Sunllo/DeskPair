@@ -1,0 +1,248 @@
+/* Connecting */
+"connect.target" = "Remote ID or address";
+"connect.password" = "Password";
+"connect.action" = "Connect";
+"connect.retry" = "Try again";
+
+"progress.lookingUp" = "Looking up the host";
+"progress.measuring" = "Checking this network";
+"progress.punching" = "Opening a direct path";
+"progress.connecting" = "Connecting…";
+"progress.waiting" = "Waiting for the remote user to accept…";
+
+/* In session. These follow the desktop's wording so the two products say the same things. */
+"session.disconnect" = "Disconnect";
+/* The four panels of the session bar. Short: they sit under an icon in a narrow tab. */
+"session.tab.actions" = "Actions";
+"session.tab.input" = "Touch";
+"session.tab.screen" = "Screen";
+"session.tab.keyboard" = "Keys";
+"session.gestures" = "How gestures work";
+"session.quality" = "Quality";
+"session.quality.low" = "Low";
+"session.quality.balanced" = "Balanced";
+"session.quality.best" = "Best";
+"session.fit" = "Fit";
+"session.original" = "1:1";
+"session.resolution" = "Resolution";
+"session.resolution.original" = "Original";
+"session.resolution.failed" = "The resolution could not be changed: %@";
+"session.remoteCursor" = "Remote pointer";
+"session.remoteCursorHint" = "Show the pointer from the other machine as well as your own.";
+"session.ctrlAltDel" = "Ctrl+Alt+Del";
+"session.lock" = "Lock";
+"session.refresh" = "Refresh";
+"session.stalled" = "Connection lost — waiting";
+"session.stalledHint" = "The picture is the last one that arrived";
+"display.label" = "Screen %d";
+
+/* Pointer modes. The desktop has a real mouse and so has no equivalent. */
+"mode.touch" = "Touch";
+"mode.mouse" = "Mouse";
+
+"gesture.tap" = "One finger tap";
+"gesture.tapTouch" = "Click where you touch";
+"gesture.tapMouse" = "Click where the pointer is";
+"gesture.twoTap" = "Two finger tap";
+"gesture.twoTapAction" = "Right click";
+"gesture.drag" = "One finger drag";
+"gesture.dragTouch" = "Move the picture";
+"gesture.dragMouse" = "Move the pointer";
+"gesture.twoDrag" = "Two finger drag";
+"gesture.twoDragAction" = "Move the picture";
+"gesture.pinch" = "Pinch";
+"gesture.pinchAction" = "Zoom the picture";
+"gesture.three" = "Three fingers up or down";
+"gesture.threeAction" = "Scroll wheel";
+
+/* Keyboard */
+"keyboard.type" = "Type here";
+"keyboard.pin" = "Pin";
+"keyboard.function" = "Fn";
+"keyboard.numpad" = "123";
+"keyboard.more" = "More";
+"keyboard.ime" = "IME";
+"clipboard.send" = "Send clipboard";
+
+"audio.unavailable" = "No sound: %@";
+"video.unavailable" = "No picture: %@";
+
+/* Home. Wording taken from the desktop's Strings.cs so the two products say the same things. */
+"home.controlRemote" = "Control a remote desk";
+"home.favouritesEmptyHint" = "Tap the heart beside a recent connection to keep it here.";
+"home.noFavourites" = "No devices yet";
+"home.recent" = "Recent";
+"presence.online" = "Online";
+"presence.offline" = "Offline";
+"presence.unknown" = "Unknown";
+"home.noRecent" = "No recent connections";
+"home.forgetRecent" = "Remove from recent";
+"home.noServer" = "No rendezvous server set. Open Settings to connect by ID.";
+
+/* The password sheet */
+"connect.cancel" = "Cancel";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.section.general" = "General";
+"settings.section.session" = "When connecting to others";
+"settings.viewOnly" = "View only";
+"settings.viewOnlyHint" = "Watch without being able to touch anything.";
+"settings.lockAfterEnd" = "Lock when the session ends";
+"settings.lockAfterEndHint" = "Leave the other computer locked on disconnect.";
+"session.rtt" = "round trip";
+"session.waitingForPicture" = "Waiting for %@'s screen…";
+"session.pictureLate" = "Still nothing. The other computer may be sitting at its lock or sign-in screen, which Windows does not allow to be captured -- someone has to unlock it before a picture appears.";
+"session.signal.platform" = "System";
+"session.signal.route" = "Route";
+"session.route.lan" = "Direct, same network";
+"session.route.direct" = "Direct";
+"session.route.punched" = "Peer to peer";
+"session.route.relay" = "Through the relay";
+"session.inputRefused" = "The other computer is not accepting input.";
+"settings.section.network" = "Network";
+"settings.section.about" = "About DeskPair";
+"settings.language" = "Language";
+"settings.language.system" = "System";
+"settings.recentLimit" = "Recent connections";
+"settings.recentLimitHint" = "How many to keep in the list.";
+"settings.clearRecent" = "Clear recent connections";
+"settings.defaultQuality" = "Quality";
+"settings.defaultQualityHint" = "What new sessions start at.";
+"settings.bitrate" = "Bitrate (kbps)";
+"settings.bitrateInvalid" = "Use a bitrate between 100 and 200000 kbps";
+"settings.fps" = "Frame rate";
+"settings.fpsInvalid" = "Use a frame rate between 5 and 120";
+"settings.quality.custom" = "Custom";
+"settings.lossless" = "Sharpen when still";
+"settings.losslessHint" = "Refine to pixel-perfect once the picture stops moving.";
+"settings.fitToWindow" = "Scale to fit";
+"settings.fitToWindowHint" = "Shrink the remote screen so all of it is visible at once.";
+"settings.audio" = "Sound";
+"settings.audioHint" = "Play what the remote computer is playing.";
+"settings.pointerMode" = "Pointer";
+"settings.server" = "Rendezvous server";
+"settings.serverKey" = "Server public key";
+"settings.fetchKey" = "Fetch from server";
+"settings.keyFetched" = "Public key fetched";
+"settings.keyInvalid" = "The public key is not valid base64; use “Fetch from server”";
+"settings.selfHosted" = "I run my own servers";
+"settings.directoryHint" = "DeskPair asks the portal which signalling server to use, so nothing here needs filling in.";
+"settings.keyMissing" = "Without a server key, a connection by ID verifies nothing";
+"settings.serverRequired" = "Enter the rendezvous server first";
+"settings.udpMedia" = "Video over UDP";
+"settings.udpMediaHint" = "Smoother on a good network, and falls back to TCP when it is not.";
+"settings.forceRelay" = "Always use a relay";
+"settings.forceRelayHint" = "Never connect directly, even on the same network.";
+"settings.version" = "Version";
+
+/* The three tabs */
+"nav.connect" = "Connect";
+"nav.favourites" = "Devices";
+"nav.settings" = "Settings";
+
+/* Scanning a pairing code */
+"home.scan" = "Scan a code";
+"scan.applied" = "Settings taken from %@";
+"scan.notDeskPair" = "That is not a DeskPair code.";
+"scan.noVersion" = "That code is missing its version.";
+"scan.newerVersion" = "That code was made by a newer version of DeskPair (v%d). Update this app.";
+"scan.noId" = "That code names no computer.";
+"scan.damagedKey" = "The key in that code is damaged.";
+"scan.cameraDenied" = "No camera access";
+"scan.cameraDeniedHint" = "Allow the camera in Settings to scan a pairing code.";
+"scan.unavailable" = "The scanner could not start on this device.";
+
+"clipboard.sendImage" = "Send a picture";
+"clipboard.imageSent" = "Picture sent — press Cmd+V (or Ctrl+V) on the remote computer";
+"clipboard.imageKnown" = "The remote computer already has that picture";
+"clipboard.imageFailed" = "Could not send that picture";
+
+"settings.section.account" = "Account";
+"settings.account.signedOut" = "Not signed in";
+"settings.account.signedOutHint" = "Sign in to sync your device list";
+"settings.account.devices" = "Devices: %d";
+"settings.deviceName" = "Name for this device";
+"settings.account.portal" = "Portal address";
+"settings.account.email" = "Email";
+"settings.account.password" = "Password";
+"settings.account.signInTitle" = "Sign in to your account";
+"settings.account.signIn" = "Sign in";
+"settings.account.register" = "Create an account";
+"settings.account.needEmail" = "Enter your email address.";
+"settings.account.needPassword" = "Enter your password.";
+"settings.account.verify" = "Account created. Confirm %@ from your inbox, then sign in.";
+"settings.account.unlink" = "Sign out";
+"settings.account.linked" = "Signed in as %@.";
+"settings.account.unlinked" = "Signed out.";
+"settings.account.unlinkedLocally" = "Signed out here, but the server was not told (%@). Revoke this device from the website as well.";
+"favourites.ungrouped" = "Not in a folder";
+
+"devices.edit" = "Edit";
+"devices.edit.title" = "Saved device";
+"devices.edit.name" = "Name";
+"devices.edit.password" = "Password";
+"devices.edit.passwordHint" = "Optional. A password kept here is used instead of asking, for a machine you reach often. Leave it empty to be asked each time.";
+"devices.edit.save" = "Save";
+
+"keyChanged.title" = "This computer's key has changed";
+"keyChanged.body" = "%1$@ is not presenting the key it presented before.\n\nIt was %2$@…\nIt is now %3$@…\n\nThat happens when a computer is reinstalled. It also happens when something is pretending to be it. Only trust the new key if you know why it changed.";
+"keyChanged.trust" = "Trust the new key";
+"keyChanged.cancel" = "Not now";
+"devices.signInRequired" = "Sign in to keep a device list";
+"devices.signInRequiredHint" = "The list belongs to your account, so it follows you to your other devices. Settings has the sign-in.";
+
+"account.error.badCredentials" = "That email address and password do not match.";
+"account.error.notVerified" = "Confirm your email address first. Check your inbox.";
+"account.error.disabled" = "That account has been turned off.";
+"account.error.closed" = "This server does not take new accounts.";
+"account.error.emailTaken" = "That address already has an account. Sign in instead.";
+"account.error.weakPassword" = "That password is too short.";
+"account.error.badEmail" = "That does not look like an email address.";
+"account.error.tooMany" = "Too many attempts. Wait a few minutes and try again.";
+"devices.edit.group" = "Group";
+"devices.edit.noGroup" = "No group";
+"devices.remove" = "Remove";
+"devices.group.add" = "New group";
+"devices.group.rename" = "Rename group";
+"devices.group.delete" = "Delete group";
+"devices.group.name" = "Group name";
+"devices.group.cancel" = "Cancel";
+"session.dropped" = "The connection dropped.";
+"session.droppedRetrying" = "The connection dropped. Trying again through the relay.";
+"session.closedByHost" = "The other computer ended the session.";
+
+/* Language */
+"settings.language.restart" = "Takes effect the next time DeskPair is opened. The same choice is in Settings > DeskPair > Language.";
+
+/* Why a connection failed, by what the shared module reported */
+"session.hostTooOld" = "This computer's DeskPair is older than this app needs. Update DeskPair on the computer you are connecting to.";
+"session.clientTooOld" = "This app is older than the computer's DeskPair needs. Update DeskPair on this device.";
+"session.unreachable.unknownId" = "No computer with the ID %@ is registered with the signalling server.";
+"session.unreachable.offline" = "%@ is not online right now.";
+"session.unreachable.busy" = "The signalling server is busy. Try again in a moment.";
+"session.unreachable.noRelay" = "%@ could not be reached directly and the server offered no relay.";
+"session.unreachable.noAnswer" = "The signalling server did not answer.";
+"session.failedDetail" = "The connection failed: %@";
+
+/* Video and audio problems shown over the picture */
+"video.unsupportedFormat" = "The video stream is not in a format this device can read";
+"video.noParameterSets" = "The keyframe carried no usable parameter sets";
+"video.parameterSetsFailed" = "Could not read the parameter sets (OSStatus %lld)";
+"video.blockBufferFailed" = "Could not wrap the frame for the decoder (%lld)";
+"video.copyFailed" = "Could not copy the frame into its buffer (%lld)";
+"video.sampleBufferFailed" = "Could not hand the frame to the decoder (%lld)";
+"audio.noOpus" = "This device has no Opus decoder";
+
+/* Terminal */
+"terminal.open" = "Open a terminal";
+"terminal.close" = "Close";
+"terminal.notAllowed" = "This computer does not allow a terminal. Its owner can turn one on in Settings, under Security; a DeskPair older than this one has no terminal at all.";
+"terminal.opening" = "Opening a shell…";
+"terminal.ended" = "The shell ended (exit code %lld).";
+"terminal.endedReason" = "The shell ended: %@";
+"terminal.failed" = "Could not open a shell: %@";
+"terminal.newShell" = "Open a new shell";
+"terminal.connectionLost" = "The connection was lost, and the shell with it. A shell does not survive its connection.";
+"terminal.paste" = "Paste";
+"terminal.pasteConfirm" = "Paste %lld lines into the shell? Each line runs as a command.";

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskPair.Protocol\DeskPair.Protocol.csproj" />
+    <!-- ClipboardSync lives in Core; the clipboard vectors must come from the shipping hash, not a copy of it. -->
+    <ProjectReference Include="..\..\src\DeskPair.Core\DeskPair.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "DeskPair n'utilise l'appareil photo que pour lire le code d'association affiché sur un ordinateur.";
+"NSLocalNetworkUsageDescription" = "DeskPair se connecte directement aux ordinateurs de ce réseau, sans passer par un serveur.";

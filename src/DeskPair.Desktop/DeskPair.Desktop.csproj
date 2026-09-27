@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(IsWindowsBuildHost)' == 'true'">net10.0;net10.0-windows</TargetFrameworks>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>DeskPair</AssemblyName>
+    <RootNamespace>DeskPair.Desktop</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\deskpair.ico</ApplicationIcon>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);IDE0005</NoWarn>
+    <Description>Sunllo DeskPair: the whole product in one executable -- controller UI, connection manager, tray and the host engine, all in one process.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Diagnostics" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Net.Codecrete.QrCodeGenerator" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Condition="'$(TargetFramework)' == 'net10.0-windows'" />
+  </ItemGroup>
+
+  <!--
+    One directory per platform's daemon, each compiled only into the target that can run it, so there is no
+    doubt about which platforms have one and nothing has to be compiled and then stubbed.
+
+    Engine\Service is Windows only, and its name does not say so: anything dropped in there is removed from
+    every other target without a word, which is exactly what a Linux or macOS daemon placed beside its
+    Windows counterpart would look like: code that builds, and is not there. The two entries below exist
+    to make the sibling directories the obvious place to put it, and are deliberately written even while
+    those directories are empty.
+  -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows'">
+    <Compile Remove="Engine\Service\**" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <Compile Remove="Engine\LinuxService\**" />
+    <Compile Remove="Engine\MacService\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DeskPair.Desktop.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeskPair.Core\DeskPair.Core.csproj" />
+    <ProjectReference Include="..\DeskPair.Codec.OpenH264\DeskPair.Codec.OpenH264.csproj" />
+    <ProjectReference Include="..\DeskPair.Codec.Vpx\DeskPair.Codec.Vpx.csproj" />
+    <ProjectReference Include="..\DeskPair.Platform.Windows\DeskPair.Platform.Windows.csproj" Condition="'$(TargetFramework)' == 'net10.0-windows'" />
+    <ProjectReference Include="..\DeskPair.Platform.Linux\DeskPair.Platform.Linux.csproj" Condition="'$(TargetFramework)' == 'net10.0'" />
+    <ProjectReference Include="..\DeskPair.Platform.MacOS\DeskPair.Platform.MacOS.csproj" Condition="'$(TargetFramework)' == 'net10.0'" />
+  </ItemGroup>
+
+  <Import Project="..\DeskPair.Platform.Linux\WaylandShim.targets" />
+
+</Project>

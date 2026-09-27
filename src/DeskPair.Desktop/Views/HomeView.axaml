@@ -1,0 +1,113 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:DeskPair.Desktop.Controls"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels"
+             xmlns:svc="using:DeskPair.Desktop.Services"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+  <UserControl.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="#1E2228" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer>
+    <StackPanel Margin="24" Spacing="20">
+
+      <!-- This computer: the two things a visitor needs, side by side in one card. -->
+      <StackPanel Spacing="10">
+        <TextBlock Text="{loc:Loc home.thisDesk}" Classes="section" />
+        <TextBlock Text="{loc:Loc home.serviceOffline}" Foreground="#E88" IsVisible="{Binding !IsServiceConnected}" />
+        <!-- Whether the signalling server can hear this machine: the reason an id is dialable at all. The
+             engine registers again on its own when the network returns; this line is what says so. -->
+        <TextBlock Text="{Binding ServerStateText}" Foreground="#E88" TextWrapping="Wrap" IsVisible="{Binding IsServerUnreachable}" />
+        <Border Classes="card">
+          <Grid ColumnDefinitions="*,20,1,20,*">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{loc:Loc home.id}" Classes="label" />
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Text="{Binding IdText}" FontSize="26" FontFamily="Consolas, Menlo, monospace" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="{loc:Loc home.copy}" Command="{Binding CopyIdCommand}" VerticalAlignment="Center" />
+                <!-- Hidden until a rendezvous server has assigned an id: a code for a LAN-xxxx id would be
+                     an invitation to fail, because nothing outside this network can dial it. -->
+                <Button Grid.Column="2" Content="▣" FontSize="16" Margin="4,0,0,0" VerticalAlignment="Center"
+                        ToolTip.Tip="{loc:Loc home.showQr}" IsVisible="{Binding HasConnectLink}">
+                  <Button.Flyout>
+                    <Flyout Placement="Bottom">
+                      <StackPanel Spacing="10" MaxWidth="280">
+                        <TextBlock Text="{loc:Loc home.qrTitle}" Classes="section" />
+                        <Border Background="White" CornerRadius="6" Padding="8" HorizontalAlignment="Center">
+                          <controls:QrCodeView Text="{Binding ConnectLinkText}" Width="220" Height="220" />
+                        </Border>
+                        <TextBlock Text="{loc:Loc home.qrHint}" Classes="label" TextWrapping="Wrap" />
+                        <TextBlock Text="{loc:Loc home.qrOneTime}" Classes="label" TextWrapping="Wrap" Foreground="#C9A227" />
+                      </StackPanel>
+                    </Flyout>
+                  </Button.Flyout>
+                </Button>
+              </Grid>
+            </StackPanel>
+
+            <Border Grid.Column="2" Background="#2C323A" />
+
+            <StackPanel Grid.Column="4" Spacing="6">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Loc home.password}" Classes="label" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsTempPasswordEnabled, Mode=OneWay}"
+                              Command="{Binding ToggleTempPasswordEnabledCommand}"
+                              OnContent="" OffContent="" IsEnabled="{Binding IsServiceConnected}" />
+              </Grid>
+              <!-- A temporary password is generated, copied and replaced; it is not typed. -->
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Text="{Binding TempPasswordText}" FontSize="22" FontFamily="Consolas, Menlo, monospace" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="{loc:Loc home.copy}" Command="{Binding CopyPasswordCommand}" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Content="⟳" ToolTip.Tip="{loc:Loc home.refreshPassword}" Command="{Binding RegeneratePasswordCommand}" IsEnabled="{Binding IsServiceConnected}" Margin="4,0,0,0" />
+              </Grid>
+              <TextBlock Text="{loc:Loc home.passwordPinned}" Classes="label" IsVisible="{Binding IsTempPasswordPinned}" />
+            </StackPanel>
+          </Grid>
+        </Border>
+        <TextBlock Text="{loc:Loc home.tempPasswordHint}" Classes="label" />
+      </StackPanel>
+
+      <!-- The computer to control: where it is, and where you have been lately. -->
+      <StackPanel Spacing="10">
+        <TextBlock Text="{loc:Loc home.controlRemote}" Classes="section" />
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{loc:Loc home.remoteDesk}" Classes="label" />
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+              <TextBox Text="{Binding RemoteId}" Watermark="{loc:Loc home.remoteId}" FontSize="16" x:Name="RemoteIdBox" />
+              <Button Grid.Column="1" Content="{loc:Loc home.connect}" Command="{Binding ConnectCommand}" IsDefault="True" Classes="accent" Margin="8,0,0,0" />
+              <Button Grid.Column="2" Content="{loc:Loc home.fileTransfer}" Command="{Binding FileTransferCommand}" Margin="8,0,0,0" />
+              <Button Grid.Column="3" Content="{loc:Loc terminal.open}" Command="{Binding TerminalCommand}" Margin="8,0,0,0" />
+            </Grid>
+
+            <TextBlock Text="{loc:Loc home.recent}" Classes="label" Margin="0,6,0,0" />
+            <TextBlock Text="{loc:Loc home.noRecent}" Foreground="#666" IsVisible="{Binding !HasRecent}" />
+            <ListBox ItemsSource="{Binding Recent}" SelectedItem="{Binding SelectedRecent}" MaxHeight="220"
+                     Background="Transparent" BorderThickness="0" IsVisible="{Binding HasRecent}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="svc:RecentPeer">
+                  <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                    <controls:PlatformIcon Platform="{Binding Platform}" Foreground="#9AA6B8" Width="16" Height="16"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" ToolTip.Tip="{Binding Platform}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Id}" FontFamily="Consolas, Menlo, monospace" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding Name}" Foreground="#888" VerticalAlignment="Center" Margin="10,0"
+                               TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="3" Content="{loc:Loc home.addToDevices}" FontSize="12" Padding="8,2"
+                            Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).AddToDevicesCommand}"
+                            CommandParameter="{Binding}" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

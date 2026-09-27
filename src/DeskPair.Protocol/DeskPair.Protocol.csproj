@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Wire protocol: protobuf messages, framing, crypto and handshake shared by peers and servers.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="..\..\protos\sunllo\*.proto" ProtoRoot="..\..\protos" GrpcServices="None" Link="Protos\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DeskPair.Tools.Vectors" />
+  </ItemGroup>
+
+</Project>

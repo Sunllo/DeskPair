@@ -1,0 +1,248 @@
+/* 连接 */
+"connect.target" = "对方 ID 或地址";
+"connect.password" = "密码";
+"connect.action" = "连接";
+"connect.retry" = "重试";
+
+"progress.lookingUp" = "正在查找主机";
+"progress.measuring" = "正在检查这个网络";
+"progress.punching" = "正在建立直连通道";
+"progress.connecting" = "连接中…";
+"progress.waiting" = "等待对方接受…";
+
+/* 会话中。用语沿用桌面端，两边说同样的话。 */
+"session.disconnect" = "断开";
+/* 会话栏的四个面板。要短：它们放在窄标签页的图标下面。 */
+"session.tab.actions" = "操作";
+"session.tab.input" = "触控";
+"session.tab.screen" = "屏幕";
+"session.tab.keyboard" = "键盘";
+"session.gestures" = "手势说明";
+"session.quality" = "画质";
+"session.quality.low" = "流畅";
+"session.quality.balanced" = "平衡";
+"session.quality.best" = "高画质";
+"session.fit" = "适应屏幕";
+"session.original" = "1:1";
+"session.resolution" = "分辨率";
+"session.resolution.original" = "原始";
+"session.resolution.failed" = "无法更改分辨率：%@";
+"session.remoteCursor" = "远程指针";
+"session.remoteCursorHint" = "同时显示对方电脑的鼠标指针。";
+"session.ctrlAltDel" = "Ctrl+Alt+Del";
+"session.lock" = "锁定";
+"session.refresh" = "刷新";
+"session.stalled" = "连接中断…正在等待";
+"session.stalledHint" = "画面停在最后收到的那一帧";
+"display.label" = "屏幕 %d";
+
+/* 指针模式。桌面端有真正的鼠标，没有对应项目。 */
+"mode.touch" = "触控";
+"mode.mouse" = "鼠标";
+
+"gesture.tap" = "单指轻点";
+"gesture.tapTouch" = "点在哪里就按在哪里";
+"gesture.tapMouse" = "在指针位置点击";
+"gesture.twoTap" = "双指轻点";
+"gesture.twoTapAction" = "右键";
+"gesture.drag" = "单指拖动";
+"gesture.dragTouch" = "移动画面";
+"gesture.dragMouse" = "移动指针";
+"gesture.twoDrag" = "双指拖动";
+"gesture.twoDragAction" = "移动画面";
+"gesture.pinch" = "双指捏合";
+"gesture.pinchAction" = "缩放画面";
+"gesture.three" = "三指上下滑动";
+"gesture.threeAction" = "滚轮";
+
+/* 键盘 */
+"keyboard.type" = "在此输入";
+"keyboard.pin" = "固定";
+"keyboard.function" = "Fn";
+"keyboard.numpad" = "数字";
+"keyboard.more" = "更多";
+"keyboard.ime" = "输入法";
+"clipboard.send" = "发送剪贴板";
+
+"audio.unavailable" = "没有声音：%@";
+"video.unavailable" = "没有画面：%@";
+
+/* 首页。用语沿用桌面端的 Strings.cs，两边说同样的话。 */
+"home.controlRemote" = "控制远程电脑";
+"home.favouritesEmptyHint" = "点一下最近连接旁边的心形，就会保存在这里。";
+"home.noFavourites" = "还没有设备";
+"home.recent" = "最近连接";
+"presence.online" = "在线";
+"presence.offline" = "离线";
+"presence.unknown" = "未知";
+"home.noRecent" = "还没有最近连接";
+"home.forgetRecent" = "从最近连接移除";
+"home.noServer" = "尚未设置信令服务器。请到设置里填写后再用 ID 连接。";
+
+/* 密码输入面板 */
+"connect.cancel" = "取消";
+
+/* 设置 */
+"settings.title" = "设置";
+"settings.section.general" = "常规";
+"settings.section.session" = "连接他人时";
+"settings.viewOnly" = "仅查看";
+"settings.viewOnlyHint" = "只看，不能操作对方电脑。";
+"settings.lockAfterEnd" = "结束时锁定";
+"settings.lockAfterEndHint" = "断开后让对方电脑保持锁定。";
+"session.rtt" = "往返延迟";
+"session.waitingForPicture" = "正在等待 %@ 的画面…";
+"session.pictureLate" = "还没有画面。对方电脑可能停在锁定或登录界面，Windows 不允许捕获这种画面，需要有人解锁后画面才会出现。";
+"session.signal.platform" = "系统";
+"session.signal.route" = "连接方式";
+"session.route.lan" = "同一网络直连";
+"session.route.direct" = "直连";
+"session.route.punched" = "点对点";
+"session.route.relay" = "经中继服务器";
+"session.inputRefused" = "对方电脑目前不接受操作。";
+"settings.section.network" = "网络";
+"settings.section.about" = "关于 DeskPair";
+"settings.language" = "语言";
+"settings.language.system" = "跟随系统";
+"settings.recentLimit" = "最近连接";
+"settings.recentLimitHint" = "列表里最多保留几条。";
+"settings.clearRecent" = "清除最近连接";
+"settings.defaultQuality" = "画质";
+"settings.defaultQualityHint" = "新会话从哪个画质开始。";
+"settings.bitrate" = "码率 (kbps)";
+"settings.bitrateInvalid" = "码率请填 100 到 200000 kbps";
+"settings.fps" = "帧率";
+"settings.fpsInvalid" = "帧率请填 5 到 120";
+"settings.quality.custom" = "自定义";
+"settings.lossless" = "静止后锐化";
+"settings.losslessHint" = "画面停止变动后，锐化至逐像素清晰。";
+"settings.fitToWindow" = "缩放至适应屏幕";
+"settings.fitToWindowHint" = "把远程画面缩小到一次就能看完整。";
+"settings.audio" = "声音";
+"settings.audioHint" = "播放远程电脑正在播放的声音。";
+"settings.pointerMode" = "指针";
+"settings.server" = "信令服务器";
+"settings.serverKey" = "服务器公钥";
+"settings.fetchKey" = "从服务器获取";
+"settings.keyFetched" = "已获取公钥";
+"settings.keyInvalid" = "公钥不是有效的 base64，请按“从服务器获取”";
+"settings.selfHosted" = "我运行自己的服务器";
+"settings.directoryHint" = "DeskPair 会向门户询问要用哪一台信令服务器，这里不需要填任何东西。";
+"settings.keyMissing" = "没有服务器公钥，用 ID 连接时不会验证任何东西";
+"settings.serverRequired" = "请先填写信令服务器";
+"settings.udpMedia" = "视频走 UDP";
+"settings.udpMediaHint" = "网络好时更流畅，网络不好时自动退回 TCP。";
+"settings.forceRelay" = "一律使用中继";
+"settings.forceRelayHint" = "即使在同一个网络也不直连。";
+"settings.version" = "版本";
+
+/* 三个标签页 */
+"nav.connect" = "连接";
+"nav.favourites" = "设备列表";
+"nav.settings" = "设置";
+
+/* 扫描配对二维码 */
+"home.scan" = "扫描二维码";
+"scan.applied" = "已带入 %@ 的设置";
+"scan.notDeskPair" = "这不是 DeskPair 的二维码。";
+"scan.noVersion" = "这个二维码缺少版本信息。";
+"scan.newerVersion" = "这个二维码是较新版本的 DeskPair 生成的（v%d），请先更新本 App。";
+"scan.noId" = "这个二维码没有指定任何电脑。";
+"scan.damagedKey" = "二维码里的密钥已损坏。";
+"scan.cameraDenied" = "没有相机权限";
+"scan.cameraDeniedHint" = "请到“设置”里允许使用相机，才能扫描配对二维码。";
+"scan.unavailable" = "这台设备上的扫码器无法启动。";
+
+"clipboard.sendImage" = "发送图片";
+"clipboard.imageSent" = "图片已发送——在远程电脑上按 Cmd+V（或 Ctrl+V）粘贴";
+"clipboard.imageKnown" = "远程电脑已经有这张图片了";
+"clipboard.imageFailed" = "无法发送这张图片";
+
+"settings.section.account" = "账号";
+"settings.account.signedOut" = "未登录";
+"settings.account.signedOutHint" = "登录后，设备列表会跟着账号同步";
+"settings.account.devices" = "设备：%d";
+"settings.deviceName" = "这台设备的名称";
+"settings.account.portal" = "门户地址";
+"settings.account.email" = "电子邮件";
+"settings.account.password" = "密码";
+"settings.account.signInTitle" = "登录账号";
+"settings.account.signIn" = "登录";
+"settings.account.register" = "创建账号";
+"settings.account.needEmail" = "请输入电子邮件地址。";
+"settings.account.needPassword" = "请输入密码。";
+"settings.account.verify" = "账号已创建。请到 %@ 的邮箱完成确认，然后登录。";
+"settings.account.unlink" = "退出登录";
+"settings.account.linked" = "已以 %@ 登录。";
+"settings.account.unlinked" = "已退出登录。";
+"settings.account.unlinkedLocally" = "本机已退出登录，但没有通知服务器（%@）。请同时在网站上撤销这台设备。";
+"favourites.ungrouped" = "未分组";
+
+"devices.edit" = "编辑";
+"devices.edit.title" = "已保存的设备";
+"devices.edit.name" = "名称";
+"devices.edit.password" = "密码";
+"devices.edit.passwordHint" = "可不填。存在这里的密码会在连接时直接使用，不再询问，适合常连的电脑。留空则每次询问。";
+"devices.edit.save" = "保存";
+
+"keyChanged.title" = "这台电脑的密钥变了";
+"keyChanged.body" = "%1$@ 这次出示的密钥和之前不同。\n\n原来是 %2$@…\n现在是 %3$@…\n\n电脑重装系统时会这样。有东西在冒充它时也会这样。只有在你知道它为什么会变的时候，才信任新的密钥。";
+"keyChanged.trust" = "信任新的密钥";
+"keyChanged.cancel" = "先不要";
+"devices.signInRequired" = "登录后才能使用设备列表";
+"devices.signInRequiredHint" = "列表属于你的账号，所以会跟着你到其他设备上。登录在“设置”里。";
+
+"account.error.badCredentials" = "这组电子邮件和密码与任何账号都不匹配。";
+"account.error.notVerified" = "请先确认你的电子邮件地址。查看你的邮箱。";
+"account.error.disabled" = "这个账号已被停用。";
+"account.error.closed" = "这台服务器不开放注册新账号。";
+"account.error.emailTaken" = "这个地址已经有账号了，请直接登录。";
+"account.error.weakPassword" = "密码太短。";
+"account.error.badEmail" = "这看起来不像电子邮件地址。";
+"account.error.tooMany" = "尝试次数过多，请等几分钟后再试。";
+"devices.edit.group" = "分组";
+"devices.edit.noGroup" = "不分组";
+"devices.remove" = "移除";
+"devices.group.add" = "新建分组";
+"devices.group.rename" = "重命名分组";
+"devices.group.delete" = "删除分组";
+"devices.group.name" = "分组名称";
+"devices.group.cancel" = "取消";
+"session.dropped" = "连接中断。";
+"session.droppedRetrying" = "连接中断，正在改用中继服务器重试。";
+"session.closedByHost" = "对方电脑结束了这次会话。";
+
+/* 语言 */
+"settings.language.restart" = "下次打开 DeskPair 时生效。也可以在“设置 › DeskPair › 语言”里选择。";
+
+/* 连接失败的原因，按共享模块回报的内容 */
+"session.hostTooOld" = "这台电脑的 DeskPair 版本太旧，这个 App 无法连上。请更新你要连接的那台电脑上的 DeskPair。";
+"session.clientTooOld" = "这个 App 版本太旧，对方电脑的 DeskPair 无法接受。请更新这台设备上的 DeskPair。";
+"session.unreachable.unknownId" = "信令服务器上没有注册 ID 为 %@ 的电脑。";
+"session.unreachable.offline" = "%@ 目前不在线。";
+"session.unreachable.busy" = "信令服务器忙碌中，请稍后再试。";
+"session.unreachable.noRelay" = "无法直接连上 %@，服务器也没有提供中继。";
+"session.unreachable.noAnswer" = "信令服务器没有回应。";
+"session.failedDetail" = "连接失败：%@";
+
+/* 显示在画面上的视频和音频问题 */
+"video.unsupportedFormat" = "这台设备无法读取这种格式的视频流";
+"video.noParameterSets" = "关键帧没有携带可用的参数集";
+"video.parameterSetsFailed" = "无法读取参数集（OSStatus %lld）";
+"video.blockBufferFailed" = "无法把帧包装给解码器（%lld）";
+"video.copyFailed" = "无法把帧复制到缓冲区（%lld）";
+"video.sampleBufferFailed" = "无法把帧交给解码器（%lld）";
+"audio.noOpus" = "这台设备没有 Opus 解码器";
+
+/* Terminal */
+"terminal.open" = "打开终端";
+"terminal.close" = "关闭";
+"terminal.notAllowed" = "这台电脑不允许终端。所有者可以在“设置 › 安全”中开启；比这一版旧的 DeskPair 没有终端功能。";
+"terminal.opening" = "正在打开 shell…";
+"terminal.ended" = "shell 已结束（退出代码 %lld）。";
+"terminal.endedReason" = "shell 已结束：%@";
+"terminal.failed" = "无法打开 shell：%@";
+"terminal.newShell" = "打开一个新的 shell";
+"terminal.connectionLost" = "连接已断开，shell 也随之结束。shell 不会在连接结束后保留。";
+"terminal.paste" = "粘贴";
+"terminal.pasteConfirm" = "要把 %lld 行粘贴到 shell 吗？每一行都会作为命令执行。";

@@ -1,0 +1,231 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:DeskPair.Desktop.Controls"
+             xmlns:vm="using:DeskPair.Desktop.ViewModels"
+             xmlns:loc="using:DeskPair.Desktop.Localization"
+             x:Class="DeskPair.Desktop.Views.DeviceListView"
+             x:DataType="vm:DeviceListViewModel">
+  <UserControl.Styles>
+    <!-- The group a dragged device would land in. -->
+    <Style Selector="Border.group">
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="8,6" />
+    </Style>
+    <Style Selector="Border.group.drop">
+      <Setter Property="BorderBrush" Value="#2E6BD6" />
+      <Setter Property="Background" Value="#182233" />
+    </Style>
+    <Style Selector="Border.device">
+      <Setter Property="Background" Value="#1E2228" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+    <!-- Where a dragged device came from, while it is in the air. -->
+    <Style Selector="Border.device.lifted">
+      <Setter Property="Opacity" Value="0.35" />
+    </Style>
+    <!-- The card a popover editor sits in, floating beside the button that opened it. -->
+    <Style Selector="Border.popover">
+      <Setter Property="Background" Value="#252A31" />
+      <Setter Property="BorderBrush" Value="#3A424D" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="14" />
+      <Setter Property="BoxShadow" Value="0 6 20 0 #77000000" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <DockPanel Margin="16,12,16,12">
+      <StackPanel DockPanel.Dock="Top" Spacing="8">
+        <TextBlock Text="{loc:Loc devices.title}" Classes="title" />
+        <TextBlock Text="{loc:Loc devices.intro}" Classes="hint" TextWrapping="Wrap" />
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,4,0,0" IsVisible="{Binding CanUseList}">
+          <TextBox Text="{Binding Search}" Watermark="{loc:Loc devices.search}" />
+          <Button Grid.Column="1" Content="{loc:Loc devices.addGroup}" Command="{Binding BeginAddGroupCommand}" Margin="8,0,0,0" />
+          <Button Grid.Column="2" Content="{loc:Loc devices.add}" Command="{Binding BeginAddCommand}" Classes="accent" Margin="8,0,0,0" />
+        </Grid>
+        <TextBlock Text="{loc:Loc devices.dragHint}" Classes="hint" TextWrapping="Wrap">
+          <TextBlock.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.And}">
+              <Binding Path="CanUseList" />
+              <Binding Path="HasDevices" />
+            </MultiBinding>
+          </TextBlock.IsVisible>
+        </TextBlock>
+
+        <!-- The list is the account's: it lives in the portal's database, folders and all, and follows
+             somebody to whatever else they sign in on. Without an account there is nowhere for it to live
+             beyond this machine, so the page says what it needs rather than quietly keeping a local copy
+             that would surprise them later. Both phones say the same thing on the same screen. -->
+        <StackPanel Spacing="6" Margin="0,8,0,0" IsVisible="{Binding !CanUseList}">
+          <TextBlock Text="{loc:Loc devices.signInRequired}" Classes="section" />
+          <TextBlock Text="{loc:Loc devices.signInRequiredHint}" Classes="hint" TextWrapping="Wrap" />
+        </StackPanel>
+      </StackPanel>
+
+      <ScrollViewer Margin="0,10,0,0" IsVisible="{Binding CanUseList}">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{loc:Loc devices.empty}" Classes="hint" TextWrapping="Wrap" IsVisible="{Binding !HasDevices}" />
+          <ItemsControl ItemsSource="{Binding Groups}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:DeviceGroupViewModel">
+                <Border Classes="group" Classes.drop="{Binding IsDropTarget}" Margin="0,0,0,6">
+                  <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+                      <Button Content="{Binding ToggleGlyph}" ToolTip.Tip="{Binding ToggleHint}"
+                              Background="Transparent" BorderThickness="0" Padding="4,0" FontSize="13"
+                              Command="{Binding $parent[UserControl].((vm:DeviceListViewModel)DataContext).ToggleGroupCommand}"
+                              CommandParameter="{Binding}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Name}" Classes="section" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="2" Text="{Binding CountText}" Classes="hint" VerticalAlignment="Center"
+                                 Margin="8,0,0,0" IsVisible="{Binding !IsExpanded}" />
+                      <Button Grid.Column="4" Content="{loc:Loc devices.renameGroup}" IsVisible="{Binding CanEdit}"
+                              Background="Transparent" BorderThickness="0" Foreground="#8A929E"
+                              Command="{Binding $parent[UserControl].((vm:DeviceListViewModel)DataContext).BeginRenameGroupCommand}"
+                              CommandParameter="{Binding}" />
+                      <Button Grid.Column="5" Content="{loc:Loc devices.deleteGroup}" IsVisible="{Binding CanEdit}"
+                              Background="Transparent" BorderThickness="0" Foreground="#8A929E"
+                              ToolTip.Tip="{loc:Loc devices.groupDeleteHint}"
+                              Command="{Binding $parent[UserControl].((vm:DeviceListViewModel)DataContext).DeleteGroupCommand}"
+                              CommandParameter="{Binding}" />
+                    </Grid>
+                    <TextBlock Text="{loc:Loc devices.groupEmpty}" Classes="hint" Margin="0,0,0,6">
+                      <TextBlock.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                          <Binding Path="IsEmpty" />
+                          <Binding Path="IsExpanded" />
+                        </MultiBinding>
+                      </TextBlock.IsVisible>
+                    </TextBlock>
+                    <ItemsControl ItemsSource="{Binding Devices}" IsVisible="{Binding IsExpanded}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:DeviceRowViewModel">
+                          <Border Classes="device" Classes.lifted="{Binding IsDragging}" Margin="0,0,0,6">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,10,0">
+                                <Ellipse Width="10" Height="10" VerticalAlignment="Center"
+                                         Fill="{Binding StateColour}" ToolTip.Tip="{Binding StateText}" />
+                                <controls:PlatformIcon Platform="{Binding Platform}" Foreground="#9AA6B8" Width="18" Height="18"
+                                                       VerticalAlignment="Center" ToolTip.Tip="{Binding Platform}" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Subtitle}" Classes="hint" />
+                                <TextBlock Text="{Binding LastConnectedText}" Classes="hint" />
+                                <TextBlock Text="{Binding Note}" Classes="hint" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding StateText}" Classes="hint" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <Button Content="{loc:Loc devices.connect}" Classes="accent" IsEnabled="{Binding CanConnect}"
+                                        Command="{Binding $parent[UserControl].((vm:DeviceListViewModel)DataContext).ConnectCommand}"
+                                        CommandParameter="{Binding}" />
+                                <Button Content="{loc:Loc devices.files}" IsEnabled="{Binding CanConnect}"
+                                        Command="{Binding $parent[UserControl].((vm:DeviceListViewModel)DataContext).OpenFilesCommand}"
+                                        CommandParameter="{Binding}" />
+                                <Button Content="{loc:Loc terminal.open}" IsEnabled="{Binding CanConnect}"
+                                        Command="{Binding $parent[UserControl].((vm:DeviceListViewModel)DataContext).OpenTerminalCommand}"
+                                        CommandParameter="{Binding}" />
+                                <Button Content="{loc:Loc devices.edit}"
+                                        Command="{Binding $parent[UserControl].((vm:DeviceListViewModel)DataContext).BeginEditCommand}"
+                                        CommandParameter="{Binding}" />
+                                <Button Content="{loc:Loc devices.delete}"
+                                        Command="{Binding $parent[UserControl].((vm:DeviceListViewModel)DataContext).DeleteDeviceCommand}"
+                                        CommandParameter="{Binding}" />
+                              </StackPanel>
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+
+    <!--
+      What is being dragged, drawn under the pointer. It is not hit-testable, so it never interferes with the
+      drop target underneath it.
+    -->
+    <Canvas x:Name="GhostLayer" IsHitTestVisible="False" IsVisible="False">
+      <Border x:Name="DragGhost" x:DataType="vm:DeviceRowViewModel" Classes="device" Width="320" Opacity="0.9"
+              BorderBrush="#2E6BD6" BorderThickness="1" BoxShadow="0 6 20 0 #88000000">
+        <Grid ColumnDefinitions="Auto,*">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,10,0">
+            <Ellipse Width="10" Height="10" VerticalAlignment="Center" Fill="{Binding StateColour}" />
+            <controls:PlatformIcon Platform="{Binding Platform}" Foreground="#9AA6B8" Width="18" Height="18" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding Subtitle}" Classes="hint" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Canvas>
+
+    <!--
+      The editors float beside whatever button opened them; the code-behind sets the placement target when the
+      view model says an editor is open. Popups take no room in the layout, so they sit at the end.
+    -->
+    <Popup x:Name="DevicePopup" Placement="BottomEdgeAlignedRight" VerticalOffset="6"
+           IsLightDismissEnabled="True" OverlayDismissEventPassThrough="True">
+      <Border Classes="popover" Width="380">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding DeviceEditorTitle}" Classes="section" Margin="0,0,0,4" />
+          <TextBlock Text="{loc:Loc devices.target}" Classes="label" />
+          <TextBox Text="{Binding DraftTarget}" Watermark="{loc:Loc devices.targetHint}" x:Name="TargetBox" />
+
+          <TextBlock Text="{loc:Loc devices.alias}" Classes="label" Margin="0,4,0,0" />
+          <TextBox Text="{Binding DraftAlias}" Watermark="{loc:Loc devices.aliasHint}" />
+
+          <TextBlock Text="{loc:Loc devices.group}" Classes="label" Margin="0,4,0,0" />
+          <TextBox Text="{Binding DraftGroup}" Watermark="{loc:Loc devices.groupHint}" />
+          <ItemsControl ItemsSource="{Binding KnownGroups}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Button Content="{Binding}" Margin="0,0,4,4" Padding="8,2" FontSize="12"
+                        Command="{Binding $parent[ItemsControl].((vm:DeviceListViewModel)DataContext).PickGroupCommand}"
+                        CommandParameter="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Text="{loc:Loc devices.note}" Classes="label" Margin="0,4,0,0" />
+          <TextBox Text="{Binding DraftNote}" />
+
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,6,0,0">
+            <Button Content="{loc:Loc devices.cancel}" Command="{Binding CancelEditCommand}" />
+            <Button Content="{loc:Loc devices.save}" Command="{Binding SaveDeviceCommand}" Classes="accent" IsDefault="True" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
+
+    <Popup x:Name="GroupPopup" Placement="BottomEdgeAlignedRight" VerticalOffset="6"
+           IsLightDismissEnabled="True" OverlayDismissEventPassThrough="True">
+      <Border Classes="popover" Width="320">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding GroupEditorTitle}" Classes="section" Margin="0,0,0,4" />
+          <TextBlock Text="{loc:Loc devices.groupName}" Classes="label" />
+          <TextBox Text="{Binding DraftGroupName}" Watermark="{loc:Loc devices.groupNameHint}" x:Name="GroupNameBox" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,6,0,0">
+            <Button Content="{loc:Loc devices.cancel}" Command="{Binding CancelGroupEditCommand}" />
+            <Button Content="{loc:Loc devices.save}" Command="{Binding SaveGroupCommand}" Classes="accent" IsDefault="True" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
+  </Panel>
+</UserControl>
