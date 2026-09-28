@@ -103,8 +103,9 @@ function Add-Artifact([string]$Path, [string]$Platform, [string]$Arch, [string]$
     $item = Get-Item $Path
     $hash = (Get-FileHash -Algorithm SHA256 $Path).Hash.ToLowerInvariant()
 
-    # sha256sum -c format: two spaces, so a reader can verify with the tool they already have.
-    "$hash  $($item.Name)" | Set-Content -Path "$Path.sha256" -Encoding ascii
+    # sha256sum -c format: two spaces, so a reader can verify with the tool they already have. And a bare LF: with
+    # Set-Content's CRLF, sha256sum took the carriage return for part of the file name and failed every line.
+    [System.IO.File]::WriteAllText("$Path.sha256", "$hash  $($item.Name)`n", [System.Text.Encoding]::ASCII)
     $script:artifacts += [ordered]@{
         platform = $Platform
         arch     = $Arch
@@ -375,8 +376,10 @@ if ($SigningKey) {
 }
 
 # One combined file beside the side-cars, so `sha256sum -c SHA256SUMS` checks the lot.
-$sums = Get-ChildItem $release -Filter *.sha256 | ForEach-Object { Get-Content $_.FullName }
-if ($sums) { $sums | Set-Content -Path (Join-Path $release "SHA256SUMS") -Encoding ascii }
+$sums = @(Get-ChildItem $release -Filter *.sha256 | ForEach-Object { Get-Content $_.FullName })
+if ($sums) {
+    [System.IO.File]::WriteAllText((Join-Path $release "SHA256SUMS"), (($sums -join "`n") + "`n"), [System.Text.Encoding]::ASCII)
+}
 
 Remove-Item $stageRoot -Recurse -Force -ErrorAction SilentlyContinue
 
