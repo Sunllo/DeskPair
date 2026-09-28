@@ -77,9 +77,18 @@ Jede Version steht auf der [Release-Seite](https://github.com/Sunllo/DeskPair/re
 
 | System | Dateien |
 |---|---|
-| Windows 10 1809 oder neuer | `DeskPair-<version>-win-x64.zip`, `-win-arm64.zip`, `-win-x86.zip` (32 Bit). Noch nicht codesigniert, daher fragt SmartScreen vor dem ersten Start nach. |
+| Windows 10 1809 oder neuer | x64, ARM64 und x86 (32 Bit): jeweils ein Installationsprogramm (`.msi`) und eine portable `.zip`, benannt wie `DeskPair-<version>-win-x64.msi`. Noch nicht codesigniert, daher fragt SmartScreen vor dem ersten Start nach. |
 | macOS 13 oder neuer | `DeskPair-<version>-arm64.dmg` (Apple Silicon), `-x86_64.dmg` (Intel). Signiert und von Apple notarisiert. |
 | Linux, glibc 2.31 oder neuer | x64, ARM64 und 32-Bit-ARM (ARMv7): jeweils ein `.deb`, ein `.rpm`, ein Arch-Paket und ein `.tar.gz`. |
+
+Unter Windows legt das Installationsprogramm DeskPair unter „Programme“ ab und trägt es ins Startmenü und unter
+„Einstellungen › Apps“ ein, wo es sich auch wieder entfernen lässt; neuere Versionen installiert die App selbst,
+sobald ein Administrator zustimmt. Die `.zip` läuft dort, wo sie entpackt wurde, und aktualisiert sich selbst. Ohne
+Rückfragen installieren, etwa auf vielen Computern zugleich:
+
+```
+msiexec /i DeskPair-<version>-win-x64.msi /qn
+```
 
 Unter Linux installieren Sie das Paket für Ihre Distribution mit deren eigenen Werkzeugen (gezeigt sind die x64-Namen):
 

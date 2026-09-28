@@ -8,13 +8,20 @@ namespace DeskPair.Core.Update;
 /// <summary>One downloadable file, as the release manifest lists it. <see cref="Name"/> is a file name, never a path.</summary>
 public sealed record ReleaseFile(string Platform, string Arch, string Name, long Size, string Sha256, bool Signed = false)
 {
-    /// <summary>Whether this file is the one for the machine this code is running on, and one it can install itself.</summary>
-    public bool IsForThisMachine() =>
+    /// <summary>
+    /// Whether this file is the one for the machine this code is running on, and one it can put in place itself: the
+    /// archive or disk image a copy that nothing installed is replaced from.
+    /// </summary>
+    public bool IsForThisMachine() => IsThisMachine && !IsSystemPackage && !IsWindowsInstaller;
+
+    /// <summary>Whether this is the Windows installer for the machine this code is running on: what a copy Windows Installer put here updates from.</summary>
+    public bool IsInstallerForThisMachine() => IsThisMachine && IsWindowsInstaller;
+
+    private bool IsThisMachine =>
         string.Equals(Platform, ThisPlatform, StringComparison.OrdinalIgnoreCase)
         && string.Equals(Arch, ThisArch, StringComparison.OrdinalIgnoreCase)
         && Name.Length > 0
-        && Path.GetFileName(Name) == Name
-        && !IsSystemPackage;
+        && Path.GetFileName(Name) == Name;
 
     /// <summary>
     /// A .deb, .rpm or Arch package: the system's package manager installs those, and the app never does. Decided
@@ -24,6 +31,13 @@ public sealed record ReleaseFile(string Platform, string Arch, string Name, long
         Name.EndsWith(".deb", StringComparison.OrdinalIgnoreCase)
         || Name.EndsWith(".rpm", StringComparison.OrdinalIgnoreCase)
         || Name.EndsWith(".pkg.tar.zst", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// A Windows Installer package. Only a copy that one installed updates from the next one; a copy run from the .zip
+    /// never takes it, and an app from before installers existed would not know what to do with it -- it takes the
+    /// first file listed for its machine and unpacks it as a zip, which is why the manifest lists the zip first.
+    /// </summary>
+    public bool IsWindowsInstaller => Name.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
 
     public static string ThisPlatform =>
         OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : OperatingSystem.IsLinux() ? "linux" : "other";
@@ -45,8 +59,12 @@ public sealed record ReleaseFile(string Platform, string Arch, string Name, long
 /// <summary>The release manifest the portal publishes at <c>/downloads/release.json</c>, as far as an installer needs it.</summary>
 public sealed record SignedReleaseManifest(string Channel, string Version, IReadOnlyList<ReleaseFile> Files)
 {
-    /// <summary>The file for this machine, or null when the release has none for it.</summary>
-    public ReleaseFile? FileForThisMachine() => Files.FirstOrDefault(f => f.IsForThisMachine());
+    /// <summary>
+    /// The file for this machine, or null when the release has none for it: the installer when Windows Installer put
+    /// this copy here (<paramref name="installed"/>), the archive or disk image otherwise.
+    /// </summary>
+    public ReleaseFile? FileForThisMachine(bool installed = false) =>
+        Files.FirstOrDefault(f => installed ? f.IsInstallerForThisMachine() : f.IsForThisMachine());
 }
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true)]

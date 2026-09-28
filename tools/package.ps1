@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-    Builds the downloadable archives for a release, and the release.json the website reads.
+    Builds the downloadable files for a release -- archives, the Windows installers and the Linux packages -- and the
+    release.json the website reads.
 
 .DESCRIPTION
     This is the release path. publish.ps1 is the inner loop -- build-numbered folders, -Loose and -Trimmed
@@ -65,6 +66,13 @@ if ($Matches[1] -ne "$core.0") {
 
 if ((git -C $repo status --porcelain)) {
     Write-Warning "The working tree is dirty. The build will carry a +sha naming a commit that does not contain it."
+}
+
+# The Windows installers are built with WiX v7, which refuses to run until this machine has accepted its Open Source
+# Maintenance Fee EULA. Accepting it is a person's decision, so it is asked for here, before an hour of building,
+# rather than made on their behalf.
+if (($Rids | Where-Object { $_ -like "win-*" }) -and -not (Test-Path (Join-Path $env:USERPROFILE ".wix\wix7-osmf-eula.txt"))) {
+    throw "The Windows installers need WiX v7, whose Open Source Maintenance Fee EULA this machine has not accepted. Read it (packaging\windows\DeskPair.wixproj says where) and, if you accept it: dotnet build packaging\windows\DeskPair.wixproj -t:AcceptEula -p:EulaId=wix7"
 }
 
 $commit = (git -C $repo rev-parse --short=7 HEAD 2>$null)
@@ -150,6 +158,28 @@ function Add-LinuxPackages([string]$Rid, [string]$Stage) {
     }
 }
 
+# ---- Windows installer --------------------------------------------------------------------------------
+# packaging/windows/DeskPair.wixproj around the staged folder: one MSI per architecture, holding exactly what the zip
+# holds, plus the marker that tells the app Windows Installer put it there and the licence.
+function Add-WindowsInstaller([string]$Rid, [string]$Stage, [string]$Name) {
+    $platform = @{ "win-x64" = "x64"; "win-x86" = "x86"; "win-arm64" = "ARM64" }[$Rid]
+    $out = Join-Path $stageRoot "msi-$Rid"
+    # Windows Installer versions are three numbers, so a pre-release goes out as its core version. --no-incremental:
+    # WiX judges a build up to date by its sources and payload, not by the version or the name asked for, and then
+    # looks for an MSI under the new name that it never wrote.
+    $log = & dotnet build (Join-Path $repo "packaging\windows\DeskPair.wixproj") -c Release -nologo --no-incremental `
+        "-p:Platform=$platform" "-p:PayloadDir=$Stage" "-p:ProductVersion=$core" "-p:OutputName=$Name" -o $out 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $log | Write-Host
+        throw "The installer for $Rid did not build."
+    }
+
+    $msi = Join-Path $release "$Name.msi"
+    Move-Item (Join-Path $out "$Name.msi") $msi -Force
+    Add-Artifact -Path $msi -Platform "windows" -Arch ($Rid -replace '^win-', '') `
+        -Requires "Windows 10 1809" -Signed $false -Format "msi"
+}
+
 foreach ($rid in $Rids) {
     Write-Host "==> $rid"
     $published = Join-Path $repo "artifacts\publish\$rid-$Build"
@@ -187,6 +217,10 @@ foreach ($rid in $Rids) {
         [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $zip, "Optimal", $true)
         Add-Artifact -Path $zip -Platform "windows" -Arch ($rid -replace '^win-', '') `
             -Requires "Windows 10 1809" -Signed $false -Format "zip"
+
+        # The zip first: an app from before installers existed installs the first file listed for its machine, and can
+        # only unpack a zip.
+        Add-WindowsInstaller -Rid $rid -Stage $stage -Name $name
     }
     elseif ($rid -like "linux-*") {
         # No equivalent version check here: an ELF has no Win32 version resource, and a single-file publish

@@ -43,6 +43,7 @@ public sealed class EngineHost : IDisposable
     private readonly ILogger _log;
     private readonly ILoggerFactory _logs;
     private readonly CancellationTokenSource _cts = new();
+    private int _disposed;
     private readonly Func<CancellationToken, Task>? _connectionManager;
     private readonly Func<bool> _serviceOwnsEngine;
     private readonly Func<string, CancellationToken, Task> _runEngine;
@@ -258,8 +259,14 @@ public sealed class EngineHost : IDisposable
         }
     }
 
+    /// <summary>Stops the engine. A second call does nothing: an app told to end by the system can hear it twice.</summary>
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+        {
+            return;
+        }
+
         _cts.Cancel();
         try
         {

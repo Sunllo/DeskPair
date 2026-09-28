@@ -22,6 +22,28 @@ public class UpdateScriptsTests
     }
 
     [Fact]
+    public void An_installed_copy_waits_for_the_process_has_windows_installer_upgrade_it_and_relaunches()
+    {
+        string script = UpdateScripts.WindowsInstaller(
+            4242,
+            @"C:\Temp\deskpair-update\DeskPair-0.4.4-win-x64.msi",
+            @"C:\Program Files\Sunllo\DeskPair\DeskPair.exe",
+            @"C:\Temp\deskpair-update\install.log");
+
+        // Windows Installer cannot replace a program that is running, so the wait comes first here too.
+        script.ShouldContain("PID eq 4242");
+        script.ShouldContain("goto wait");
+        // /wait, or the program would be started again while the installer is still replacing it; /passive shows
+        // progress and asks nothing; /norestart leaves a restart to whoever is at the computer.
+        script.ShouldContain("start \"\" /wait msiexec.exe /i \"C:\\Temp\\deskpair-update\\DeskPair-0.4.4-win-x64.msi\" /passive /norestart /l*v \"C:\\Temp\\deskpair-update\\install.log\"");
+        script.IndexOf("msiexec", StringComparison.Ordinal).ShouldBeLessThan(script.IndexOf("start \"\" \"C:\\Program Files", StringComparison.Ordinal));
+        // Never robocopy over what Windows Installer owns.
+        script.ShouldNotContain("robocopy");
+        script.ShouldContain("del \"%~f0\"");
+        script.ShouldContain("\r\n");
+    }
+
+    [Fact]
     public void MacOS_replaces_the_bundle_with_ditto_detaches_the_image_and_opens_the_new_one()
     {
         string script = UpdateScripts.MacOS(7, "/tmp/mnt/DeskPair.app", "/Applications/DeskPair.app", "/tmp/mnt");

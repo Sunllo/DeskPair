@@ -236,6 +236,45 @@ public class UpdateCheckServiceTests
         service.Current.Notes.ShouldNotContain("\u0007");
     }
 
+    [Theory]
+    [InlineData(null, "DeskPair-0.4.4-portable.zip")]
+    [InlineData("msi", "DeskPair-0.4.4-installer.msi")]
+    [InlineData("deb", null)]
+    public async Task What_a_copy_installs_depends_on_what_put_it_there(string? packaged, string? expected)
+    {
+        // A self-hosted portal with its own release key, so the signed half can be exercised end to end.
+        using var key = DeskPair.Protocol.Crypto.IdentityKey.Create();
+        string platform = ReleaseFile.ThisPlatform;
+        string arch = ReleaseFile.ThisArch;
+        byte[] release = System.Text.Encoding.UTF8.GetBytes($$"""
+            { "channel": "stable", "version": "0.4.4", "files": [
+              { "platform": "{{platform}}", "arch": "{{arch}}", "name": "DeskPair-0.4.4-portable.zip", "size": 1, "sha256": "{{new string('a', 64)}}" },
+              { "platform": "{{platform}}", "arch": "{{arch}}", "name": "DeskPair-0.4.4-installer.msi", "size": 1, "sha256": "{{new string('b', 64)}}" } ] }
+            """);
+        string signature = SignedRelease.Sign(key, release);
+        var handler = new Stub(request => request.RequestUri!.AbsolutePath switch
+        {
+            "/downloads/release.json.sig" => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(signature) },
+            "/downloads/release.json" => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(release) },
+            _ => Json(Manifest("0.4.4")),
+        });
+        using var service = new UpdateCheckService(
+            new UpdateClient(new HttpClient(handler)),
+            Running,
+            () => true,
+            () => "https://portal.test",
+            NullLogger<UpdateCheckService>.Instance,
+            new FakeTimeProvider(new DateTimeOffset(2026, 9, 28, 0, 0, 0, TimeSpan.Zero)),
+            publicKey: () => Convert.ToBase64String(key.PublicKeySpki),
+            packaged: () => packaged);
+
+        await service.CheckNowAsync();
+
+        service.Current.IsUpdateAvailable.ShouldBeTrue();
+        (service.Current.Install?.Name).ShouldBe(expected);
+        service.Current.CanInstall.ShouldBe(expected is not null);
+    }
+
     [Fact]
     public void Nothing_is_asked_before_the_first_delay()
     {

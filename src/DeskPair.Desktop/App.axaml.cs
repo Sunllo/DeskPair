@@ -18,6 +18,7 @@ public partial class App : Application
     private static readonly List<Window> SessionWindows = [];
     private static HostLink? _host;
     private static EngineHost? _engine;
+    private static int _exited;
 
     /// <summary>
     /// The connection manager's own link to the engine. It is a second IPC client in this one process,
@@ -208,9 +209,29 @@ public partial class App : Application
             }
 
             ILogger lifecycle = Logs.CreateLogger("lifecycle");
-            desktop.ShutdownRequested += (_, e) => lifecycle.LogInformation("Shutdown requested (cancel={Cancel})", e.Cancel);
+
+            // The system asking the app to end -- Windows signing out or shutting down, or an installer's Restart
+            // Manager closing it to replace or remove its files -- is a real quit, as the tray's is. Left to the
+            // windows, the main one hid itself in the tray instead of closing, Avalonia took that for a refusal, and
+            // an MSI upgrade left the old version running from files Windows Installer had had to move aside.
+            desktop.ShutdownRequested += (_, e) =>
+            {
+                lifecycle.LogInformation("Shutdown requested (cancel={Cancel})", e.Cancel);
+                if (!e.Cancel)
+                {
+                    Quit();
+                }
+            };
             desktop.Exit += async (_, e) =>
             {
+                // Once. When the system ends the app, Exit comes twice -- for the end of the session and for the Quit
+                // above -- and a second pass disposed the engine again, which threw on the way out and left the
+                // process sitting on a crash dialog.
+                if (Interlocked.Exchange(ref _exited, 1) == 1)
+                {
+                    return;
+                }
+
                 lifecycle.LogInformation("Application exit (code {Code}); open windows: {Windows}", e.ApplicationExitCode, string.Join(", ", desktop.Windows.Select(w => w.GetType().Name)));
                 if (_cmLink is not null)
                 {

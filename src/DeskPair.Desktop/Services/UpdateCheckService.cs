@@ -66,6 +66,7 @@ public sealed class UpdateCheckService : IDisposable
     private readonly Func<bool> _enabled;
     private readonly Func<string> _portal;
     private readonly Func<string> _publicKey;
+    private readonly Func<string?> _packaged;
     private readonly ILogger _log;
     private readonly TimeProvider _time;
     private readonly CancellationTokenSource _stopping = new();
@@ -78,13 +79,15 @@ public sealed class UpdateCheckService : IDisposable
         Func<string> portal,
         ILogger<UpdateCheckService> log,
         TimeProvider? time = null,
-        Func<string>? publicKey = null)
+        Func<string>? publicKey = null,
+        Func<string?>? packaged = null)
     {
         _client = client;
         _runningVersion = runningVersion;
         _enabled = enabled;
         _portal = portal;
         _publicKey = publicKey ?? (() => string.Empty);
+        _packaged = packaged ?? (() => Update.PackagedInstall.Format);
         _log = log;
         _time = time ?? TimeProvider.System;
     }
@@ -184,7 +187,10 @@ public sealed class UpdateCheckService : IDisposable
     /// </summary>
     private async Task<ReleaseFile?> InstallableAsync(string portal, string version, CancellationToken ct)
     {
-        if (Update.PackagedInstall.Format is { } format)
+        // A Windows Installer copy goes on: it installs the next installer, which Windows Installer then puts in place.
+        string? format = _packaged();
+        bool installed = format == Update.PackagedInstall.WindowsInstaller;
+        if (format is not null && !installed)
         {
             _log.LogInformation("Installed by the system's package manager ({Format}); version {Version} is announced, and installing it is the package manager's job", format, version);
             return null;
@@ -217,10 +223,10 @@ public sealed class UpdateCheckService : IDisposable
             return null;
         }
 
-        ReleaseFile? file = release.FileForThisMachine();
+        ReleaseFile? file = release.FileForThisMachine(installed);
         if (file is null)
         {
-            _log.LogInformation("Release {Version} has no file for {Platform}/{Arch}", version, ReleaseFile.ThisPlatform, ReleaseFile.ThisArch);
+            _log.LogInformation("Release {Version} has no {Kind} for {Platform}/{Arch}", version, installed ? "installer" : "file", ReleaseFile.ThisPlatform, ReleaseFile.ThisArch);
         }
         else
         {

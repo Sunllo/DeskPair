@@ -65,7 +65,7 @@ public sealed class UpdateInstaller(HttpClient http, ILogger log)
         string script;
         if (OperatingSystem.IsWindows())
         {
-            script = StageWindows(downloaded, work);
+            script = file.IsWindowsInstaller ? StageWindowsInstaller(downloaded, work) : StageWindows(downloaded, work);
         }
         else if (OperatingSystem.IsMacOS())
         {
@@ -160,6 +160,19 @@ public sealed class UpdateInstaller(HttpClient http, ILogger log)
         string installDir = Path.GetDirectoryName(executable) ?? throw new UpdateException("Cannot work out where this program is.");
         string script = Path.Combine(work, "update.cmd");
         File.WriteAllText(script, UpdateScripts.Windows(Environment.ProcessId, staged, installDir, executable));
+        return script;
+    }
+
+    /// <summary>
+    /// A copy Windows Installer put here is upgraded by Windows Installer, from the package just verified, once this
+    /// process has gone: the package replaces the one that installed this copy, stops and restarts the unattended
+    /// service around the files, and asks for an administrator's consent the way every per-machine install does.
+    /// </summary>
+    private static string StageWindowsInstaller(string package, string work)
+    {
+        string executable = Environment.ProcessPath ?? throw new UpdateException("Cannot work out where this program is.");
+        string script = Path.Combine(work, "update.cmd");
+        File.WriteAllText(script, UpdateScripts.WindowsInstaller(Environment.ProcessId, package, executable, Path.Combine(work, "install.log")));
         return script;
     }
 

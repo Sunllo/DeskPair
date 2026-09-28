@@ -74,9 +74,15 @@ Windows 上的桌面程式。這些圖由 `tools/DeskPair.Tools.Screenshots` 從
 
 | 系統 | 檔案 |
 |---|---|
-| Windows 10 1809 以上 | `DeskPair-<version>-win-x64.zip`、`-win-arm64.zip`、`-win-x86.zip`（32 位元）。尚未做程式碼簽章，第一次執行時 SmartScreen 會先詢問。 |
+| Windows 10 1809 以上 | x64、ARM64 與 x86（32 位元）：各有安裝程式（`.msi`）與免安裝的 `.zip`，檔名如 `DeskPair-<version>-win-x64.msi`。尚未做程式碼簽章，第一次執行時 SmartScreen 會先詢問。 |
 | macOS 13 以上 | `DeskPair-<version>-arm64.dmg`（Apple 晶片）、`-x86_64.dmg`（Intel）。已簽章並經 Apple 公證。 |
 | Linux，glibc 2.31 以上 | x64、ARM64 與 32 位元 ARM（ARMv7）：各有 `.deb`、`.rpm`、Arch 套件與 `.tar.gz`。 |
+
+在 Windows 上，安裝程式會把 DeskPair 裝到 Program Files，加進「開始」功能表和「設定 › 應用程式」（之後也從那裡移除），新版本則由 App 在系統管理員同意後自己安裝。`.zip` 解壓縮到哪裡都能執行，而且會自己更新。要不經詢問地安裝，例如一次裝到很多台電腦：
+
+```
+msiexec /i DeskPair-<version>-win-x64.msi /qn
+```
 
 在 Linux 上，用發行版自己的工具安裝對應的套件（以下是 x64 的檔名）：
 

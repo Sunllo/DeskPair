@@ -20,6 +20,7 @@ public class ProgramRoleTests
     [InlineData("--uninstall-service", AppRole.UninstallService)]
     [InlineData("--allow-firewall", AppRole.AllowFirewall)]
     [InlineData("--remove-firewall", AppRole.RemoveFirewall)]
+    [InlineData("--remove-system-changes", AppRole.RemoveSystemChanges)]
     [InlineData("--version", AppRole.Version)]
     [InlineData("--help", AppRole.Help)]
     [InlineData("-h", AppRole.Help)]

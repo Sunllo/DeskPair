@@ -173,7 +173,10 @@ case 檢查完整性。身分不看 hello 裡的角色、也不看權杖檔，�
   （`SecuritySettingsViewModel.cs:267` 的 `Verb = "runas"`）。
 - 服務不是預設安裝。使用者要在「設定 → 安全性」明確開啟「允許在鎖定畫面時連線」，
   那個開關才去裝服務。**預設維持現在的行為。**
-- 移除程式時要移除服務。現在沒有安裝程式，所以 `--uninstall-service` 必須能獨立執行。
+- 移除程式時要移除服務。當時沒有安裝程式，所以 `--uninstall-service` 必須能獨立執行（zip 版至今仍靠它）。
+  0.4.4 起有 MSI（`packaging/windows/README.md`）：移除時它以 LocalSystem 執行 `--remove-system-changes`，
+  拆掉服務、防火牆規則與虛擬顯示器驅動；升級時只在換檔案前停止服務、裝完再啟動，服務的註冊保留。
+  要無人值守的機器應該用安裝版：服務執行的 `DeskPair.exe` 放在 Program Files，只有系統管理員能換。
 
 ## B 只有 Windows
 

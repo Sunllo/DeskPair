@@ -77,9 +77,17 @@ Windows용 데스크톱 앱입니다. 이미지는 `tools/DeskPair.Tools.Screens
 
 | 시스템 | 파일 |
 |---|---|
-| Windows 10 1809 이상 | `DeskPair-<version>-win-x64.zip`, `-win-arm64.zip`, `-win-x86.zip`(32비트). 아직 코드 서명을 하지 않아 처음 실행할 때 SmartScreen이 확인을 요청합니다. |
+| Windows 10 1809 이상 | x64, ARM64, x86(32비트)마다 설치 프로그램(`.msi`)과 설치가 필요 없는 `.zip`이 있으며, 파일 이름은 `DeskPair-<version>-win-x64.msi`와 같습니다. 아직 코드 서명을 하지 않아 처음 실행할 때 SmartScreen이 확인을 요청합니다. |
 | macOS 13 이상 | `DeskPair-<version>-arm64.dmg`(Apple 실리콘), `-x86_64.dmg`(Intel). 서명되었고 Apple의 공증을 받았습니다. |
 | Linux, glibc 2.31 이상 | x64, ARM64, 32비트 ARM(ARMv7)마다 `.deb`, `.rpm`, Arch 패키지, `.tar.gz`가 있습니다. |
+
+Windows에서는 설치 프로그램이 DeskPair를 Program Files에 넣고 시작 메뉴와 '설정 › 앱'에 등록하며(제거도 그곳에서 합니다),
+새 버전은 관리자 승인을 받은 뒤 앱이 직접 설치합니다. `.zip`은 압축을 푼 곳에서 실행되며 스스로 업데이트합니다.
+묻지 않고 설치하려면(예: 여러 컴퓨터에 한꺼번에):
+
+```
+msiexec /i DeskPair-<version>-win-x64.msi /qn
+```
 
 Linux에서는 배포판의 기본 도구로 해당 패키지를 설치합니다(아래는 x64 파일 이름입니다).
 

@@ -56,6 +56,13 @@
          as Avalonia geometry and never becomes a bitmap: no SkiaSharp, and nothing to blur at high DPI. -->
     <PackageVersion Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1" />
   </ItemGroup>
+  <ItemGroup Label="Windows installer">
+    <!-- packaging/windows/DeskPair.wixproj: the wizard's dialogs and WixShellExec, which opens the app at the end. The
+         SDK's own version is in the project's Sdk attribute; keep the three on the same release. WiX v6 and later carry
+         the Open Source Maintenance Fee EULA, which the machine that builds a release accepts (see the project). -->
+    <PackageVersion Include="WixToolset.UI.wixext" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.Util.wixext" Version="7.0.0" />
+  </ItemGroup>
   <ItemGroup Label="Testing">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />

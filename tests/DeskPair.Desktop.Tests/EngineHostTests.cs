@@ -13,6 +13,19 @@ namespace DeskPair.Desktop.Tests;
 /// </summary>
 public class EngineHostTests
 {
+    /// <summary>
+    /// Seen on a real machine: an installer's Restart Manager asked the app to end, the app's exit ran twice, and the
+    /// second Dispose threw -- leaving the process on a crash dialog instead of letting the upgrade replace it.
+    /// </summary>
+    [Fact]
+    public void Disposing_twice_is_harmless()
+    {
+        var host = new EngineHost(NullLoggerFactory.Instance, serviceOwnsEngine: () => true);
+
+        host.Dispose();
+        Should.NotThrow(host.Dispose);
+    }
+
     [Fact]
     public async Task The_app_starts_no_engine_when_the_service_owns_it()
     {

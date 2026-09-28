@@ -17,12 +17,36 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
-## Desktop, unreleased
+## 0.4.4 — 2026-09-28
+
+Desktop only; the phones stay at 0.4.0.
+
+### Added
+
+- **A Windows installer.** An `.msi` for x64, ARM64 and x86 beside each `.zip`. It puts DeskPair in
+  `Program Files\Sunllo\DeskPair`, on the Start menu, on the desktop and in Settings › Apps; it stops and restarts the
+  unattended service around an upgrade; and removing it takes away what the app set up outside its folder -- the
+  service, the firewall rules and the virtual display driver (`DeskPair --remove-system-changes`, which the
+  installer runs). A copy it installed updates from the next installer (`msiexec /passive`, which asks for an
+  administrator's consent) rather than by copying files over ones Windows Installer owns; a copy run from the `.zip`
+  goes on updating from the `.zip`, which the manifest lists first so that apps from before installers keep taking
+  it. `msiexec /i DeskPair-<version>-win-x64.msi /qn` installs without a question, and `DESKTOP_SHORTCUT=0` leaves the
+  desktop shortcut off. A DeskPair that is open when an upgrade starts is closed by the installer and comes back in
+  the notification area when it is done, so a computer upgraded remotely stays reachable. Built by `tools/package.ps1`
+  from `packaging/windows/`, with WiX v7.
 
 ### Fixed
 
 - The connection manager's card wraps the line that says what somebody wants ("… wants to control this computer")
   instead of cutting it off after their name.
+- When Windows signs out or shuts down, or an installer needs DeskPair's files, DeskPair quits. It used to hide in the
+  notification area and stay running from files the installer then had to leave for the next restart; and quitting
+  that way disposed the engine twice, which ended on a crash dialog.
+
+### Known limits
+
+- The installer's own dialogs are in English; the app follows the system's language as before.
+- Neither the installer nor the program is code-signed yet, so SmartScreen asks before the first run of either.
 
 ## 0.4.3 — 2026-09-28
 

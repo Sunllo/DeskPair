@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DeskPair for Windows, installed: the program in Program Files\Sunllo\DeskPair, a Start menu and a desktop shortcut,
+  and an entry in Settings > Apps that takes it all away again. DeskPair.wixproj says how it is built; README.md
+  says what happens when, and why.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!-- The upgrade code is what makes every DeskPair installer the same product to Windows Installer, so installing a
+       newer one replaces the one before. It must never change. -->
+  <Package Name="DeskPair"
+           Manufacturer="Sunllo"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="AE1F782F-3A43-4402-B3EB-6BCB3518CBC5"
+           Scope="perMachine"
+           Language="1033"
+           Compressed="yes">
+
+    <SummaryInformation Description="DeskPair remote desktop" />
+
+    <!-- The installed version is removed before this one goes in, so no file ever depends on version rules. -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of DeskPair is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="DeskPair.ico" SourceFile="$(var.Repo)\src\DeskPair.Desktop\Assets\deskpair.ico" />
+    <Property Id="ARPPRODUCTICON" Value="DeskPair.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://deskpair.app" />
+    <Property Id="ARPHELPLINK" Value="https://deskpair.app" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
+
+    <!-- msiexec /i DeskPair-<version>-win-x64.msi DESKTOP_SHORTCUT=0 installs without the desktop shortcut. -->
+    <Property Id="DESKTOP_SHORTCUT" Value="1" Secure="yes" />
+
+    <!-- Whether the unattended-access service is registered. The app registers it when somebody turns unattended
+         access on, against whichever DeskPair.exe they were running; the installer only stops and restarts it. -->
+    <Property Id="DESKPAIR_SERVICE">
+      <RegistrySearch Id="ServiceImagePath" Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\SunlloDeskPair" Name="ImagePath" Type="raw" />
+    </Property>
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="SunlloFolder" Name="Sunllo">
+        <Directory Id="INSTALLFOLDER" Name="DeskPair" />
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="DeskPair" Title="DeskPair" AllowAbsent="no">
+      <ComponentGroupRef Id="Program" />
+      <ComponentRef Id="DesktopShortcut" />
+      <ComponentRef Id="StopService" />
+      <ComponentRef Id="RestartService" />
+    </Feature>
+
+    <!-- Only when DeskPair is really being removed, not replaced by a newer version: the service, the firewall rules
+         and the virtual display driver are the app's own changes outside this folder, and nothing else would undo
+         them. Run as LocalSystem while DeskPair.exe is still there; it never shows a window, and whatever it cannot
+         remove it logs and leaves, rather than fail the uninstall. -->
+    <CustomAction Id="RemoveSystemChanges" FileRef="DeskPairExe" ExeCommand="--remove-system-changes"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="RemoveSystemChanges" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+
+    <!-- The stock minimal wizard, less its licence page: the AGPL asks nobody to accept it in order to run the program
+         (section 9), so the installer does not ask either. Welcome, ready, progress, done; and DeskPair opened at the
+         end unless the box is unticked. -->
+    <UI Id="DeskPairUI">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <DialogRef Id="WelcomeDlg" />
+
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="1" Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed" />
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="OpenDeskPair" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
+    </UI>
+    <UIRef Id="WixUI_Common" />
+
+    <!-- Opened as the person installing, not as the installer: WixShellExec runs in the unelevated half. -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open DeskPair" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixShellExecTarget" Value="[#DeskPairExe]" />
+    <CustomAction Id="OpenDeskPair" DllEntry="WixShellExec" Impersonate="yes" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="Program" Directory="INSTALLFOLDER">
+      <Component Id="DeskPairExe">
+        <File Id="DeskPairExe" Source="$(var.PayloadDir)\DeskPair.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="DeskPair" WorkingDirectory="INSTALLFOLDER" Advertise="no" />
+        </File>
+      </Component>
+
+      <!-- Everything else publish.ps1 put beside it: the native libraries Skia and ANGLE load, vpx.dll, the virtual
+           display driver's folder and the symbols the crash log reads. -->
+      <Files Include="$(var.PayloadDir)\**">
+        <Exclude Files="$(var.PayloadDir)\DeskPair.exe" />
+      </Files>
+
+      <!-- Tells the app that Windows Installer put it here, so an update comes as the next installer instead of files
+           copied over ones Windows Installer owns (PackagedInstall.cs). -->
+      <Component Id="PackagedMarker">
+        <File Id="PackagedMarker" Source="packaged" Name="packaged" KeyPath="yes" />
+      </Component>
+
+      <Component Id="Licence">
+        <File Id="Licence" Source="$(var.Repo)\LICENSE" Name="LICENSE.txt" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Condition="DESKTOP_SHORTCUT = 1">
+      <Shortcut Id="DesktopShortcut" Name="DeskPair" Target="[INSTALLFOLDER]DeskPair.exe" WorkingDirectory="INSTALLFOLDER" />
+      <RegistryValue Root="HKLM" Key="Software\Sunllo\DeskPair\Installer" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- The service holds DeskPair.exe open, so it is stopped before the files are replaced or removed, whoever
+         registered it. -->
+    <Component Id="StopService" Directory="INSTALLFOLDER">
+      <ServiceControl Id="StopService" Name="SunlloDeskPair" Stop="both" Wait="yes" />
+      <RegistryValue Root="HKLM" Key="Software\Sunllo\DeskPair\Installer" Name="StopsService" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- And started again afterwards, but only when it was registered to begin with: asking Windows to start a service
+         that does not exist fails the whole install. -->
+    <Component Id="RestartService" Directory="INSTALLFOLDER" Condition="DESKPAIR_SERVICE">
+      <ServiceControl Id="RestartService" Name="SunlloDeskPair" Start="install" Wait="no" />
+      <RegistryValue Root="HKLM" Key="Software\Sunllo\DeskPair\Installer" Name="RestartsService" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+  </Fragment>
+</Wix>

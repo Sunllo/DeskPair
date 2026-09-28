@@ -28,6 +28,7 @@ public static class Program
             AppRole.RemoveFirewall => RunFirewall(args, console, add: false),
             AppRole.InstallVirtualDisplay => RunVirtualDisplaySetup(args, console, install: true),
             AppRole.RemoveVirtualDisplay => RunVirtualDisplaySetup(args, console, install: false),
+            AppRole.RemoveSystemChanges => RunRemoveSystemChanges(args),
             AppRole.Update => RunUpdate(args),
             AppRole.Version => Print(App.Version),
             AppRole.Help => Usage(),
@@ -47,6 +48,7 @@ public static class Program
         "--remove-firewall" => AppRole.RemoveFirewall,
         "--install-virtual-display" => AppRole.InstallVirtualDisplay,
         "--remove-virtual-display" => AppRole.RemoveVirtualDisplay,
+        "--remove-system-changes" => AppRole.RemoveSystemChanges,
         "--update" => AppRole.Update,
         "--version" => AppRole.Version,
         "--help" or "-h" or "-?" or "/?" => AppRole.Help,
@@ -73,6 +75,9 @@ public static class Program
         {
             App.Instance = single;
             log.LogInformation("Starting {Version} on {Os}", App.Version, Environment.OSVersion);
+#if WINDOWS
+            RestartAfterUpdate.Register(log);
+#endif
             return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
         catch (Exception e)
@@ -399,6 +404,50 @@ public static class Program
 #endif
     }
 
+    /// <summary>
+    /// What the Windows installer runs, as LocalSystem, just before it deletes the program: removes the service, the
+    /// firewall rules and the virtual display driver -- everything this program put outside its own folder, which
+    /// nothing else would take away. Never a window: under the installer nobody can answer one, and a message box in
+    /// session 0 would hold the uninstall up for good. And always exit 0, so a computer being cleaned up is not left
+    /// half-uninstalled because one of the three was already gone or would not go; the service log says which.
+    /// </summary>
+    private static int RunRemoveSystemChanges(string[] args)
+    {
+#if WINDOWS
+        string dataDir = ServerRole.Arg(args, "--data") ?? ServerRole.DefaultDataDir();
+        using ILoggerFactory logs = LoggerFactory.Create(b => b
+            .AddSimpleConsole(o => o.SingleLine = true)
+            .AddProvider(new FileLoggerProvider(Path.Combine(dataDir, "logs", "service.log")))
+            .SetMinimumLevel(args.Contains("--verbose") ? LogLevel.Debug : LogLevel.Information));
+        ILogger log = logs.CreateLogger("uninstall");
+        log.LogInformation("DeskPair is being removed; taking away what it changed outside its own folder");
+        Remove("the service", () => Engine.Service.HostServiceInstaller.Uninstall(log));
+        Remove("the firewall rules", () => FirewallRules.Remove(logs, quiet: true));
+        Remove("the virtual display driver", () => Platform.Windows.Capture.VirtualDisplayDriverInstaller.Uninstall(dataDir, log));
+        return 0;
+
+        void Remove(string what, Func<int> remove)
+        {
+            try
+            {
+                int code = remove();
+                if (code != 0)
+                {
+                    log.LogWarning("Could not remove {What} (exit {Code}); going on with the rest", what, code);
+                }
+            }
+            catch (Exception e)
+            {
+                log.LogWarning(e, "Could not remove {What}; going on with the rest", what);
+            }
+        }
+#else
+        _ = args;
+        Console.Error.WriteLine("This is what the Windows installer runs before it removes DeskPair; there is nothing for it to do here.");
+        return 2;
+#endif
+    }
+
     private static int Print(string text)
     {
         Console.WriteLine(text);
@@ -494,6 +543,8 @@ public static class Program
               DeskPair --install-virtual-display   let viewers add displays this computer does not have
                                            (Windows, administrator; used by the service's engine)
               DeskPair --remove-virtual-display    remove that driver again
+              DeskPair --remove-system-changes     remove the service, the firewall rules and that driver in one go
+                                           (Windows, administrator; the installer runs it before removing DeskPair)
               DeskPair --update             check the portal and, if a newer release is signed by the key this
                                            install trusts, download it, verify it and replace this program
                                            (exit 0: installed or already current; 3: newer but not installable)
@@ -566,6 +617,9 @@ public enum AppRole
     /// <summary>Install or remove the driver virtual displays are made with. Windows only.</summary>
     InstallVirtualDisplay,
     RemoveVirtualDisplay,
+
+    /// <summary>Undo everything outside the program's folder, for the Windows installer to run before it removes the program.</summary>
+    RemoveSystemChanges,
 
     /// <summary>Check the portal and install a newer signed release, with no window: for a machine nobody sits at.</summary>
     Update,

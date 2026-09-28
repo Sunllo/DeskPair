@@ -43,6 +43,34 @@ public static class UpdateScripts
     }
 
     /// <summary>
+    /// Windows, a copy Windows Installer put here: <c>update.cmd</c>. Waits for the process, has msiexec install the
+    /// verified package with a progress bar and no questions of its own (<c>/passive</c>; Windows still asks for the
+    /// consent a per-machine install needs), and starts the program again whether or not that worked -- a declined
+    /// consent leaves the old version, which should come back rather than vanish. The installer's log stays beside
+    /// the script, for whoever wants to know why; the package itself is deleted.
+    /// </summary>
+    public static string WindowsInstaller(int pid, string package, string executable, string logFile)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(package);
+        ArgumentException.ThrowIfNullOrWhiteSpace(executable);
+        ArgumentException.ThrowIfNullOrWhiteSpace(logFile);
+        return $"""
+            @echo off
+            :wait
+            tasklist /FI "PID eq {pid}" 2>nul | find "{pid}" >nul
+            if not errorlevel 1 (
+              timeout /t 1 /nobreak >nul
+              goto wait
+            )
+            start "" /wait msiexec.exe /i "{package}" /passive /norestart /l*v "{logFile}"
+            start "" "{executable}"
+            del "{package}"
+            del "%~f0"
+
+            """.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// macOS: replaces the bundle from a mounted, verified disk image, detaches it, opens the new bundle.
     /// <c>ditto</c> rather than <c>cp</c>: it keeps the resource forks, the extended attributes and the
     /// code signature's staple, which is what makes the copy still the notarised app.

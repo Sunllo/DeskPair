@@ -1,0 +1,36 @@
+<!--
+  The Windows installer: one MSI per architecture, around the same folder the .zip holds. tools/package.ps1 builds it
+  after publishing:
+
+    dotnet build packaging/windows/DeskPair.wixproj -c Release -p:Platform=x64 -p:PayloadDir=<published folder>
+
+  Platform is x64, x86 or ARM64. README.md beside this says what the package does and why.
+
+  Not in DeskPair.slnx: WiX builds MSI packages on Windows only, and the solution builds everywhere.
+
+  WiX v7 asks whoever builds with it to accept its Open Source Maintenance Fee EULA, once per machine
+  (dotnet build packaging/windows/DeskPair.wixproj -t:AcceptEula -p:EulaId=wix7). That is the builder's decision
+  to make, so it is not made for them here.
+-->
+<Project Sdk="WixToolset.Sdk/7.0.0">
+  <PropertyGroup>
+    <OutputName Condition="'$(OutputName)' == ''">DeskPair</OutputName>
+    <!-- Windows Installer versions are three numbers; a pre-release suffix has nowhere to go. -->
+    <ProductVersion Condition="'$(ProductVersion)' == ''">$(VersionPrefix)</ProductVersion>
+    <DefineConstants>PayloadDir=$(PayloadDir);ProductVersion=$(ProductVersion);Repo=$(MSBuildThisFileDirectory)..\..</DefineConstants>
+    <!-- ICE38, ICE43 and ICE57 assume the Start menu and the desktop may be one user's own folders. In a per-machine
+         package, which this is and only is, they are the all-users folders: the shortcuts go there, and the key paths
+         that go with them belong under HKLM, where these three would have moved them to HKCU. -->
+    <SuppressIces>ICE38;ICE43;ICE57</SuppressIces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" />
+    <PackageReference Include="WixToolset.Util.wixext" />
+  </ItemGroup>
+
+  <Target Name="RequirePayload" BeforeTargets="Build;CoreCompile">
+    <Error Condition="'$(PayloadDir)' == '' Or !Exists('$(PayloadDir)\DeskPair.exe')"
+           Text="PayloadDir must name a published DeskPair for Windows (a folder holding DeskPair.exe); tools/package.ps1 passes it." />
+  </Target>
+</Project>

@@ -22,6 +22,10 @@ not in git). Not wire-compatible with RustDesk. Full design: `docs/architecture.
   `tests/` — xunit + Shouldly + NSubstitute.
 - `packaging/linux/` — the .deb/.rpm/Arch package description (`nfpm.yaml`) and its install/remove scripts;
   `tools/package.ps1` builds all three per Linux RID with nfpm (`tools/fetch-nfpm.ps1`).
+- `packaging/windows/` — the MSI (WiX v7, `DeskPair.wixproj` + `Package.wxs`), one per Windows RID beside the zip,
+  built by `tools/package.ps1`. Windows only, so not in `DeskPair.slnx`. The manifest lists each zip before its MSI:
+  apps from before installers install the first file for their machine. An installed copy (`packaged` = `msi`)
+  updates by running the next MSI; its uninstall runs `DeskPair --remove-system-changes`, which must never show a window.
 
 ## Conventions
 

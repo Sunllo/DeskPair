@@ -124,6 +124,39 @@ public class SignedReleaseTests
         packagesOnly.FileForThisMachine().ShouldBeNull();
     }
 
+    [Theory]
+    [InlineData("DeskPair-0.4.4-win-x64.msi", true)]
+    [InlineData("DESKPAIR-0.4.4-WIN-ARM64.MSI", true)]
+    [InlineData("DeskPair-0.4.4-win-x64.zip", false)]
+    [InlineData("DeskPair-0.4.4-arm64.dmg", false)]
+    [InlineData("notes.msi.txt", false)]
+    public void Only_an_msi_is_a_Windows_installer(string name, bool installer)
+    {
+        new ReleaseFile("windows", "x64", name, 1, new string('a', 64)).IsWindowsInstaller.ShouldBe(installer);
+    }
+
+    [Fact]
+    public void A_copy_run_from_the_zip_takes_the_zip_and_an_installed_copy_takes_the_installer()
+    {
+        string platform = ReleaseFile.ThisPlatform;
+        string arch = ReleaseFile.ThisArch;
+
+        // The installer listed first on purpose: the order is the release's to keep, not what the choice rests on.
+        var release = new SignedReleaseManifest("stable", "0.4.4",
+        [
+            new(platform, arch, "DeskPair-0.4.4-installer.msi", 1, new string('a', 64)),
+            new(platform, arch, "DeskPair-0.4.4-portable.zip", 1, new string('b', 64)),
+            new("elsewhere", arch, "DeskPair-0.4.4-other.msi", 1, new string('c', 64)),
+        ]);
+
+        release.FileForThisMachine().ShouldNotBeNull().Name.ShouldBe("DeskPair-0.4.4-portable.zip");
+        release.FileForThisMachine(installed: true).ShouldNotBeNull().Name.ShouldBe("DeskPair-0.4.4-installer.msi");
+
+        // An installed copy is never handed an archive to unpack over what Windows Installer owns, nor a portable copy an installer.
+        new SignedReleaseManifest("stable", "0.4.4", release.Files.Skip(1).ToList()).FileForThisMachine(installed: true).ShouldBeNull();
+        new SignedReleaseManifest("stable", "0.4.4", release.Files.Take(1).ToList()).FileForThisMachine().ShouldBeNull();
+    }
+
     [Fact]
     public void The_official_portal_uses_the_built_in_key_and_a_self_hosted_one_needs_its_own()
     {
