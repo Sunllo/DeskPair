@@ -17,6 +17,17 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## 0.4.7 — 2026-09-29
+
+Desktop only; the phones stay at 0.4.0.
+
+### Added
+
+- **The Windows installer speaks the language Windows is shown in**: the ten the app does, English for any other. One
+  `.msi` still: the other nine languages are transforms of the English package, carried inside it, and Windows Installer
+  applies the one for the display language by itself. WiX brings the wizard's own words; ours ("Open DeskPair", the
+  refusal to replace a newer version) are in `packaging/windows/Localization`.
+
 ## 0.4.6 — 2026-09-29
 
 Desktop only; the phones stay at 0.4.0.

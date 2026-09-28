@@ -8,19 +8,24 @@
      xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
 
   <!-- The upgrade code is what makes every DeskPair installer the same product to Windows Installer, so installing a
-       newer one replaces the one before. It must never change. -->
+       newer one replaces the one before. It must never change.
+
+       No Language: each culture's build takes its language and codepage from the localization, which is what lets
+       tools/package.ps1 turn every other language into a transform of the English package. The product code comes from
+       the project for the same reason: left to WiX, each culture would get its own, and the Chinese transform would
+       install a different product from the English one. -->
   <Package Name="DeskPair"
            Manufacturer="Sunllo"
            Version="$(var.ProductVersion)"
+           ProductCode="$(var.ProductCode)"
            UpgradeCode="AE1F782F-3A43-4402-B3EB-6BCB3518CBC5"
            Scope="perMachine"
-           Language="1033"
            Compressed="yes">
 
     <SummaryInformation Description="DeskPair remote desktop" />
 
     <!-- The installed version is removed before this one goes in, so no file ever depends on version rules. -->
-    <MajorUpgrade DowngradeErrorMessage="A newer version of DeskPair is already installed." />
+    <MajorUpgrade DowngradeErrorMessage="!(loc.NewerVersionInstalled)" />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
     <Icon Id="DeskPair.ico" SourceFile="$(var.Repo)\src\DeskPair.Desktop\Assets\deskpair.ico" />
@@ -66,9 +71,9 @@
          (section 9), so the installer does not ask either. Welcome, ready, progress, done; and DeskPair opened at the
          end unless the box is unticked. -->
     <UI Id="DeskPairUI">
-      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
-      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
-      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+      <TextStyle Id="WixUI_Font_Normal" FaceName="!(loc.Advanced_Font_FaceName)" Size="!(loc.Advanced_Font_Normal_Size)" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="!(loc.Advanced_Font_FaceName)" Size="!(loc.Advanced_Font_Bigger_Size)" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="!(loc.Advanced_Font_FaceName)" Size="!(loc.Advanced_Font_Title_Size)" Bold="yes" />
       <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
 
       <DialogRef Id="ErrorDlg" />
@@ -94,7 +99,7 @@
     <UIRef Id="WixUI_Common" />
 
     <!-- Opened as the person installing, not as the installer: WixShellExec runs in the unelevated half. -->
-    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open DeskPair" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="!(loc.OpenDeskPair)" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
     <Property Id="WixShellExecTarget" Value="[#DeskPairExe]" />
     <CustomAction Id="OpenDeskPair" DllEntry="WixShellExec" Impersonate="yes" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />

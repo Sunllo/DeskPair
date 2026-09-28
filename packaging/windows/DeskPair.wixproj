@@ -4,7 +4,9 @@
 
     dotnet build packaging/windows/DeskPair.wixproj -c Release -p:Platform=x64 -p:PayloadDir=<published folder>
 
-  Platform is x64, x86 or ARM64. README.md beside this says what the package does and why.
+  Platform is x64, x86 or ARM64. That builds every culture in Cultures, each MSI in a folder of its own;
+  tools/package.ps1 makes them one, the English package carrying the other languages as transforms.
+  -p:Cultures=zh-TW builds one. README.md beside this says what the package does and why.
 
   Not in DeskPair.slnx: WiX builds MSI packages on Windows only, and the solution builds everywhere.
 
@@ -17,7 +19,12 @@
     <OutputName Condition="'$(OutputName)' == ''">DeskPair</OutputName>
     <!-- Windows Installer versions are three numbers; a pre-release suffix has nowhere to go. -->
     <ProductVersion Condition="'$(ProductVersion)' == ''">$(VersionPrefix)</ProductVersion>
-    <DefineConstants>PayloadDir=$(PayloadDir);ProductVersion=$(ProductVersion);Repo=$(MSBuildThisFileDirectory)..\..</DefineConstants>
+    <!-- One product code for every culture of one build: they are one product in ten languages. A new one per build,
+         as WiX would make, because each version is a major upgrade of the one before. -->
+    <ProductCode Condition="'$(ProductCode)' == ''">$([System.Guid]::NewGuid().ToString('B').ToUpperInvariant())</ProductCode>
+    <!-- English first: it is the package; tools/package.ps1 makes the rest into transforms that ride inside it. -->
+    <Cultures Condition="'$(Cultures)' == ''">en-US;zh-TW;zh-CN;ja-JP;ko-KR;de-DE;fr-FR;es-ES;pt-BR;ru-RU</Cultures>
+    <DefineConstants>PayloadDir=$(PayloadDir);ProductVersion=$(ProductVersion);ProductCode=$(ProductCode);Repo=$(MSBuildThisFileDirectory)..\..</DefineConstants>
     <!-- ICE38, ICE43 and ICE57 assume the Start menu and the desktop may be one user's own folders. In a per-machine
          package, which this is and only is, they are the all-users folders: the shortcuts go there, and the key paths
          that go with them belong under HKLM, where these three would have moved them to HKCU. -->

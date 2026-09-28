@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The installer's own words in ja-JP; WiX brings the rest of the wizard's. README.md beside Package.wxs
+     says how one MSI carries every language. -->
+<WixLocalization Culture="ja-JP" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="OpenDeskPair" Value="DeskPair を開く" />
+  <String Id="NewerVersionInstalled" Value="新しいバージョンの DeskPair が既にインストールされています。" />
+  <!-- The wizard's font: this language's own interface font, on every Windows. -->
+  <String Id="Advanced_Font_FaceName" Value="Yu Gothic UI" />
+</WixLocalization>

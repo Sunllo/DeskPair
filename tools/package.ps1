@@ -207,6 +207,92 @@ function Set-CodeSignature([string[]]$Files, [string]$Description) {
 }
 
 # ---- Windows installer --------------------------------------------------------------------------------
+# The Windows Installer database API, from PowerShell 5.1: late-bound COM, so every call goes through InvokeMember.
+function Invoke-Msi($Object, [string]$Name, [string]$Kind, [object[]]$Arguments) {
+    # A cmdlet's output arrives wrapped in a PSObject, which COM cannot convert: unwrap every argument.
+    if ($null -ne $Arguments) {
+        $Arguments = [object[]]@($Arguments | ForEach-Object { if ($_ -is [psobject]) { $_.psobject.BaseObject } else { $_ } })
+    }
+    # A method with nothing to return still hands back a null, which would otherwise become part of a function's output.
+    $result = $Object.GetType().InvokeMember($Name, $Kind, $null, $Object, $Arguments)
+    if ($null -ne $result) { $result }
+}
+
+# A database stays open, and locked, until its last COM reference is gone, and PowerShell lets go of those when it likes.
+function Close-Msi {
+    foreach ($o in $args) {
+        if ($null -ne $o) { [void][System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($o) }
+    }
+}
+
+function Get-MsiProperty($Installer, [string]$Path, [string]$Property) {
+    $db = Invoke-Msi $Installer "OpenDatabase" "InvokeMethod" @($Path, 0)
+    $view = Invoke-Msi $db "OpenView" "InvokeMethod" @("SELECT ``Value`` FROM ``Property`` WHERE ``Property``='$Property'")
+    Invoke-Msi $view "Execute" "InvokeMethod" $null
+    $record = Invoke-Msi $view "Fetch" "InvokeMethod" $null
+    $value = [string](Invoke-Msi $record "StringData" "GetProperty" @(1))
+    Invoke-Msi $view "Close" "InvokeMethod" $null
+    Close-Msi $record $view $db
+    return $value
+}
+
+# One MSI in every language. WiX builds the package once per culture; each one but English becomes a transform of the
+# English package, stored inside it under its language id, and the summary's Template lists every language, English
+# first. Windows Installer then applies the transform for the language Windows is shown in by itself, and uses English
+# for any other -- which is how one file asks in Traditional Chinese on one desk and in German on the next. The
+# transforms carry only what the cultures differ in, a few tens of KB: the payload is the same cabinet in all of them,
+# and the product code comes from the project, so a language never becomes a different product.
+#
+# Missing the exact language, Windows Installer takes one with the same primary language: Mexican Spanish gets the
+# Spanish one, Portuguese the Brazilian one, which is what the app does. Chinese is two written languages under one
+# primary language, and there that fallback would be a coin toss -- seen: a Traditional Chinese Windows given a package
+# without 1028 took the Simplified transform. So the other Chinese regions are named outright, the way the app reads
+# them (AppLanguages.Match): Hong Kong and Macau Traditional, Singapore Simplified.
+$languageAliases = @{ "1028" = @("3076", "5124"); "2052" = @("4100") }
+
+function Add-LanguageTransforms([string]$Package, [string[]]$Translations) {
+    $installer = New-Object -ComObject WindowsInstaller.Installer
+    $work = Join-Path $stageRoot ("transforms-" + [System.IO.Path]::GetFileNameWithoutExtension($Package))
+    New-Item -ItemType Directory -Force $work | Out-Null
+    $languages = @(Get-MsiProperty $installer $Package "ProductLanguage")
+    foreach ($translation in $Translations) {
+        $language = Get-MsiProperty $installer $translation "ProductLanguage"
+        $mst = Join-Path $work "$language.mst"
+        $reference = Invoke-Msi $installer "OpenDatabase" "InvokeMethod" @($Package, 0)
+        $translated = Invoke-Msi $installer "OpenDatabase" "InvokeMethod" @($translation, 0)
+        [void](Invoke-Msi $translated "GenerateTransform" "InvokeMethod" @($reference, $mst))
+        # 32: the transform changes the database's codepage, which Windows Installer refuses unless told it is expected.
+        # Nothing validated: a transform that only ever travels inside the package it was made from has nothing to check.
+        Invoke-Msi $translated "CreateTransformSummaryInfo" "InvokeMethod" @($reference, $mst, 32, 0)
+        Close-Msi $translated $reference
+
+        $names = @($language) + @($languageAliases[$language] | Where-Object { $_ })
+        $db = Invoke-Msi $installer "OpenDatabase" "InvokeMethod" @($Package, 1)
+        $view = Invoke-Msi $db "OpenView" "InvokeMethod" @("SELECT ``Name``, ``Data`` FROM ``_Storages``")
+        foreach ($name in $names) {
+            Invoke-Msi $view "Execute" "InvokeMethod" $null
+            $record = Invoke-Msi $installer "CreateRecord" "InvokeMethod" @(2)
+            Invoke-Msi $record "StringData" "SetProperty" @(1, $name)
+            Invoke-Msi $record "SetStream" "InvokeMethod" @(2, $mst)
+            Invoke-Msi $view "Modify" "InvokeMethod" @(3, $record)
+            Close-Msi $record
+        }
+        Invoke-Msi $view "Close" "InvokeMethod" $null
+        Invoke-Msi $db "Commit" "InvokeMethod" $null
+        Close-Msi $view $db
+        $languages += $names
+    }
+
+    $db = Invoke-Msi $installer "OpenDatabase" "InvokeMethod" @($Package, 1)
+    $info = Invoke-Msi $db "SummaryInformation" "GetProperty" @(1)
+    $platform = ([string](Invoke-Msi $info "Property" "GetProperty" @(7))).Split(";")[0]
+    Invoke-Msi $info "Property" "SetProperty" @(7, "$platform;$($languages -join ',')")
+    Invoke-Msi $info "Persist" "InvokeMethod" $null
+    Invoke-Msi $db "Commit" "InvokeMethod" $null
+    Close-Msi $info $db $installer
+    Write-Host ("  languages: " + ($languages -join ","))
+}
+
 # packaging/windows/DeskPair.wixproj around the staged folder: one MSI per architecture, holding exactly what the zip
 # holds, plus the marker that tells the app Windows Installer put it there and the licence.
 function Add-WindowsInstaller([string]$Rid, [string]$Stage, [string]$Name) {
@@ -214,7 +300,8 @@ function Add-WindowsInstaller([string]$Rid, [string]$Stage, [string]$Name) {
     $out = Join-Path $stageRoot "msi-$Rid"
     # Windows Installer versions are three numbers, so a pre-release goes out as its core version. --no-incremental:
     # WiX judges a build up to date by its sources and payload, not by the version or the name asked for, and then
-    # looks for an MSI under the new name that it never wrote.
+    # looks for an MSI under the new name that it never wrote. Every culture the project lists is built, each into a
+    # folder of its own; that takes some minutes, the payload being compressed once per language.
     $log = & dotnet build (Join-Path $repo "packaging\windows\DeskPair.wixproj") -c Release -nologo --no-incremental `
         "-p:Platform=$platform" "-p:PayloadDir=$Stage" "-p:ProductVersion=$core" "-p:OutputName=$Name" -o $out 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -223,8 +310,13 @@ function Add-WindowsInstaller([string]$Rid, [string]$Stage, [string]$Name) {
     }
 
     $msi = Join-Path $release "$Name.msi"
-    Move-Item (Join-Path $out "$Name.msi") $msi -Force
-    # Signed after it is built: the package holds the program already signed, and its own signature is over the lot.
+    Move-Item (Join-Path $out "en-US\$Name.msi") $msi -Force
+    [string[]]$translations = @(Get-ChildItem $out -Directory | Where-Object Name -ne "en-US" |
+        ForEach-Object { Join-Path $_.FullName "$Name.msi" })
+    if ($translations.Count -eq 0) { throw "The installer for $Rid was built in English only; the project names every culture." }
+    Add-LanguageTransforms $msi $translations
+    # Signed last: the package holds the program already signed, and its own signature is over the lot, transforms
+    # included -- anything written into it afterwards would break the signature.
     if ($CodeSigning) { Set-CodeSignature @($msi) "DeskPair" }
     Add-Artifact -Path $msi -Platform "windows" -Arch ($Rid -replace '^win-', '') `
         -Requires "Windows 10 1809" -Signed ([bool]$CodeSigning) -Format "msi"

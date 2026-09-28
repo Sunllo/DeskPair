@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The installer's own words in zh-TW; WiX brings the rest of the wizard's. README.md beside Package.wxs
+     says how one MSI carries every language. -->
+<WixLocalization Culture="zh-TW" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="OpenDeskPair" Value="開啟 DeskPair" />
+  <String Id="NewerVersionInstalled" Value="已經安裝了較新版本的 DeskPair。" />
+</WixLocalization>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The installer's own words in es-ES; WiX brings the rest of the wizard's. README.md beside Package.wxs
+     says how one MSI carries every language. -->
+<WixLocalization Culture="es-ES" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="OpenDeskPair" Value="Abrir DeskPair" />
+  <String Id="NewerVersionInstalled" Value="Ya hay instalada una versión más reciente de DeskPair." />
+</WixLocalization>

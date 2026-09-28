@@ -24,7 +24,9 @@ not in git). Not wire-compatible with RustDesk. Full design: `docs/architecture.
   `tools/package.ps1` builds all three per Linux RID with nfpm (`tools/fetch-nfpm.ps1`).
 - `packaging/windows/` — the MSI (WiX v7, `DeskPair.wixproj` + `Package.wxs`), one per Windows RID beside the zip,
   built by `tools/package.ps1`. Windows only, so not in `DeskPair.slnx`. The manifest lists each zip before its MSI:
-  apps from before installers install the first file for their machine. An installed copy (`packaged` = `msi`)
+  apps from before installers install the first file for their machine. One MSI speaks ten languages: WiX builds
+  each culture (`Localization/*.wxl` holds our strings), and `package.ps1` embeds every non-English one as a language
+  transform of the English package; the project supplies the ProductCode so all cultures share it. An installed copy (`packaged` = `msi`)
   updates by running the next MSI; its uninstall runs `DeskPair --remove-system-changes`, which must never show a window.
   Windows builds are Authenticode-signed through Microsoft Artifact Signing when `package.ps1` gets `-CodeSigning <metadata>`
   (SignTool + `tools/fetch-artifact-signing.ps1`'s plug-in, signed in with `az login`); the account's settings are not public.
