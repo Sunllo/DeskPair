@@ -19,6 +19,7 @@ internal static class Fr
         ["home.copy"] = "Copier",
         ["home.refreshPassword"] = "Nouveau mot de passe",
         ["home.serviceOffline"] = "Le service hôte n'est pas lancé",
+        ["host.notOwner"] = "Seule une personne connectée devant l’écran de cet ordinateur, ou un administrateur, peut voir son mot de passe, ses paramètres et son historique de connexions.",
         ["home.serverRegistered"] = "Joignable par ID",
         ["home.serverConnecting"] = "Connexion au serveur de signalisation…",
         ["home.serverUnreachable"] = "Le serveur de signalisation ne répond pas — pas de réseau ? Cet ordinateur s'y réinscrira de lui-même dès que la connexion sera revenue.",

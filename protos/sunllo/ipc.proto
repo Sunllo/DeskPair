@@ -190,6 +190,12 @@ message ConnectionHistory {
   repeated ConnectionHistoryEntry entries = 1;   // newest first
 }
 
+// The engine's answer to a request this caller may not make: nothing was read or written. Said rather than left
+// unanswered, so the asking window neither waits out its timeout nor takes the silence for a lost connection.
+message IpcRefused {
+  string reason = 1;   // why the caller is not the owner; for the log, never shown as it stands
+}
+
 message IpcMessage {
   // Non-zero on requests that expect a reply; the reply echoes it. Pushes use 0.
   uint32 request_id = 100;
@@ -227,5 +233,6 @@ message IpcMessage {
     ConnectionHistory connection_history = 31;
     DesktopSharingRequest desktop_sharing_request = 32;
     DesktopSharingState desktop_sharing_state = 33;
+    IpcRefused refused = 34;
   }
 }

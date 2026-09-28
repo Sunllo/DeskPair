@@ -62,6 +62,39 @@ public static class FirewallRules
         return 0;
     }
 
+    /// <summary>
+    /// Removes every rule that names <paramref name="program"/>, whoever made it: chiefly the pair Windows makes itself
+    /// when somebody answers its "allow access" prompt -- inbound, allowed, on private and public networks alike --
+    /// which it names after the program and which nothing else ever takes away. By path, so the rules of a copy of
+    /// DeskPair elsewhere on the disk stay where they are.
+    ///
+    /// Through PowerShell's firewall module rather than netsh. Windows keeps the path as its prompt wrote it, in lower
+    /// case, and the module's program filter matches it whatever the case -- seen on a machine with such a pair --
+    /// where netsh's is not documented either way.
+    /// </summary>
+    public static int RemoveAllFor(string program, ILogger log)
+    {
+        if (!OperatingSystem.IsWindows() || program.Length == 0)
+        {
+            return 2;
+        }
+
+        string powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+        (int code, string output) = Run(log, powershell, ["-NoProfile", "-NonInteractive", "-Command", RemoveAllForScript(program)]);
+        if (code == 0)
+        {
+            log.LogInformation("Firewall rules naming {Program} removed: {Count}", program, output.Trim());
+        }
+
+        return code;
+    }
+
+    /// <summary>What <see cref="RemoveAllFor"/> runs: prints how many rules it found, and fails if one would not go.</summary>
+    internal static string RemoveAllForScript(string program) =>
+        $"$r = @(Get-NetFirewallApplicationFilter -Program '{program.Replace("'", "''", StringComparison.Ordinal)}' "
+        + "-ErrorAction SilentlyContinue | Get-NetFirewallRule -ErrorAction SilentlyContinue); "
+        + "if ($r.Count) { $r | Remove-NetFirewallRule -ErrorAction Stop }; $r.Count";
+
     private static int Netsh(ILogger log, string arguments)
     {
         try
@@ -87,6 +120,50 @@ public static class FirewallRules
         {
             log.LogWarning(e, "netsh failed");
             return -1;
+        }
+    }
+
+    private static (int Code, string Output) Run(ILogger log, string file, IEnumerable<string> arguments)
+    {
+        try
+        {
+            var start = new ProcessStartInfo(file)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            foreach (string argument in arguments)
+            {
+                start.ArgumentList.Add(argument);
+            }
+
+            using Process? process = Process.Start(start);
+            if (process is null)
+            {
+                return (-1, string.Empty);
+            }
+
+            Task<string> errors = process.StandardError.ReadToEndAsync();
+            string output = process.StandardOutput.ReadToEnd();
+            if (!process.WaitForExit(60_000))
+            {
+                process.Kill();
+                return (-1, output);
+            }
+
+            if (process.ExitCode != 0)
+            {
+                log.LogWarning("{File} exited {Code}: {Errors}", Path.GetFileName(file), process.ExitCode, errors.Result.Trim());
+            }
+
+            return (process.ExitCode, output);
+        }
+        catch (Exception e)
+        {
+            log.LogWarning(e, "{File} failed", Path.GetFileName(file));
+            return (-1, string.Empty);
         }
     }
 }

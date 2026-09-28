@@ -21,6 +21,7 @@
       <StackPanel Spacing="10">
         <TextBlock Text="{loc:Loc home.thisDesk}" Classes="section" />
         <TextBlock Text="{loc:Loc home.serviceOffline}" Foreground="#E88" IsVisible="{Binding !IsServiceConnected}" />
+        <TextBlock Text="{loc:Loc host.notOwner}" Foreground="#E8C06A" TextWrapping="Wrap" IsVisible="{Binding IsRefusedByHost}" />
         <!-- Whether the signalling server can hear this machine: the reason an id is dialable at all. The
              engine registers again on its own when the network returns; this line is what says so. -->
         <TextBlock Text="{Binding ServerStateText}" Foreground="#E88" TextWrapping="Wrap" IsVisible="{Binding IsServerUnreachable}" />
@@ -58,13 +59,13 @@
                 <TextBlock Text="{loc:Loc home.password}" Classes="label" VerticalAlignment="Center" />
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsTempPasswordEnabled, Mode=OneWay}"
                               Command="{Binding ToggleTempPasswordEnabledCommand}"
-                              OnContent="" OffContent="" IsEnabled="{Binding IsServiceConnected}" />
+                              OnContent="" OffContent="" IsEnabled="{Binding CanManagePasswords}" />
               </Grid>
               <!-- A temporary password is generated, copied and replaced; it is not typed. -->
               <Grid ColumnDefinitions="*,Auto,Auto">
                 <TextBlock Text="{Binding TempPasswordText}" FontSize="22" FontFamily="Consolas, Menlo, monospace" VerticalAlignment="Center" />
                 <Button Grid.Column="1" Content="{loc:Loc home.copy}" Command="{Binding CopyPasswordCommand}" VerticalAlignment="Center" />
-                <Button Grid.Column="2" Content="⟳" ToolTip.Tip="{loc:Loc home.refreshPassword}" Command="{Binding RegeneratePasswordCommand}" IsEnabled="{Binding IsServiceConnected}" Margin="4,0,0,0" />
+                <Button Grid.Column="2" Content="⟳" ToolTip.Tip="{loc:Loc home.refreshPassword}" Command="{Binding RegeneratePasswordCommand}" IsEnabled="{Binding CanManagePasswords}" Margin="4,0,0,0" />
               </Grid>
               <TextBlock Text="{loc:Loc home.passwordPinned}" Classes="label" IsVisible="{Binding IsTempPasswordPinned}" />
             </StackPanel>

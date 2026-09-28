@@ -19,6 +19,7 @@ internal static class De
         ["home.copy"] = "Kopieren",
         ["home.refreshPassword"] = "Neues Passwort",
         ["home.serviceOffline"] = "Host-Dienst läuft nicht",
+        ["host.notOwner"] = "Passwort, Einstellungen und Verbindungsverlauf dieses Computers sieht nur, wer an seinem eigenen Bildschirm angemeldet ist, oder ein Administrator.",
         ["home.serverRegistered"] = "Per ID erreichbar",
         ["home.serverConnecting"] = "Verbindung zum Signalisierungsserver wird hergestellt …",
         ["home.serverUnreachable"] = "Der Signalisierungsserver antwortet nicht – kein Netzwerk? Dieser Computer registriert sich von selbst wieder, sobald es zurück ist.",

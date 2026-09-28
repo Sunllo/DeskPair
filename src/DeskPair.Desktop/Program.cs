@@ -406,10 +406,14 @@ public static class Program
 
     /// <summary>
     /// What the Windows installer runs, as LocalSystem, just before it deletes the program: removes the service, the
-    /// firewall rules and the virtual display driver -- everything this program put outside its own folder, which
-    /// nothing else would take away. Never a window: under the installer nobody can answer one, and a message box in
-    /// session 0 would hold the uninstall up for good. And always exit 0, so a computer being cleaned up is not left
-    /// half-uninstalled because one of the three was already gone or would not go; the service log says which.
+    /// firewall rules, the login entries and the virtual display driver -- everything outside the program's own folder
+    /// that nothing else would take away. The firewall rules include the ones Windows made itself when somebody allowed
+    /// the program through its prompt, and the login entries are those that start this copy, for everybody signed in.
+    /// What people set up -- this computer's id and passwords, settings, the device list, the logs -- stays, so that
+    /// installing DeskPair again gives back the same computer. Never a window: under the installer nobody can answer
+    /// one, and a message box in session 0 would hold the uninstall up for good. And always exit 0, so a computer being
+    /// cleaned up is not left half-uninstalled because one step was already done or would not go; the service log says
+    /// which.
     /// </summary>
     private static int RunRemoveSystemChanges(string[] args)
     {
@@ -421,8 +425,15 @@ public static class Program
             .SetMinimumLevel(args.Contains("--verbose") ? LogLevel.Debug : LogLevel.Information));
         ILogger log = logs.CreateLogger("uninstall");
         log.LogInformation("DeskPair is being removed; taking away what it changed outside its own folder");
+        string exe = Environment.ProcessPath ?? string.Empty;
         Remove("the service", () => Engine.Service.HostServiceInstaller.Uninstall(log));
         Remove("the firewall rules", () => FirewallRules.Remove(logs, quiet: true));
+        Remove("the firewall rules Windows made for this program", () => FirewallRules.RemoveAllFor(exe, log));
+        Remove("the login entries", () =>
+        {
+            log.LogInformation("Login entries that started {Program} removed: {Count}", exe, StartupEntry.RemoveForSignedInUsers(exe, log));
+            return 0;
+        });
         Remove("the virtual display driver", () => Platform.Windows.Capture.VirtualDisplayDriverInstaller.Uninstall(dataDir, log));
         return 0;
 

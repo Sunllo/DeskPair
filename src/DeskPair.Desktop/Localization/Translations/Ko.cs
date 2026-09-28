@@ -19,6 +19,7 @@ internal static class Ko
         ["home.copy"] = "복사",
         ["home.refreshPassword"] = "새 비밀번호",
         ["home.serviceOffline"] = "호스트 서비스가 실행 중이 아닙니다",
+        ["host.notOwner"] = "이 컴퓨터의 비밀번호, 설정, 연결 기록은 이 컴퓨터 화면 앞에서 로그인한 사용자나 관리자만 볼 수 있습니다.",
         ["home.serverRegistered"] = "ID로 접속 가능",
         ["home.serverConnecting"] = "시그널링 서버에 연결하는 중…",
         ["home.serverUnreachable"] = "시그널링 서버가 응답하지 않습니다. 네트워크가 끊겼습니까? 네트워크가 돌아오면 이 컴퓨터는 스스로 다시 등록합니다.",

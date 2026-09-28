@@ -99,6 +99,44 @@ App 會告訴你，再用同樣的方式安裝新套件。`.tar.gz` 在任何發
 
 手機 App（用來控制電腦）還沒有上架。
 
+## 移除 DeskPair
+
+移除 DeskPair 會拿掉程式本身和它對系統做的變更，但會保留讓這台電腦還是這台電腦的東西：它的 ID 與金鑰、密碼、你的設定與設備清單、連線紀錄和記錄檔。重新安裝後，DeskPair 會回到同一台電腦，用同一組固定密碼就連得到。想完全重來，就用下面的指令把這些也刪掉，下次安裝會拿到新的 ID。連結過 DeskPair 帳號的電腦，會一直留在帳號的設備清單裡，直到你在那裡移除它。
+
+在 Windows 上，從「設定 › 應用程式」解除安裝 DeskPair。這會移除程式、捷徑、無人值守服務、防火牆規則（包括允許 DeskPair 通過 Windows 提示時，Windows 自己建立的規則）、登入時啟動的項目和虛擬顯示器驅動。從 `.zip` 執行的版本沒有解除安裝程式：以系統管理員身分開啟終端機，在它的資料夾執行 `DeskPair.exe --remove-system-changes`，會移除同樣的東西，再刪掉資料夾。資料用下面兩行 PowerShell 刪除：第一行由每個用過 DeskPair 的人各執行一次，第二行以系統管理員身分執行一次：
+
+```
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:APPDATA\Sunllo\DeskPair", "$env:LOCALAPPDATA\Sunllo\DeskPair", "$env:TEMP\DeskPair", "$env:TEMP\deskpair-update*"
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:ProgramData\Sunllo\DeskPair"
+```
+
+在 macOS 上，先在 DeskPair 關掉「設定 › 安全 › 鎖定時仍可被連線」和「設定 › 基本 › 登入時自動啟動」，再把它從「應用程式」拖到垃圾桶。資料、它存在鑰匙圈裡的密碼，以及它取得的螢幕錄製與輔助使用權限，用這幾行刪除：
+
+```
+rm -rf ~/Library/Application\ Support/Sunllo/DeskPair ~/Library/LaunchAgents/com.sunllo.deskpair.login.plist
+sudo rm -rf "/Library/Application Support/Sunllo/DeskPair" /Library/LaunchAgents/com.sunllo.deskpair.agent.plist
+while security delete-generic-password -s "Sunllo DeskPair" >/dev/null 2>&1; do :; done
+tccutil reset ScreenCapture com.sunllo.deskpair
+tccutil reset Accessibility com.sunllo.deskpair
+```
+
+在 Linux 上，用當初安裝的工具移除套件，無人值守服務會一起移除：
+
+```
+sudo apt remove deskpair       # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf remove deskpair       # Fedora, RHEL
+sudo zypper remove deskpair    # openSUSE
+sudo pacman -R deskpair        # Arch, Manjaro
+```
+
+從 `.tar.gz` 執行的版本沒有套件：先關掉「鎖定時仍可被連線」和「登入時自動啟動」，或執行 `sudo /opt/deskpair/DeskPair --uninstall-service`，再刪掉檔案。資料，包括無人值守服務保存的東西和它執行時用的 `deskpair` 帳號：
+
+```
+rm -rf ~/.local/share/deskpair ~/.local/share/Sunllo/DeskPair ~/.config/Sunllo/DeskPair ~/.config/autostart/deskpair.desktop ~/.cache/DeskPair ~/.net/DeskPair
+sudo rm -rf /var/lib/deskpair /etc/deskpair /root/.net/DeskPair
+sudo userdel deskpair
+```
+
 ## 建置
 
 ```

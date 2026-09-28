@@ -19,6 +19,7 @@ internal static class Es
         ["home.copy"] = "Copiar",
         ["home.refreshPassword"] = "Contraseña nueva",
         ["home.serviceOffline"] = "El servicio de host no está en ejecución",
+        ["host.notOwner"] = "Solo quien haya iniciado sesión frente a la pantalla de esta computadora, o un administrador, puede ver su contraseña, su configuración y su historial de conexiones.",
         ["home.serverRegistered"] = "Accesible por ID",
         ["home.serverConnecting"] = "Conectando con el servidor de señalización…",
         ["home.serverUnreachable"] = "El servidor de señalización no responde. ¿Sin red? Esta computadora se registra de nuevo por sí sola cuando vuelve a haberla.",

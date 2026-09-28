@@ -61,6 +61,10 @@ public static class IpcAuthorities
         [IpcMessage.UnionOneofCase.GetServerState] = IpcAuthority.Any,
         [IpcMessage.UnionOneofCase.ServerState] = IpcAuthority.Any,
 
+        // The answer to somebody who may not ask: it carries nothing but the fact of the refusal, and it is the one
+        // reply a caller who is not the owner has to be able to receive.
+        [IpcMessage.UnionOneofCase.Refused] = IpcAuthority.Any,
+
         // ---- pushes that carry what the requests above are protecting ----
         // Refusing to answer GetTempPassword while broadcasting the password to every attached client
         // would have been a lock on a door with no wall beside it.

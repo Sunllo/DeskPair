@@ -121,13 +121,17 @@ public sealed class HostIpcBridge : IIpcHostBridge, IConnectionApprover
         // about itself, and the token sits in ProgramData where the Users group can read it.
         if (IpcAuthorities.For(request.UnionCase) == IpcAuthority.Owner && !client.Caller.IsOwner)
         {
+            string because = client.Caller.Because.Length == 0 ? "the caller could not be identified" : client.Caller.Because;
             _log.LogWarning(
                 "Refused {Case} from IPC client {Id} ({User}): {Because}",
                 request.UnionCase,
                 client.Id,
                 client.Caller.Name.Length == 0 ? "unidentified" : client.Caller.Name,
-                client.Caller.Because.Length == 0 ? "the caller could not be identified" : client.Caller.Because);
-            return null;
+                because);
+
+            // Said, not left unanswered: a window that hears nothing waits out its timeout, takes the silence for a
+            // lost engine, and reconnects to ask again -- every twelve seconds, for as long as it is open.
+            return new IpcMessage { Refused = new IpcRefused { Reason = because } };
         }
 
         switch (request.UnionCase)

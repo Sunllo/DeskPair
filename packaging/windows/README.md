@@ -27,12 +27,28 @@
 - **App 內更新**：安裝版會下載清單裡同架構的 `.msi`，跟其他下載一樣先驗簽章清單與 SHA-256，然後由 `update.cmd`
   等 App 結束、執行 `msiexec /i <msi> /passive /norestart`（Windows 會要求系統管理員同意），最後重新開啟 App。
   使用者拒絕同意時，舊版照樣重新開啟。msiexec 的紀錄留在 `%TEMP%\deskpair-update\install.log`。
-- **移除**：刪檔案之前，以 LocalSystem 執行 `DeskPair.exe --remove-system-changes`，拆掉 App 在自己資料夾以外做的事——
-  無人值守服務、防火牆規則、虛擬顯示器驅動。這一步不開任何視窗（安裝程式底下沒有人能回答，工作階段 0 的對話框只會
-  讓移除卡住），拆不掉的寫進 `%ProgramData%\Sunllo\DeskPair\logs\service.log`，不讓整個移除失敗。
+- **移除**：刪檔案之前，以 LocalSystem 執行 `DeskPair.exe --remove-system-changes`，拆掉 App 在自己資料夾以外做的事：
+  - 無人值守服務，以及它打開的「允許軟體送出 Ctrl+Alt+Del」原則
+  - App 自己建的防火牆規則（`Sunllo DeskPair`）
+  - **Windows 自己建的防火牆規則**（0.4.6 起）：程式第一次監聽時，使用者在 Windows 的「允許存取」提示按下允許，
+    Windows 會以程式路徑建兩條輸入規則（私人與公用網路），名稱是「DeskPair」。依路徑刪，其他位置的 DeskPair 不受影響。
+    用 PowerShell 的防火牆模組而不用 netsh：Windows 存的路徑是小寫，模組的比對不分大小寫（實測過），netsh 沒有文件說明。
+  - **「登入時啟動」的項目**（0.4.6 起）：每個已登入使用者的 `HKCU\...\Run` 裡啟動這個路徑的項目。沒有登入的使用者不動
+    （他們的登錄檔是磁碟上的檔案，移除程式不該去開）。
+  - 虛擬顯示器驅動與它的設定資料夾
+
+  這一步不開任何視窗（安裝程式底下沒有人能回答，工作階段 0 的對話框只會讓移除卡住），拆不掉的寫進
+  `%ProgramData%\Sunllo\DeskPair\logs\service.log`，不讓整個移除失敗。
   **升級時不跑這一步**（條件是 `REMOVE~="ALL" AND NOT UPGRADINGPRODUCTCODE`）。
-- 資料不刪：`%ProgramData%\Sunllo\DeskPair`（本機 ID、金鑰、密碼）與 `%AppData%\Sunllo\DeskPair`（設定、設備清單）
-  都留著，重新安裝後還是同一台電腦。
+- **UAC 顯示的名稱**：移除時 Windows 執行的是它自己留在 `C:\Windows\Installer` 的安裝檔複本，檔名是隨機的（例如
+  `1a2b3c4d.msi`）。簽章帶了描述，UAC 才會顯示名稱，否則顯示檔名。所以 `package.ps1` 簽 MSI 時加 `/d DeskPair`（0.4.6 起）。
+- **資料刻意保留**（使用者 2026-09-29 決定），重新安裝後還是同一台電腦、同一個 ID 與永久密碼：
+  - `%ProgramData%\Sunllo\DeskPair`：本機 ID 與身分金鑰、永久密碼（雜湊）、主機設定、連線紀錄、服務記錄檔
+  - `%AppData%\Sunllo\DeskPair`：每個使用者自己的設定與裝置清單
+  - `%LocalAppData%\Sunllo\DeskPair`：每個使用者的 App 記錄檔
+
+  要完全清除，移除之後再刪這三個資料夾（第一個要系統管理員；另外兩個每個用過的使用者各有一份）。
+  重新安裝後會拿到新的 ID。
 
 ## 大量部署
 

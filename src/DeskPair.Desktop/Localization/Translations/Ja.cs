@@ -19,6 +19,7 @@ internal static class Ja
         ["home.copy"] = "コピー",
         ["home.refreshPassword"] = "新しいパスワード",
         ["home.serviceOffline"] = "ホストサービスが動作していません",
+        ["host.notOwner"] = "このコンピューターのパスワード、設定、接続履歴を見られるのは、その画面の前でサインインしている人か管理者だけです。",
         ["home.serverRegistered"] = "IDで接続できます",
         ["home.serverConnecting"] = "シグナリングサーバーに接続しています…",
         ["home.serverUnreachable"] = "シグナリングサーバーが応答しません。ネットワークがありませんか？復旧すると、このコンピューターは自動で再登録します。",

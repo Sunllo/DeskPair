@@ -151,6 +151,33 @@ public class IpcApprovalTests
         (await session.LoginAsync("hunter2", CancellationToken.None)).Success.ShouldBeTrue();
     }
 
+    /// <summary>
+    /// A window whose account is not the owner of this computer is told no, and told it in words: silence was the old
+    /// answer, and a window that hears nothing waits out its timeout, takes that for a lost engine and reconnects. On
+    /// a machine whose owner worked over remote desktop the home page said "host service not running" for a moment
+    /// every twelve seconds, while the service ran fine. Nothing is read or written on the refusal's way out, and what
+    /// anybody may ask is still answered -- the window keeps its link and its id.
+    /// </summary>
+    [Fact]
+    public async Task A_caller_who_is_not_the_owner_is_told_no_and_nothing_changes()
+    {
+        await using Testbed bed = await Testbed.StartAsync();
+        (HostRuntime host, HostPasswords passwords, _, _, _, HostIpcBridge bridge) = await StartServiceAsync(bed, new HostPolicy());
+        var stranger = new IpcClientInfo(7, IpcRoles.Ui) { Caller = IpcCaller.Unknown };
+
+        IpcMessage? read = await bridge.HandleAsync(new IpcMessage { GetTempPassword = new GetTempPassword() }, stranger, CancellationToken.None);
+        IpcMessage? written = await bridge.HandleAsync(
+            new IpcMessage { SetPermanentPassword = new SetPermanentPassword { Password = "hunter2" } }, stranger, CancellationToken.None);
+        IpcMessage? id = await bridge.HandleAsync(new IpcMessage { GetId = new GetId() }, stranger, CancellationToken.None);
+
+        read.ShouldNotBeNull().UnionCase.ShouldBe(IpcMessage.UnionOneofCase.Refused);
+        read.Refused.Reason.ShouldNotBeEmpty();
+        read.ToString().ShouldNotContain(passwords.TemporaryPassword);
+        written.ShouldNotBeNull().UnionCase.ShouldBe(IpcMessage.UnionOneofCase.Refused);
+        passwords.HasPermanentPassword.ShouldBeFalse();
+        id.ShouldNotBeNull().IdChanged.Id.ShouldBe(host.Identity.Id);
+    }
+
     private static List<IpcMessage> Snapshot(List<IpcMessage> events)
     {
         lock (events)

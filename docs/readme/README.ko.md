@@ -104,6 +104,44 @@ sudo pacman -U deskpair-<version>-1-x86_64.pkg.tar.zst                        # 
 
 컴퓨터를 제어하는 휴대폰 앱은 아직 스토어에 출시되지 않았습니다.
 
+## DeskPair 제거
+
+DeskPair를 제거하면 프로그램과 프로그램이 시스템에 만든 변경 사항은 사라지지만, 이 컴퓨터를 이 컴퓨터로 만드는 것들, 곧 ID와 키, 비밀번호, 사용자 설정과 기기 목록, 연결 기록, 로그는 남습니다. 다시 설치하면 같은 컴퓨터로 돌아오고, 같은 고정 비밀번호로 접속할 수 있습니다. 처음부터 다시 시작하려면 아래 명령으로 이것들도 삭제하세요. 다음 설치에서는 새 ID를 받습니다. DeskPair 계정에 연결한 컴퓨터는 계정의 기기 목록에서 제거할 때까지 그곳에 남습니다.
+
+Windows에서는 '설정 › 앱'에서 DeskPair를 제거합니다. 프로그램, 바로 가기, 무인 접속 서비스, 방화벽 규칙(DeskPair를 Windows 확인 창에서 허용했을 때 Windows가 직접 만든 규칙 포함), 로그인 시 시작 항목, 가상 디스플레이 드라이버가 제거됩니다. `.zip`에서 실행한 버전에는 제거 프로그램이 없습니다. 관리자 권한으로 연 터미널에서 해당 폴더의 `DeskPair.exe --remove-system-changes`를 실행하면 같은 것들이 제거되며, 그다음 폴더를 삭제하세요. 데이터는 아래 두 줄의 PowerShell로 삭제합니다. 첫 줄은 DeskPair를 사용한 사람마다 한 번씩, 둘째 줄은 관리자로 한 번 실행합니다:
+
+```
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:APPDATA\Sunllo\DeskPair", "$env:LOCALAPPDATA\Sunllo\DeskPair", "$env:TEMP\DeskPair", "$env:TEMP\deskpair-update*"
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:ProgramData\Sunllo\DeskPair"
+```
+
+macOS에서는 먼저 DeskPair의 "설정 › 보안 › 잠긴 상태에서도 접속 가능"과 "설정 › 일반 › 로그인하면 시작"을 끈 다음, DeskPair를 '응용 프로그램'에서 휴지통으로 옮깁니다. 데이터, 키체인에 저장한 비밀번호, 화면 기록과 손쉬운 사용 권한은 다음으로 삭제합니다:
+
+```
+rm -rf ~/Library/Application\ Support/Sunllo/DeskPair ~/Library/LaunchAgents/com.sunllo.deskpair.login.plist
+sudo rm -rf "/Library/Application Support/Sunllo/DeskPair" /Library/LaunchAgents/com.sunllo.deskpair.agent.plist
+while security delete-generic-password -s "Sunllo DeskPair" >/dev/null 2>&1; do :; done
+tccutil reset ScreenCapture com.sunllo.deskpair
+tccutil reset Accessibility com.sunllo.deskpair
+```
+
+Linux에서는 설치할 때 사용한 도구로 패키지를 제거합니다. 무인 접속 서비스도 함께 제거됩니다:
+
+```
+sudo apt remove deskpair       # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf remove deskpair       # Fedora, RHEL
+sudo zypper remove deskpair    # openSUSE
+sudo pacman -R deskpair        # Arch, Manjaro
+```
+
+`.tar.gz`에서 실행한 버전에는 패키지가 없습니다. 먼저 "잠긴 상태에서도 접속 가능"과 "로그인하면 시작"을 끄거나 `sudo /opt/deskpair/DeskPair --uninstall-service`를 실행한 다음 파일을 삭제하세요. 무인 접속 서비스가 보관한 것과 서비스가 사용한 `deskpair` 계정을 포함한 데이터는 다음으로 삭제합니다:
+
+```
+rm -rf ~/.local/share/deskpair ~/.local/share/Sunllo/DeskPair ~/.config/Sunllo/DeskPair ~/.config/autostart/deskpair.desktop ~/.cache/DeskPair ~/.net/DeskPair
+sudo rm -rf /var/lib/deskpair /etc/deskpair /root/.net/DeskPair
+sudo userdel deskpair
+```
+
 ## 빌드
 
 ```

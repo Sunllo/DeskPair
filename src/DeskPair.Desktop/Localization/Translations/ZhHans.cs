@@ -19,6 +19,7 @@ internal static class ZhHans
         ["home.copy"] = "复制",
         ["home.refreshPassword"] = "重新生成",
         ["home.serviceOffline"] = "主机服务未运行",
+        ["host.notOwner"] = "只有在这台电脑本机屏幕前登录的用户或管理员，才能看到它的密码、设置和连接记录。",
         ["home.serverRegistered"] = "可通过 ID 连接",
         ["home.serverConnecting"] = "正在连接信令服务器…",
         ["home.serverUnreachable"] = "信令服务器没有回应——没有网络？网络恢复后这台电脑会自动重新注册。",

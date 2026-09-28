@@ -19,6 +19,7 @@ internal static class PtBr
         ["home.copy"] = "Copiar",
         ["home.refreshPassword"] = "Nova senha",
         ["home.serviceOffline"] = "O serviço de host não está em execução",
+        ["host.notOwner"] = "Só quem fez login diante da tela deste computador, ou um administrador, pode ver a senha, as configurações e o histórico de conexões dele.",
         ["home.serverRegistered"] = "Acessível pelo ID",
         ["home.serverConnecting"] = "Conectando ao servidor de sinalização…",
         ["home.serverUnreachable"] = "O servidor de sinalização não está respondendo — sem rede? Este computador se registra de novo sozinho quando ela voltar.",

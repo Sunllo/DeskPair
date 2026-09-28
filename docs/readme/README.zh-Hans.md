@@ -99,6 +99,44 @@ sudo pacman -U deskpair-<version>-1-x86_64.pkg.tar.zst                        # 
 
 手机应用（用来控制电脑）尚未上架。
 
+## 卸载 DeskPair
+
+卸载 DeskPair 会移除程序本身和它对系统所做的更改，但会保留让这台电脑仍是这台电脑的东西：它的 ID 与密钥、密码、你的设置与设备列表、连接记录和日志。重新安装后，DeskPair 会回到同一台电脑，用同一个固定密码就能连接。想彻底重来，就用下面的命令把这些也删除，下次安装会得到新的 ID。关联过 DeskPair 账号的电脑，会一直留在账号的设备列表里，直到你在那里移除它。
+
+在 Windows 上，从“设置 › 应用”卸载 DeskPair。这会移除程序、快捷方式、无人值守服务、防火墙规则（包括允许 DeskPair 通过 Windows 提示时，Windows 自己创建的规则）、登录时启动的项目和虚拟显示器驱动。从 `.zip` 运行的版本没有卸载程序：以管理员身份打开终端，在它的文件夹运行 `DeskPair.exe --remove-system-changes`，会移除同样的东西，再删除文件夹。数据用下面两行 PowerShell 删除：第一行由每个用过 DeskPair 的人各运行一次，第二行以管理员身份运行一次：
+
+```
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:APPDATA\Sunllo\DeskPair", "$env:LOCALAPPDATA\Sunllo\DeskPair", "$env:TEMP\DeskPair", "$env:TEMP\deskpair-update*"
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:ProgramData\Sunllo\DeskPair"
+```
+
+在 macOS 上，先在 DeskPair 里关闭「设置 › 安全 › 锁定时仍可连接」和「设置 › 常规 › 登录时自动启动」，再把它从“应用程序”拖到废纸篓。数据、它存在钥匙串里的密码，以及它获得的屏幕录制与辅助功能权限，用这几行删除：
+
+```
+rm -rf ~/Library/Application\ Support/Sunllo/DeskPair ~/Library/LaunchAgents/com.sunllo.deskpair.login.plist
+sudo rm -rf "/Library/Application Support/Sunllo/DeskPair" /Library/LaunchAgents/com.sunllo.deskpair.agent.plist
+while security delete-generic-password -s "Sunllo DeskPair" >/dev/null 2>&1; do :; done
+tccutil reset ScreenCapture com.sunllo.deskpair
+tccutil reset Accessibility com.sunllo.deskpair
+```
+
+在 Linux 上，用当初安装的工具卸载软件包，无人值守服务会一起移除：
+
+```
+sudo apt remove deskpair       # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf remove deskpair       # Fedora, RHEL
+sudo zypper remove deskpair    # openSUSE
+sudo pacman -R deskpair        # Arch, Manjaro
+```
+
+从 `.tar.gz` 运行的版本没有软件包：先关闭「锁定时仍可连接」和「登录时自动启动」，或运行 `sudo /opt/deskpair/DeskPair --uninstall-service`，再删除文件。数据，包括无人值守服务保存的内容和它运行时使用的 `deskpair` 账户：
+
+```
+rm -rf ~/.local/share/deskpair ~/.local/share/Sunllo/DeskPair ~/.config/Sunllo/DeskPair ~/.config/autostart/deskpair.desktop ~/.cache/DeskPair ~/.net/DeskPair
+sudo rm -rf /var/lib/deskpair /etc/deskpair /root/.net/DeskPair
+sudo userdel deskpair
+```
+
 ## 构建
 
 ```

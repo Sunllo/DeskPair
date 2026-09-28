@@ -17,6 +17,36 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## 0.4.6 — 2026-09-29
+
+Desktop only; the phones stay at 0.4.0.
+
+### Fixed
+
+- With unattended access installed on Windows, the home page said "Host service not running" for a moment every
+  twelve seconds while the service ran fine, when DeskPair was open in a session that is not the console's -- the
+  owner of a computer working on it over remote desktop, for one. The service's engine gives the passwords and the
+  settings only to the machine's owner, and it counted an administrator only while elevated, which under UAC an
+  administrator's programs are not; and it refused by not answering, which the app took for a lost engine and
+  reconnected. An administrator is an owner elevated or not, since a consent prompt is all that separates the two,
+  and a refusal is now said: the app stays connected, shows this computer's id, and says that its password,
+  settings and connection history are only for someone signed in at its own screen or an administrator.
+- The Windows `.zip` and installer, and the Linux `.tar.gz`, no longer put seven `.pdb` files beside the program.
+  The symbols are inside it instead, so a crash log still names the file and line. An upgrade by the installer takes
+  the old ones away; a `.zip` copy updated in place keeps them, unused.
+- Removing DeskPair on Windows also takes away the firewall rules Windows made itself when somebody allowed DeskPair
+  through its prompt -- inbound, on private and public networks -- and the entries that started it at sign-in, for
+  everybody signed in. Both were left behind.
+- The Windows permission prompt calls the installer "DeskPair". It showed the file's name, which when DeskPair is
+  removed is the random one Windows keeps its copy of the installer under (`1a2b3c4d.msi`).
+
+### Documentation
+
+- The README, in all ten languages, says what removing DeskPair leaves on each system -- this computer's id and
+  passwords, settings, the device list and the logs, kept so that installing it again gives back the same computer
+  -- and the commands that remove those as well, with the keychain items and privacy permissions on macOS and the
+  service account on Linux.
+
 ## 0.4.5 — 2026-09-28
 
 Desktop only; the phones stay at 0.4.0. The program is 0.4.4's: this release exists to be signed.

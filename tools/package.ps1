@@ -190,9 +190,12 @@ if ($CodeSigning) {
     }
 }
 
-function Set-CodeSignature([string[]]$Files) {
+function Set-CodeSignature([string[]]$Files, [string]$Description) {
     # Timestamped, because an Artifact Signing certificate lives three days and the signature has to outlive it.
-    $out = & $signTool sign /fd SHA256 /tr "http://timestamp.acs.microsoft.com" /td SHA256 /dlib $dlib /dmdf $CodeSigning @Files 2>&1
+    # A description (/d) is the name the UAC prompt gives a signed installer. Without one it shows the file's name,
+    # and when a program is removed Windows runs its own copy of the installer, kept under a random one (1a2b3c4d.msi).
+    $described = if ($Description) { @("/d", $Description, "/du", "https://deskpair.app") } else { @() }
+    $out = & $signTool sign /fd SHA256 /tr "http://timestamp.acs.microsoft.com" /td SHA256 @described /dlib $dlib /dmdf $CodeSigning @Files 2>&1
     if ($LASTEXITCODE -ne 0) {
         $out | Write-Host
         throw "Signing failed (SignTool exited $LASTEXITCODE). Signed in? The Azure CLI's az login, as an account with the Artifact Signing Certificate Profile Signer role."
@@ -222,7 +225,7 @@ function Add-WindowsInstaller([string]$Rid, [string]$Stage, [string]$Name) {
     $msi = Join-Path $release "$Name.msi"
     Move-Item (Join-Path $out "$Name.msi") $msi -Force
     # Signed after it is built: the package holds the program already signed, and its own signature is over the lot.
-    if ($CodeSigning) { Set-CodeSignature @($msi) }
+    if ($CodeSigning) { Set-CodeSignature @($msi) "DeskPair" }
     Add-Artifact -Path $msi -Platform "windows" -Arch ($Rid -replace '^win-', '') `
         -Requires "Windows 10 1809" -Signed ([bool]$CodeSigning) -Format "msi"
 }

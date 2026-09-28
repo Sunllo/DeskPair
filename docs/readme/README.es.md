@@ -106,6 +106,60 @@ versiones de Windows y macOS.
 
 Las aplicaciones para teléfono, que controlan una computadora, todavía no están en las tiendas.
 
+## Desinstalar DeskPair
+
+Desinstalar DeskPair quita el programa y lo que cambió en el sistema, pero conserva lo que hace que esta
+computadora sea esta computadora: su ID y su clave, sus contraseñas, tu configuración y la lista de dispositivos, el
+historial de conexiones y los registros. Si lo vuelves a instalar, DeskPair regresa como la misma computadora,
+accesible con la misma contraseña fija. Para empezar de cero, borra también esos datos con los comandos de abajo; la
+siguiente instalación recibe un ID nuevo. Una computadora vinculada a una cuenta de DeskPair sigue en la lista de
+dispositivos de la cuenta hasta que la quites allí.
+
+En Windows, desinstala DeskPair desde Configuración › Aplicaciones. Eso quita el programa, sus accesos directos,
+el servicio de acceso desatendido, sus reglas del firewall —incluidas las que Windows creó por su cuenta cuando se
+permitió DeskPair en su aviso—, las entradas que lo inician al iniciar sesión y el controlador de pantalla virtual.
+Una copia que se ejecuta desde el `.zip` no tiene desinstalador: en una terminal abierta como administrador, ejecuta
+`DeskPair.exe --remove-system-changes` desde su carpeta, que quita lo mismo, y luego borra la carpeta. Los datos se
+borran con dos líneas de PowerShell, la primera ejecutada por cada persona que usó DeskPair y la segunda una vez
+como administrador:
+
+```
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:APPDATA\Sunllo\DeskPair", "$env:LOCALAPPDATA\Sunllo\DeskPair", "$env:TEMP\DeskPair", "$env:TEMP\deskpair-update*"
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:ProgramData\Sunllo\DeskPair"
+```
+
+En macOS, desactiva primero en DeskPair Configuración › Seguridad › Accesible mientras está bloqueada y
+Configuración › General › Iniciar cuando inicie sesión, y luego mueve DeskPair de Aplicaciones a la Papelera. Los
+datos, las contraseñas guardadas en el llavero y los permisos de grabación de pantalla y accesibilidad se borran
+con:
+
+```
+rm -rf ~/Library/Application\ Support/Sunllo/DeskPair ~/Library/LaunchAgents/com.sunllo.deskpair.login.plist
+sudo rm -rf "/Library/Application Support/Sunllo/DeskPair" /Library/LaunchAgents/com.sunllo.deskpair.agent.plist
+while security delete-generic-password -s "Sunllo DeskPair" >/dev/null 2>&1; do :; done
+tccutil reset ScreenCapture com.sunllo.deskpair
+tccutil reset Accessibility com.sunllo.deskpair
+```
+
+En Linux, quita el paquete con la herramienta que lo instaló; el servicio de acceso desatendido se va con él:
+
+```
+sudo apt remove deskpair       # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf remove deskpair       # Fedora, RHEL
+sudo zypper remove deskpair    # openSUSE
+sudo pacman -R deskpair        # Arch, Manjaro
+```
+
+Una copia que se ejecuta desde el `.tar.gz` no tiene paquete: desactiva primero «Accesible mientras está
+bloqueada» e «Iniciar cuando inicie sesión», o ejecuta `sudo /opt/deskpair/DeskPair --uninstall-service`, y luego
+borra el archivo. Los datos, incluido lo que guardó el servicio y la cuenta `deskpair` con la que se ejecutaba:
+
+```
+rm -rf ~/.local/share/deskpair ~/.local/share/Sunllo/DeskPair ~/.config/Sunllo/DeskPair ~/.config/autostart/deskpair.desktop ~/.cache/DeskPair ~/.net/DeskPair
+sudo rm -rf /var/lib/deskpair /etc/deskpair /root/.net/DeskPair
+sudo userdel deskpair
+```
+
 ## Compilación
 
 ```

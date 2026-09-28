@@ -52,10 +52,10 @@
       <ComponentRef Id="RestartService" />
     </Feature>
 
-    <!-- Only when DeskPair is really being removed, not replaced by a newer version: the service, the firewall rules
-         and the virtual display driver are the app's own changes outside this folder, and nothing else would undo
-         them. Run as LocalSystem while DeskPair.exe is still there; it never shows a window, and whatever it cannot
-         remove it logs and leaves, rather than fail the uninstall. -->
+    <!-- Only when DeskPair is really being removed, not replaced by a newer version: the service, the firewall rules,
+         the login entries and the virtual display driver are the app's own changes outside this folder, and nothing
+         else would undo them. Run as LocalSystem while DeskPair.exe is still there; it never shows a window, and
+         whatever it cannot remove it logs and leaves, rather than fail the uninstall. -->
     <CustomAction Id="RemoveSystemChanges" FileRef="DeskPairExe" ExeCommand="--remove-system-changes"
                   Execute="deferred" Impersonate="no" Return="ignore" />
     <InstallExecuteSequence>
@@ -108,8 +108,8 @@
         </File>
       </Component>
 
-      <!-- Everything else publish.ps1 put beside it: the native libraries Skia and ANGLE load, vpx.dll, the virtual
-           display driver's folder and the symbols the crash log reads. -->
+      <!-- Everything else publish.ps1 put beside it: the native libraries Skia and ANGLE load, vpx.dll and the virtual
+           display driver's folder. -->
       <Files Include="$(var.PayloadDir)\**">
         <Exclude Files="$(var.PayloadDir)\DeskPair.exe" />
       </Files>

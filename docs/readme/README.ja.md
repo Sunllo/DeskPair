@@ -103,6 +103,44 @@ Windows 版や macOS 版と同じく自分で更新します。
 
 コンピューターを操作するスマートフォンアプリは、まだストアで公開していません。
 
+## DeskPair の削除
+
+DeskPair を削除すると、プログラム本体とそれがシステムに加えた変更は取り除かれますが、このコンピューターをこのコンピューターたらしめるもの（ID と鍵、パスワード、あなたの設定とデバイス一覧、接続履歴、ログ）は残ります。もう一度インストールすれば同じコンピューターに戻り、同じ固定パスワードで接続できます。最初からやり直したい場合は、下のコマンドでそれらも削除してください。次のインストールでは新しい ID になります。DeskPair アカウントにリンクしたコンピューターは、アカウントのデバイス一覧から削除するまでそこに残ります。
+
+Windows では、「設定 › アプリ」から DeskPair をアンインストールします。プログラム、ショートカット、無人アクセスのサービス、ファイアウォール規則（DeskPair を Windows の確認画面で許可したときに Windows 自身が作った規則を含む）、サインイン時の起動項目、仮想ディスプレイ ドライバーが削除されます。`.zip` から実行しているものにはアンインストーラーがありません。管理者として開いたターミナルで、そのフォルダーから `DeskPair.exe --remove-system-changes` を実行すると同じものが削除されるので、そのあとフォルダーを削除してください。データは次の 2 行の PowerShell で削除します。1 行目は DeskPair を使った人がそれぞれ一度、2 行目は管理者として一度実行します：
+
+```
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:APPDATA\Sunllo\DeskPair", "$env:LOCALAPPDATA\Sunllo\DeskPair", "$env:TEMP\DeskPair", "$env:TEMP\deskpair-update*"
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:ProgramData\Sunllo\DeskPair"
+```
+
+macOS では、まず DeskPair の「設定 › セキュリティ › ロック中も接続できるようにする」と「設定 › 一般 › サインイン時に起動する」をオフにしてから、DeskPair を「アプリケーション」からゴミ箱に移動します。データ、キーチェーンに保存したパスワード、画面収録とアクセシビリティの権限は次で削除できます：
+
+```
+rm -rf ~/Library/Application\ Support/Sunllo/DeskPair ~/Library/LaunchAgents/com.sunllo.deskpair.login.plist
+sudo rm -rf "/Library/Application Support/Sunllo/DeskPair" /Library/LaunchAgents/com.sunllo.deskpair.agent.plist
+while security delete-generic-password -s "Sunllo DeskPair" >/dev/null 2>&1; do :; done
+tccutil reset ScreenCapture com.sunllo.deskpair
+tccutil reset Accessibility com.sunllo.deskpair
+```
+
+Linux では、インストールに使ったツールでパッケージを削除します。無人アクセスのサービスも一緒に削除されます：
+
+```
+sudo apt remove deskpair       # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf remove deskpair       # Fedora, RHEL
+sudo zypper remove deskpair    # openSUSE
+sudo pacman -R deskpair        # Arch, Manjaro
+```
+
+`.tar.gz` から実行しているものにはパッケージがありません。先に「ロック中も接続できるようにする」と「サインイン時に起動する」をオフにするか、`sudo /opt/deskpair/DeskPair --uninstall-service` を実行してから、ファイルを削除します。無人アクセスのサービスが保存したものと、サービスが使っていた `deskpair` アカウントを含むデータは次で削除できます：
+
+```
+rm -rf ~/.local/share/deskpair ~/.local/share/Sunllo/DeskPair ~/.config/Sunllo/DeskPair ~/.config/autostart/deskpair.desktop ~/.cache/DeskPair ~/.net/DeskPair
+sudo rm -rf /var/lib/deskpair /etc/deskpair /root/.net/DeskPair
+sudo userdel deskpair
+```
+
 ## ビルド
 
 ```

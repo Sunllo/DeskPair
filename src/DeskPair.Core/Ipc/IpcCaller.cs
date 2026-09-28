@@ -136,7 +136,7 @@ public sealed record IpcCaller
     /// <summary>
     /// Asks the kernel who opened this socket.
     ///
-    /// Three ways to be the owner here, against Windows's four, and the missing one is deliberate. There
+    /// Three ways to be the owner here, against Windows's five, and the missing ones are deliberate. There
     /// is no "administrator" on Unix that is not either root or somebody who can become root at will, and
     /// a group membership check would be a guess about a policy this program does not own -- sudo, wheel,
     /// admin and polkit all disagree. Somebody who can become root is already covered by being able to
@@ -194,7 +194,7 @@ public sealed record IpcCaller
     {
         var principal = new WindowsPrincipal(client);
 
-        // Four ways to be the owner of this machine, and the same reasoning for each: they can already do
+        // Five ways to be the owner of this machine, and the same reasoning for each: they can already do
         // this without asking the engine.
         //
         // The first is the one that keeps the ordinary case working, and it is easy to leave out: the
@@ -205,8 +205,9 @@ public sealed record IpcCaller
         //
         // Then: LocalSystem, which is the service's arrangements talking to themselves. An administrator,
         // who can install a service and read any file on the disk, so withholding a password from one is
-        // theatre. And the user in the console session, who is sitting at the screen this engine is
-        // capturing -- there is nothing to keep from somebody who can already see it and type on it.
+        // theatre -- elevated or not, since the difference is one click on a consent prompt. And the user in
+        // the console session, who is sitting at the screen this engine is capturing -- there is nothing to
+        // keep from somebody who can already see it and type on it.
         //
         // The session comparison is what the obvious check gets wrong: the INTERACTIVE group is in the
         // token of a remote desktop logon exactly as it is in a console one, so trusting it would have
@@ -227,6 +228,16 @@ public sealed record IpcCaller
             return Owned(client, "an administrator");
         }
 
+        // An administrator whose window is not elevated. Under UAC the Administrators group is in such a token for
+        // deny only, so the check above says no -- but the person behind it is the one who can install a service and
+        // read any file on the disk with one click on a consent prompt, which is why administrators are owners at
+        // all. Left out, the owner of the machine working over remote desktop was refused their own passwords and
+        // settings by the service's engine, whose console session is not theirs.
+        if (IsFilteredAdministrator(client))
+        {
+            return Owned(client, "an administrator (not elevated)");
+        }
+
         if (session is { } id && id == ConsoleSession())
         {
             return Owned(client, "signed in at the console");
@@ -245,6 +256,14 @@ public sealed record IpcCaller
 
     [SupportedOSPlatform("windows")]
     private static IpcCaller Owned(WindowsIdentity client, string because) => Owned(client.Name, because);
+
+    /// <summary>
+    /// Whether this is the filtered half of an administrator's split token: what UAC gives an administrator's
+    /// programs until one is elevated. Only a member of Administrators ever has one.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    internal static bool IsFilteredAdministrator(WindowsIdentity client) =>
+        GetTokenInformation(client.Token, TokenElevationType, out int type, sizeof(int), out _) && type == TokenElevationTypeLimited;
 
     /// <summary>
     /// The account this engine is running as. Only ever called from outside an impersonation block.
@@ -285,6 +304,14 @@ public sealed record IpcCaller
 
     [DllImport("kernel32.dll")]
     private static extern uint WTSGetActiveConsoleSessionId();
+
+    private const int TokenElevationType = 18;
+
+    private const int TokenElevationTypeLimited = 3;
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetTokenInformation(nint token, int informationClass, out int information, int length, out int returnLength);
 
     /// <summary>Enough to be allowed to open the token, and no more than that.</summary>
     private const uint ProcessQueryLimitedInformation = 0x1000;

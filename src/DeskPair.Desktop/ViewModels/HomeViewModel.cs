@@ -21,10 +21,12 @@ public partial class HomeViewModel : ObservableObject
         Id = host.Id;
         TempPassword = host.TempPassword;
         IsServiceConnected = host.IsConnected;
+        IsHostOwner = host.IsOwner;
         RemoteId = string.Empty;
         PermanentPassword = string.Empty;
         Notice = string.Empty;
         host.ConnectedChanged += c => Dispatcher.UIThread.Post(() => IsServiceConnected = c);
+        host.OwnerChanged += owner => Dispatcher.UIThread.Post(() => IsHostOwner = owner);
         host.IdChanged += id => Dispatcher.UIThread.Post(() => Id = id);
         ServerState = host.ServerState;
         host.ServerStateChanged += state => Dispatcher.UIThread.Post(() => ServerState = state);
@@ -71,7 +73,23 @@ public partial class HomeViewModel : ObservableObject
 
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanManagePasswords))]
+    [NotifyPropertyChangedFor(nameof(IsRefusedByHost))]
     public partial bool IsServiceConnected { get; set; }
+
+    /// <summary>
+    /// Whether the engine shows this account the password and lets it change it. It does not for somebody who is
+    /// neither at this computer's own screen nor an administrator of it -- another account over remote desktop, say.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanManagePasswords))]
+    [NotifyPropertyChangedFor(nameof(IsRefusedByHost))]
+    public partial bool IsHostOwner { get; set; }
+
+    public bool CanManagePasswords => IsServiceConnected && IsHostOwner;
+
+    /// <summary>The engine is running and said no, which is not the same thing as it not running.</summary>
+    public bool IsRefusedByHost => IsServiceConnected && !IsHostOwner;
 
     /// <summary>
     /// Whether the signalling server is answering the engine. Shown beside the id, because an id on a

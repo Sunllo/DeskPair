@@ -17,7 +17,8 @@
 
   <DockPanel Margin="16,12,16,12">
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
-      <TextBlock Text="{loc:Loc settings.hostOffline}" Foreground="#E88" IsVisible="{Binding !IsHostAvailable}" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Loc settings.hostOffline}" Foreground="#E88" IsVisible="{Binding IsHostOffline}" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Loc host.notOwner}" Foreground="#E8C06A" IsVisible="{Binding IsHostRefused}" TextWrapping="Wrap" />
       <TextBlock Text="{loc:Loc settings.restartRequired}" Foreground="#E8C06A" IsVisible="{Binding NeedsRestart}" TextWrapping="Wrap" />
     </StackPanel>
     <Border DockPanel.Dock="Bottom" Height="22">

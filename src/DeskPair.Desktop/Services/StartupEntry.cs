@@ -1,4 +1,7 @@
 using DeskPair.Desktop.Localization;
+#if WINDOWS
+using Microsoft.Extensions.Logging;
+#endif
 
 namespace DeskPair.Desktop.Services;
 
@@ -104,8 +107,50 @@ public static class StartupEntry
 #endif
     }
 
+    /// <summary>
+    /// Whether a Run-key command starts this very program: its first word, quoted or not, is <paramref name="exe"/>.
+    /// Windows paths, so the case does not matter.
+    /// </summary>
+    internal static bool Starts(string command, string exe)
+    {
+        string first = command.StartsWith('"')
+            ? command[1..].Split('"', 2)[0]
+            : command.Split(' ', 2)[0];
+        return exe.Length > 0 && string.Equals(first.Trim(), exe, StringComparison.OrdinalIgnoreCase);
+    }
+
 #if WINDOWS
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
+    /// <summary>
+    /// While DeskPair is being removed, as LocalSystem: takes the entry that starts <paramref name="exe"/> out of the
+    /// Run key of every user whose registry is loaded -- whoever is removing it, and anybody else signed in. Left there,
+    /// Windows tries at each sign-in to start a program that is gone. Somebody who is not signed in keeps theirs: their
+    /// registry is a file on the disk that an uninstaller has no business opening. Returns how many it removed.
+    /// </summary>
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal static int RemoveForSignedInUsers(string exe, ILogger log)
+    {
+        int removed = 0;
+        foreach (string user in Microsoft.Win32.Registry.Users.GetSubKeyNames())
+        {
+            try
+            {
+                using Microsoft.Win32.RegistryKey? run = Microsoft.Win32.Registry.Users.OpenSubKey($@"{user}\{RunKeyPath}", writable: true);
+                if (run?.GetValue(EntryName) is string command && Starts(command, exe))
+                {
+                    run.DeleteValue(EntryName, throwOnMissingValue: false);
+                    removed++;
+                }
+            }
+            catch (Exception e) when (e is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+            {
+                log.LogDebug(e, "Could not read the login entries of {User}", user);
+            }
+        }
+
+        return removed;
+    }
 #else
     private static string LaunchAgentPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),

@@ -102,6 +102,57 @@ wherever it is unpacked, on any distribution, and updates itself, as the Windows
 
 The phone apps, which control a computer, are not in the stores yet.
 
+## Removing DeskPair
+
+Removing DeskPair takes away the program and what it changed in the system, and keeps what makes this computer
+itself: its ID and key, its passwords, your settings and device list, the connection history and the logs. Installed
+again, DeskPair comes back as the same computer, reachable with the same permanent password. To start afresh
+instead, delete those as well with the commands below, and the next installation gets a new ID. A computer linked to
+a DeskPair account stays in the account's device list until it is removed there.
+
+On Windows, uninstall DeskPair from Settings › Apps. That removes the program, its shortcuts, the unattended
+service, its firewall rules -- including the ones Windows made when DeskPair was allowed through its prompt -- the
+entries that start it at sign-in and the virtual display driver. A copy run from the `.zip` has no uninstaller: in a
+terminal opened as administrator, run `DeskPair.exe --remove-system-changes` from its folder, which removes the same
+things, then delete the folder. The data goes with two lines of PowerShell, the first run by each person who used
+DeskPair and the second once as an administrator:
+
+```
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:APPDATA\Sunllo\DeskPair", "$env:LOCALAPPDATA\Sunllo\DeskPair", "$env:TEMP\DeskPair", "$env:TEMP\deskpair-update*"
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:ProgramData\Sunllo\DeskPair"
+```
+
+On macOS, first turn off Settings › Security › Reachable while locked and Settings › General › Start when I sign
+in, then move DeskPair from Applications to the Trash. The data, the passwords it kept in the keychain and the
+permissions it was given for screen recording and accessibility go with:
+
+```
+rm -rf ~/Library/Application\ Support/Sunllo/DeskPair ~/Library/LaunchAgents/com.sunllo.deskpair.login.plist
+sudo rm -rf "/Library/Application Support/Sunllo/DeskPair" /Library/LaunchAgents/com.sunllo.deskpair.agent.plist
+while security delete-generic-password -s "Sunllo DeskPair" >/dev/null 2>&1; do :; done
+tccutil reset ScreenCapture com.sunllo.deskpair
+tccutil reset Accessibility com.sunllo.deskpair
+```
+
+On Linux, remove the package with the tool that installed it; the unattended service goes with it:
+
+```
+sudo apt remove deskpair       # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf remove deskpair       # Fedora, RHEL
+sudo zypper remove deskpair    # openSUSE
+sudo pacman -R deskpair        # Arch, Manjaro
+```
+
+A copy run from the `.tar.gz` has no package: turn off Reachable while locked and Start when I sign in first, or
+run `sudo /opt/deskpair/DeskPair --uninstall-service`, then delete the file. The data, including what the unattended
+service kept and the `deskpair` account it ran as:
+
+```
+rm -rf ~/.local/share/deskpair ~/.local/share/Sunllo/DeskPair ~/.config/Sunllo/DeskPair ~/.config/autostart/deskpair.desktop ~/.cache/DeskPair ~/.net/DeskPair
+sudo rm -rf /var/lib/deskpair /etc/deskpair /root/.net/DeskPair
+sudo userdel deskpair
+```
+
 ## Build
 
 ```

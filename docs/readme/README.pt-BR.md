@@ -105,6 +105,58 @@ em qualquer distribuição, de onde for descompactado, e se atualiza sozinho, co
 
 Os apps para celular, que controlam um computador, ainda não estão nas lojas.
 
+## Remover o DeskPair
+
+Remover o DeskPair tira o programa e o que ele mudou no sistema, mas mantém o que faz deste computador este
+computador: o ID e a chave, as senhas, suas configurações e a lista de dispositivos, o histórico de conexões e os
+logs. Instalado de novo, o DeskPair volta como o mesmo computador, acessível com a mesma senha fixa. Para recomeçar do
+zero, apague também esses dados com os comandos abaixo; a próxima instalação recebe um ID novo. Um computador
+vinculado a uma conta do DeskPair continua na lista de dispositivos da conta até ser removido de lá.
+
+No Windows, desinstale o DeskPair em Configurações › Aplicativos. Isso remove o programa, os atalhos, o serviço
+de acesso não assistido, as regras de firewall — inclusive as que o próprio Windows criou quando o DeskPair foi
+permitido no aviso dele —, as entradas que o iniciam ao fazer login e o driver de tela virtual. Uma cópia executada a
+partir do `.zip` não tem desinstalador: num terminal aberto como administrador, execute
+`DeskPair.exe --remove-system-changes` na pasta dela, que remove as mesmas coisas, e depois apague a pasta. Os dados
+saem com duas linhas de PowerShell, a primeira executada por cada pessoa que usou o DeskPair e a segunda uma vez
+como administrador:
+
+```
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:APPDATA\Sunllo\DeskPair", "$env:LOCALAPPDATA\Sunllo\DeskPair", "$env:TEMP\DeskPair", "$env:TEMP\deskpair-update*"
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:ProgramData\Sunllo\DeskPair"
+```
+
+No macOS, desative primeiro no DeskPair Configurações › Segurança › Acessível enquanto bloqueado e Configurações
+› Geral › Iniciar quando eu fizer login, e depois mova o DeskPair de Aplicativos para o Lixo. Os dados, as senhas
+guardadas no chaveiro e as permissões de gravação de tela e acessibilidade saem com:
+
+```
+rm -rf ~/Library/Application\ Support/Sunllo/DeskPair ~/Library/LaunchAgents/com.sunllo.deskpair.login.plist
+sudo rm -rf "/Library/Application Support/Sunllo/DeskPair" /Library/LaunchAgents/com.sunllo.deskpair.agent.plist
+while security delete-generic-password -s "Sunllo DeskPair" >/dev/null 2>&1; do :; done
+tccutil reset ScreenCapture com.sunllo.deskpair
+tccutil reset Accessibility com.sunllo.deskpair
+```
+
+No Linux, remova o pacote com a ferramenta que o instalou; o serviço de acesso não assistido sai junto:
+
+```
+sudo apt remove deskpair       # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf remove deskpair       # Fedora, RHEL
+sudo zypper remove deskpair    # openSUSE
+sudo pacman -R deskpair        # Arch, Manjaro
+```
+
+Uma cópia executada a partir do `.tar.gz` não tem pacote: desative primeiro "Acessível enquanto bloqueado" e
+"Iniciar quando eu fizer login", ou execute `sudo /opt/deskpair/DeskPair --uninstall-service`, e depois apague o
+arquivo. Os dados, inclusive o que o serviço guardou e a conta `deskpair` com que ele rodava:
+
+```
+rm -rf ~/.local/share/deskpair ~/.local/share/Sunllo/DeskPair ~/.config/Sunllo/DeskPair ~/.config/autostart/deskpair.desktop ~/.cache/DeskPair ~/.net/DeskPair
+sudo rm -rf /var/lib/deskpair /etc/deskpair /root/.net/DeskPair
+sudo userdel deskpair
+```
+
 ## Compilação
 
 ```

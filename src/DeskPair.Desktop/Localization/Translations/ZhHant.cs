@@ -19,6 +19,7 @@ internal static class ZhHant
         ["home.copy"] = "複製",
         ["home.refreshPassword"] = "重新產生",
         ["home.serviceOffline"] = "主機服務未啟動",
+        ["host.notOwner"] = "只有在這台電腦本機螢幕前登入的使用者或系統管理員，才能看到它的密碼、設定與連線紀錄。",
         ["home.serverRegistered"] = "可透過 ID 連線",
         ["home.serverConnecting"] = "正在連上中繼伺服器…",
         ["home.serverUnreachable"] = "中繼伺服器沒有回應——沒有網路？網路恢復後這台電腦會自動重新註冊。",

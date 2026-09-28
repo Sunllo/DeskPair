@@ -4,8 +4,8 @@
 
 .DESCRIPTION
   DeskPair is a single executable -- the window, the connection manager, the tray and the host engine all run
-  in one process -- so the folder holds that program, the few native libraries Skia and ANGLE load by name,
-  and the symbols, rather than three hundred assemblies.
+  in one process -- so the folder holds that program and the few native libraries Skia and ANGLE load by name,
+  rather than three hundred assemblies.
 
   Bundling is close to free; compressing the bundle is not, and is deliberately off. Measured, to the first
   window and settled:
@@ -19,7 +19,9 @@
 
   PlatformHarness is a development tool and is deliberately not included.
 
-  Symbols (.pdb) are kept: the crash log reports file and line, which is worth far more than the few MB.
+  Symbols are kept, inside the assemblies they describe: the crash log reports file and line, which is worth
+  far more than the MB they cost. They used to sit beside the program as seven .pdb files, which is what a
+  debug build looks like to anybody opening the folder it was installed into.
   XML documentation is dropped, being of no use at runtime.
 
 .PARAMETER Build
@@ -92,6 +94,10 @@ $common = @(
     # here, and the analyzer needs the documentation file to run.
     "-p:PublishDocumentationFile=false",
     "-p:PublishReferencesDocumentationFiles=false",
+    # Symbols inside each assembly, and so inside the single file: line numbers in the crash log with no .pdb beside
+    # the program. Separate .pdb files are never bundled -- a single-file publish leaves them next to it, and the
+    # zip and the installer took the folder as they found it.
+    "-p:DebugType=embedded",
     # The PDB path each library records becomes /_/... rather than wherever the repository sits on the machine that
     # built it. DeskPair.dll itself keeps the real one: Avalonia's XAML compiler rewrites that assembly after the C#
     # compiler has mapped it. So release builds are made from a clone whose path names nobody (C:\GitHub\DeskPair).

@@ -67,6 +67,37 @@ public class IpcCallerTests
     }
 
     /// <summary>
+    /// An administrator whose programs are not elevated -- which is how an administrator's programs run under UAC --
+    /// owns this machine as much as an elevated one: a consent prompt is all that stands between the two. Refused, the
+    /// owner of a machine working over remote desktop could not see their own password in the service's engine, whose
+    /// console session is not theirs. Asked of this test's own token, so it says something only when that token is
+    /// such an administrator's, as a developer's own window usually is.
+    /// </summary>
+    [Fact]
+    public void An_administrator_who_is_not_elevated_owns_the_machine()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return; // process tokens are a Windows arrangement
+        }
+
+        using (var me = System.Security.Principal.WindowsIdentity.GetCurrent())
+        {
+            if (!IpcCaller.IsFilteredAdministrator(me))
+            {
+                return; // elevated, a standard user, or UAC off: no filtered token here to ask about
+            }
+        }
+
+        var service = new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.LocalServiceSid, null);
+
+        IpcCaller caller = IpcCaller.OfProcess((uint)Environment.ProcessId, service);
+
+        caller.IsOwner.ShouldBeTrue(caller.Because);
+        caller.Because.ShouldBe("an administrator (not elevated)");
+    }
+
+    /// <summary>
     /// Reading the engine's own account has to happen before impersonating the client, and nothing in the
     /// type's shape enforces that. The first version read it lazily from inside the impersonation block,
     /// where WindowsIdentity.GetCurrent() answers with the *caller's* account -- which would have made

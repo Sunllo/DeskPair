@@ -55,6 +55,7 @@ public partial class SettingsViewModel : ObservableObject
         Account.PortalServer = () => Network.PortalServer;
 
         IsHostAvailable = host.Config is not null;
+        IsHostRefused = host.IsConnected && !host.IsOwner;
         LoadAll();
         foreach (ISettingsSection section in _sections)
         {
@@ -73,7 +74,17 @@ public partial class SettingsViewModel : ObservableObject
 
             NeedsRestart |= _host.LastSaveNeedsRestart;
         });
-        host.ConnectedChanged += connected => _post(() => IsHostAvailable = connected && host.Config is not null);
+        host.ConnectedChanged += connected => _post(() =>
+        {
+            IsHostAvailable = connected && host.Config is not null;
+            IsHostRefused = connected && !host.IsOwner;
+        });
+        host.OwnerChanged += owner => _post(() =>
+        {
+            // A refusal takes the link's configuration away, so the page stops offering to change it.
+            IsHostAvailable = host.IsConnected && host.Config is not null;
+            IsHostRefused = host.IsConnected && !owner;
+        });
         host.PasswordStateChanged += _ => _post(LoadAll);
     }
 
@@ -95,7 +106,19 @@ public partial class SettingsViewModel : ObservableObject
 
     /// <summary>False while the host service is not reachable; the host half of every tab is disabled.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsHostOffline))]
     public partial bool IsHostAvailable { get; set; }
+
+    /// <summary>
+    /// The engine is running but will not show this account its settings: it is neither at this computer's own screen
+    /// nor an administrator of it. The host half of every tab is disabled, as when it is not running, for another reason.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsHostOffline))]
+    public partial bool IsHostRefused { get; set; }
+
+    /// <summary>What the banner says "not running" for: unavailable, and not because the engine said no.</summary>
+    public bool IsHostOffline => !IsHostAvailable && !IsHostRefused;
 
     /// <summary>Sticky: some settings only reach the engine when it restarts, and the banner says so until it does.</summary>
     [ObservableProperty]

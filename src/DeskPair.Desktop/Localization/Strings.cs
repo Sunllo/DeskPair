@@ -24,6 +24,7 @@ public static class Strings
         ["home.copy"] = "Copy",
         ["home.refreshPassword"] = "New password",
         ["home.serviceOffline"] = "Host service not running",
+        ["host.notOwner"] = "Only someone signed in at this computer's own screen, or an administrator, can see its password, settings and connection history.",
         ["home.serverRegistered"] = "Reachable by id",
         ["home.serverConnecting"] = "Connecting to the signalling server…",
         ["home.serverUnreachable"] = "The signalling server is not answering — no network? This computer registers again by itself when it is back.",

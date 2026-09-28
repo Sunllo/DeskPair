@@ -179,6 +179,12 @@ public partial class ConnectionHistoryViewModel : ObservableObject
 
             IsEmpty = Rows.Count == 0;
         }
+        catch (HostRefusedException e)
+        {
+            // The record names everybody who has been let in, so it is the owner's, and this account is not.
+            Problem = e.Message;
+            IsEmpty = Rows.Count == 0;
+        }
         catch (Exception e) when (e is IOException or TimeoutException or InvalidOperationException or ObjectDisposedException)
         {
             Problem = Strings.Get("history.unavailable");

@@ -66,22 +66,68 @@ public sealed class HostLink : IAsyncDisposable
 
     public PasswordState? PasswordState { get; private set; }
 
+    /// <summary>
+    /// Whether the engine lets this window see and change what decides who may connect: the passwords, the settings and
+    /// the connection record. It does not for an account that is neither at this computer's own screen nor an
+    /// administrator of it -- see <see cref="IpcCaller"/>. True until the engine says otherwise.
+    /// </summary>
+    public bool IsOwner { get; private set; } = true;
+
+    public event Action<bool>? OwnerChanged;
+
     /// <summary>True when the last saved settings only take effect after the host service restarts.</summary>
     public bool LastSaveNeedsRestart { get; private set; }
 
     public void Start() => _loop ??= Task.Run(LoopAsync);
 
+    /// <summary>Asks the engine. Throws <see cref="HostRefusedException"/> when this window may not ask it that.</summary>
     public async Task<IpcMessage> RequestAsync(IpcMessage request, CancellationToken ct = default)
     {
         IpcClient client = _client ?? throw new InvalidOperationException("Host service is not connected.");
-        return await client.RequestAsync(request, ct).ConfigureAwait(false);
+        return Answered(await client.RequestAsync(request, ct).ConfigureAwait(false));
     }
 
     /// <summary>A request whose answer may take as long as <paramref name="timeout"/>: one a person has to answer first.</summary>
     public async Task<IpcMessage> RequestAsync(IpcMessage request, TimeSpan timeout, CancellationToken ct = default)
     {
         IpcClient client = _client ?? throw new InvalidOperationException("Host service is not connected.");
-        return await client.RequestAsync(request, ct, timeout).ConfigureAwait(false);
+        return Answered(await client.RequestAsync(request, ct, timeout).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// A refusal as an exception, so no caller mistakes it for an answer: an empty reply where a configuration was
+    /// expected would otherwise be read as one.
+    /// </summary>
+    private IpcMessage Answered(IpcMessage reply)
+    {
+        if (reply.UnionCase == IpcMessage.UnionOneofCase.Refused)
+        {
+            SetOwner(false);
+            throw new HostRefusedException(reply.Refused.Reason);
+        }
+
+        return reply;
+    }
+
+    private void SetOwner(bool owner)
+    {
+        if (IsOwner == owner)
+        {
+            return;
+        }
+
+        IsOwner = owner;
+        if (!owner)
+        {
+            // What an earlier link was shown as the owner -- before the engine restarted, say -- is not to stay on the
+            // screen of an account that is not.
+            Config = null;
+            PasswordState = null;
+            TempPassword = string.Empty;
+            TempPasswordChanged?.Invoke(TempPassword);
+        }
+
+        OwnerChanged?.Invoke(owner);
     }
 
     public Task SendAsync(IpcMessage message, CancellationToken ct = default)
@@ -232,12 +278,22 @@ public sealed class HostLink : IAsyncDisposable
     {
         IpcMessage id = await client.RequestAsync(new IpcMessage { GetId = new GetId() }, _cts.Token).ConfigureAwait(false);
         OnPushed(id);
+
+        // The password is the question the engine may decline, to an account that is neither at this computer's screen
+        // nor an administrator of it. Declined, the rest of what only the owner may see is not asked for -- it would
+        // only be declined as well -- and the link stays up: the id and the server's state are still this window's to
+        // show, and the engine is running, which is what the home page says when the link is down.
         IpcMessage pw = await client.RequestAsync(new IpcMessage { GetTempPassword = new GetTempPassword() }, _cts.Token).ConfigureAwait(false);
-        OnPushed(pw);
-        IpcMessage cfg = await client.RequestAsync(new IpcMessage { GetConfig = new GetConfig() }, _cts.Token).ConfigureAwait(false);
-        OnPushed(cfg);
-        IpcMessage state = await client.RequestAsync(new IpcMessage { GetPasswordState = new GetPasswordState() }, _cts.Token).ConfigureAwait(false);
-        OnPushed(state);
+        SetOwner(pw.UnionCase != IpcMessage.UnionOneofCase.Refused);
+        if (IsOwner)
+        {
+            OnPushed(pw);
+            IpcMessage cfg = await client.RequestAsync(new IpcMessage { GetConfig = new GetConfig() }, _cts.Token).ConfigureAwait(false);
+            OnPushed(cfg);
+            IpcMessage state = await client.RequestAsync(new IpcMessage { GetPasswordState = new GetPasswordState() }, _cts.Token).ConfigureAwait(false);
+            OnPushed(state);
+        }
+
         IpcMessage server = await client.RequestAsync(new IpcMessage { GetServerState = new GetServerState() }, _cts.Token).ConfigureAwait(false);
         OnPushed(server);
     }
@@ -287,6 +343,11 @@ public sealed class HostLink : IAsyncDisposable
                 break;
             case IpcMessage.UnionOneofCase.PasswordState:
                 ApplyPasswordState(message);
+                break;
+            case IpcMessage.UnionOneofCase.Refused:
+                // Only ever an answer, and here when its question gave up waiting for it -- or when the screenshot tool
+                // and the tests deliver one.
+                SetOwner(false);
                 break;
             default:
                 Pushed?.Invoke(message);

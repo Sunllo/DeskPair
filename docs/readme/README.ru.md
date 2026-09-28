@@ -106,6 +106,58 @@ Windows и macOS.
 
 Мобильные приложения, управляющие компьютером, пока не опубликованы в магазинах.
 
+## Удаление DeskPair
+
+Удаление DeskPair убирает программу и то, что она изменила в системе, но сохраняет то, что делает этот компьютер
+этим компьютером: его ID и ключ, пароли, ваши настройки и список устройств, журнал подключений и логи. После
+повторной установки DeskPair вернётся как тот же компьютер, доступный с тем же постоянным паролем. Чтобы начать с
+чистого листа, удалите и эти данные командами ниже; следующая установка получит новый ID. Компьютер, привязанный к
+учётной записи DeskPair, остаётся в списке устройств этой учётной записи, пока его там не удалят.
+
+В Windows удалите DeskPair в разделе «Параметры › Приложения». Будут удалены программа, её ярлыки, служба
+автономного доступа, её правила брандмауэра — включая те, что Windows создала сама, когда DeskPair разрешили в её
+запросе, — записи автозапуска при входе и драйвер виртуального дисплея. У копии, запущенной из `.zip`, нет программы
+удаления: в терминале, открытом от имени администратора, выполните в её папке `DeskPair.exe --remove-system-changes`
+— это удалит то же самое, — а затем удалите папку. Данные удаляются двумя строками PowerShell: первую выполняет
+каждый, кто пользовался DeskPair, вторую — один раз администратор:
+
+```
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:APPDATA\Sunllo\DeskPair", "$env:LOCALAPPDATA\Sunllo\DeskPair", "$env:TEMP\DeskPair", "$env:TEMP\deskpair-update*"
+Remove-Item -Recurse -Force -ErrorAction Ignore "$env:ProgramData\Sunllo\DeskPair"
+```
+
+В macOS сначала выключите в DeskPair «Настройки › Безопасность › Доступен, когда заблокирован» и «Настройки ›
+Общие › Запускать при входе в систему», затем переместите DeskPair из «Программ» в Корзину. Данные, пароли,
+сохранённые в связке ключей, и разрешения на запись экрана и универсальный доступ удаляются так:
+
+```
+rm -rf ~/Library/Application\ Support/Sunllo/DeskPair ~/Library/LaunchAgents/com.sunllo.deskpair.login.plist
+sudo rm -rf "/Library/Application Support/Sunllo/DeskPair" /Library/LaunchAgents/com.sunllo.deskpair.agent.plist
+while security delete-generic-password -s "Sunllo DeskPair" >/dev/null 2>&1; do :; done
+tccutil reset ScreenCapture com.sunllo.deskpair
+tccutil reset Accessibility com.sunllo.deskpair
+```
+
+В Linux удалите пакет тем инструментом, которым он был установлен; служба автономного доступа будет удалена
+вместе с ним:
+
+```
+sudo apt remove deskpair       # Debian, Ubuntu, Mint, Raspberry Pi OS
+sudo dnf remove deskpair       # Fedora, RHEL
+sudo zypper remove deskpair    # openSUSE
+sudo pacman -R deskpair        # Arch, Manjaro
+```
+
+У копии, запущенной из `.tar.gz`, нет пакета: сначала выключите «Доступен, когда заблокирован» и «Запускать при
+входе в систему» или выполните `sudo /opt/deskpair/DeskPair --uninstall-service`, затем удалите файл. Данные, включая
+то, что хранила служба, и учётную запись `deskpair`, под которой она работала:
+
+```
+rm -rf ~/.local/share/deskpair ~/.local/share/Sunllo/DeskPair ~/.config/Sunllo/DeskPair ~/.config/autostart/deskpair.desktop ~/.cache/DeskPair ~/.net/DeskPair
+sudo rm -rf /var/lib/deskpair /etc/deskpair /root/.net/DeskPair
+sudo userdel deskpair
+```
+
 ## Сборка
 
 ```
