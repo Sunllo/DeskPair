@@ -26,6 +26,8 @@ not in git). Not wire-compatible with RustDesk. Full design: `docs/architecture.
   built by `tools/package.ps1`. Windows only, so not in `DeskPair.slnx`. The manifest lists each zip before its MSI:
   apps from before installers install the first file for their machine. An installed copy (`packaged` = `msi`)
   updates by running the next MSI; its uninstall runs `DeskPair --remove-system-changes`, which must never show a window.
+  Windows builds are Authenticode-signed through Microsoft Artifact Signing when `package.ps1` gets `-CodeSigning <metadata>`
+  (SignTool + `tools/fetch-artifact-signing.ps1`'s plug-in, signed in with `az login`); the account's settings are not public.
 
 ## Conventions
 

@@ -34,6 +34,10 @@ param(
     # The release signing key (PKCS#8, from KeyGen). With it, release.json.sig is written beside the
     # manifest and installed apps can install the update themselves; without it they can only be told.
     [string]$SigningKey,
+    # An Artifact Signing metadata file (the account's endpoint, name and certificate profile; the official builds'
+    # is kept in the private repository). With it the Windows programs and installers are Authenticode-signed, as
+    # whoever ran `az login` on this machine; without it they go out unsigned and SmartScreen names no publisher.
+    [string]$CodeSigning,
     [int]$Build = ([int]((Get-Date).ToUniversalTime().ToString("MMddHHmm")))
 )
 
@@ -159,6 +163,46 @@ function Add-LinuxPackages([string]$Rid, [string]$Stage) {
     }
 }
 
+# ---- code signing ---------------------------------------------------------------------------------------
+# SignTool with the Artifact Signing plug-in (tools/fetch-artifact-signing.ps1): the service signs each file's digest
+# with a certificate it holds, signed in through the Azure CLI. Found before anything is built, so a machine that
+# cannot sign says so at the start rather than after an hour.
+$signTool = $null
+$dlib = $null
+if ($CodeSigning) {
+    if (-not (Test-Path $CodeSigning)) { throw "No Artifact Signing metadata at $CodeSigning." }
+    $CodeSigning = (Resolve-Path $CodeSigning).Path
+    $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
+        Sort-Object { [version]$_.Directory.Parent.Name } -Descending | Select-Object -First 1 -ExpandProperty FullName
+    if (-not $signTool) { throw "No SignTool: install the Windows SDK, 10.0.22621 or later." }
+    $dlib = Join-Path $repo "artifacts\tools\artifact-signing\Azure.CodeSigning.Dlib.dll"
+    if (-not (Test-Path $dlib)) { & (Join-Path $PSScriptRoot "fetch-artifact-signing.ps1") | Out-Null }
+
+    # The plug-in signs in through the Azure CLI, which it runs by name, so the CLI has to be on the path. The zip
+    # install, which needs no administrator, lives in %LOCALAPPDATA%\Programs\azure-cli and does not put itself there;
+    # left off, the only symptom is "Azure CLI authentication failed due to an unknown error".
+    if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
+        $cli = Join-Path $env:LOCALAPPDATA "Programs\azure-cli\bin"
+        if (-not (Test-Path (Join-Path $cli "az.cmd"))) {
+            throw "Signing needs the Azure CLI, signed in (az login) as an account with the Artifact Signing Certificate Profile Signer role."
+        }
+        $env:PATH = "$cli;$env:PATH"
+    }
+}
+
+function Set-CodeSignature([string[]]$Files) {
+    # Timestamped, because an Artifact Signing certificate lives three days and the signature has to outlive it.
+    $out = & $signTool sign /fd SHA256 /tr "http://timestamp.acs.microsoft.com" /td SHA256 /dlib $dlib /dmdf $CodeSigning @Files 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $out | Write-Host
+        throw "Signing failed (SignTool exited $LASTEXITCODE). Signed in? The Azure CLI's az login, as an account with the Artifact Signing Certificate Profile Signer role."
+    }
+    foreach ($file in $Files) {
+        $status = (Get-AuthenticodeSignature $file).Status
+        if ($status -ne "Valid") { throw "$file does not carry a valid signature after signing ($status)." }
+    }
+}
+
 # ---- Windows installer --------------------------------------------------------------------------------
 # packaging/windows/DeskPair.wixproj around the staged folder: one MSI per architecture, holding exactly what the zip
 # holds, plus the marker that tells the app Windows Installer put it there and the licence.
@@ -177,8 +221,10 @@ function Add-WindowsInstaller([string]$Rid, [string]$Stage, [string]$Name) {
 
     $msi = Join-Path $release "$Name.msi"
     Move-Item (Join-Path $out "$Name.msi") $msi -Force
+    # Signed after it is built: the package holds the program already signed, and its own signature is over the lot.
+    if ($CodeSigning) { Set-CodeSignature @($msi) }
     Add-Artifact -Path $msi -Platform "windows" -Arch ($Rid -replace '^win-', '') `
-        -Requires "Windows 10 1809" -Signed $false -Format "msi"
+        -Requires "Windows 10 1809" -Signed ([bool]$CodeSigning) -Format "msi"
 }
 
 foreach ($rid in $Rids) {
@@ -212,12 +258,25 @@ foreach ($rid in $Rids) {
         }
         Write-Host "  binary says $reported"
 
+        if ($CodeSigning) {
+            # Everything in the program's folder that nobody has signed: ours (DeskPair.exe, vpx.dll) and the ANGLE
+            # library Avalonia ships unsigned. Skia's two keep Microsoft's signature, and the virtual display driver is
+            # signed through its catalog, which a signature of ours on its .dll would break.
+            $vdd = Join-Path $stage "vdd"
+            [string[]]$unsigned = @(Get-ChildItem $stage -Recurse -Include *.exe, *.dll |
+                Where-Object { -not $_.FullName.StartsWith($vdd, [StringComparison]::OrdinalIgnoreCase) } |
+                Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -eq "NotSigned" } |
+                ForEach-Object { $_.FullName })
+            Set-CodeSignature $unsigned
+            Write-Host ("  signed " + (($unsigned | ForEach-Object { Split-Path $_ -Leaf }) -join ", "))
+        }
+
         $zip = Join-Path $release "$name.zip"
         # Not Compress-Archive: markedly slower on a bundle this size, and historically odd about separators.
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $zip, "Optimal", $true)
         Add-Artifact -Path $zip -Platform "windows" -Arch ($rid -replace '^win-', '') `
-            -Requires "Windows 10 1809" -Signed $false -Format "zip"
+            -Requires "Windows 10 1809" -Signed ([bool]$CodeSigning) -Format "zip"
 
         # The zip first: an app from before installers existed installs the first file listed for its machine, and can
         # only unpack a zip.

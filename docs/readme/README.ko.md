@@ -77,7 +77,7 @@ Windows용 데스크톱 앱입니다. 이미지는 `tools/DeskPair.Tools.Screens
 
 | 시스템 | 파일 |
 |---|---|
-| Windows 10 1809 이상 | x64, ARM64, x86(32비트)마다 설치 프로그램(`.msi`)과 설치가 필요 없는 `.zip`이 있으며, 파일 이름은 `DeskPair-<version>-win-x64.msi`와 같습니다. 아직 코드 서명을 하지 않아 처음 실행할 때 SmartScreen이 확인을 요청합니다. |
+| Windows 10 1809 이상 | x64, ARM64, x86(32비트)마다 설치 프로그램(`.msi`)과 설치가 필요 없는 `.zip`이 있으며, 파일 이름은 `DeskPair-<version>-win-x64.msi`와 같습니다. 코드 서명이 되어 있습니다. 새 릴리스가 충분한 평판을 쌓기 전에는 처음 실행할 때 SmartScreen이 확인을 요청할 수 있습니다. |
 | macOS 13 이상 | `DeskPair-<version>-arm64.dmg`(Apple 실리콘), `-x86_64.dmg`(Intel). 서명되었고 Apple의 공증을 받았습니다. |
 | Linux, glibc 2.31 이상 | x64, ARM64, 32비트 ARM(ARMv7)마다 `.deb`, `.rpm`, Arch 패키지, `.tar.gz`가 있습니다. |
 

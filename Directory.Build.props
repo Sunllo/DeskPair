@@ -15,7 +15,7 @@
     <Deterministic>true</Deterministic>
     <Company>Sunllo</Company>
     <Product>DeskPair</Product>
-    <VersionPrefix>0.4.4</VersionPrefix>
+    <VersionPrefix>0.4.5</VersionPrefix>
     <SatelliteResourceLanguages>en;zh-TW</SatelliteResourceLanguages>
     <!-- net10.0-windows projects still compile on Linux/macOS CI runners; they only run on Windows. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>

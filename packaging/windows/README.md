@@ -62,5 +62,6 @@ dotnet build packaging/windows/DeskPair.wixproj -c Release -p:Platform=x64 -p:Pa
 
 - 安裝程式本身的對話框只有英文（App 仍依系統語言顯示）。要多語言得為每種語言建一份，再用語言轉換（transform）
   合成一個 MSI，之後再做。
-- 還沒有程式碼簽章：從瀏覽器下載的 `.msi` 第一次執行時 SmartScreen 會詢問，和 zip 裡的 `DeskPair.exe` 一樣。
+- 0.4.5 起已做程式碼簽章（Microsoft Artifact Signing，`package.ps1 -CodeSigning`）：`DeskPair.exe`、資料夾裡沒有別人簽過的 DLL
+  與 MSI 本身。新版本在 SmartScreen 累積足夠信譽之前，第一次執行時仍可能詢問，但會顯示發行者名稱。
 - 安裝程式不會替你開無人值守服務：那需要先設定固定密碼，仍是 App 設定頁的開關（`docs/unattended-windows.md`）。

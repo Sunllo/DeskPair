@@ -17,6 +17,24 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## 0.4.5 — 2026-09-28
+
+Desktop only; the phones stay at 0.4.0. The program is 0.4.4's: this release exists to be signed.
+
+### Added
+
+- **Signed Windows builds.** `DeskPair.exe`, the libraries in its folder that nobody else signed (`vpx.dll` and
+  Avalonia's ANGLE library) and the three installers carry an Authenticode signature from Microsoft's Artifact
+  Signing, timestamped, so Windows names the publisher -- Syno Compute X LLC -- instead of "unknown". Skia's
+  libraries keep Microsoft's signature and the virtual display driver its own. `tools/package.ps1 -CodeSigning`
+  signs; without it a build goes out unsigned as before. SmartScreen can still ask about a new release until it
+  has been downloaded often enough to be known.
+
+### Fixed
+
+- `SHA256SUMS` is written with LF line endings, so `sha256sum -c SHA256SUMS` checks every file; 0.4.3's failed every
+  line. (0.4.4's was corrected by hand before it went out.)
+
 ## 0.4.4 — 2026-09-28
 
 Desktop only; the phones stay at 0.4.0.
@@ -46,7 +64,8 @@ Desktop only; the phones stay at 0.4.0.
 ### Known limits
 
 - The installer's own dialogs are in English; the app follows the system's language as before.
-- Neither the installer nor the program is code-signed yet, so SmartScreen asks before the first run of either.
+- Neither the installer nor the program is code-signed yet, so SmartScreen asks before the first run of either
+  (signed from 0.4.5).
 
 ## 0.4.3 — 2026-09-28
 

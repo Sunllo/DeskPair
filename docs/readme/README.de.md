@@ -77,7 +77,7 @@ Jede Version steht auf der [Release-Seite](https://github.com/Sunllo/DeskPair/re
 
 | System | Dateien |
 |---|---|
-| Windows 10 1809 oder neuer | x64, ARM64 und x86 (32 Bit): jeweils ein Installationsprogramm (`.msi`) und eine portable `.zip`, benannt wie `DeskPair-<version>-win-x64.msi`. Noch nicht codesigniert, daher fragt SmartScreen vor dem ersten Start nach. |
+| Windows 10 1809 oder neuer | x64, ARM64 und x86 (32 Bit): jeweils ein Installationsprogramm (`.msi`) und eine portable `.zip`, benannt wie `DeskPair-<version>-win-x64.msi`. Codesigniert; solange eine neue Version noch keine Reputation aufgebaut hat, kann SmartScreen vor dem ersten Start trotzdem nachfragen. |
 | macOS 13 oder neuer | `DeskPair-<version>-arm64.dmg` (Apple Silicon), `-x86_64.dmg` (Intel). Signiert und von Apple notarisiert. |
 | Linux, glibc 2.31 oder neuer | x64, ARM64 und 32-Bit-ARM (ARMv7): jeweils ein `.deb`, ein `.rpm`, ein Arch-Paket und ein `.tar.gz`. |
 

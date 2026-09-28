@@ -77,7 +77,7 @@ Windows 版のデスクトップアプリです。画像は `tools/DeskPair.Tool
 
 | システム | ファイル |
 |---|---|
-| Windows 10 1809 以降 | x64、ARM64、x86（32 ビット）のそれぞれにインストーラー（`.msi`）とインストール不要の `.zip` があり、ファイル名は `DeskPair-<version>-win-x64.msi` のようになります。まだコード署名していないため、初回の実行前に SmartScreen が確認を求めます。 |
+| Windows 10 1809 以降 | x64、ARM64、x86（32 ビット）のそれぞれにインストーラー（`.msi`）とインストール不要の `.zip` があり、ファイル名は `DeskPair-<version>-win-x64.msi` のようになります。コード署名済みです。新しいリリースが十分な評価を得るまでは、初回の実行前に SmartScreen が確認を求めることがあります。 |
 | macOS 13 以降 | `DeskPair-<version>-arm64.dmg`（Apple シリコン）、`-x86_64.dmg`（Intel）。署名済みで、Apple の公証を受けています。 |
 | Linux（glibc 2.31 以降） | x64、ARM64、32 ビット ARM（ARMv7）のそれぞれに `.deb`、`.rpm`、Arch パッケージ、`.tar.gz` があります。 |
 

@@ -77,7 +77,7 @@ Chaque version se trouve sur la [page des versions](https://github.com/Sunllo/De
 
 | Système | Fichiers |
 |---|---|
-| Windows 10 1809 ou ultérieur | x64, ARM64 et x86 (32 bits) : pour chacun un programme d'installation (`.msi`) et un `.zip` portable, nommés comme `DeskPair-<version>-win-x64.msi`. Pas encore signés, donc SmartScreen demande confirmation avant le premier lancement. |
+| Windows 10 1809 ou ultérieur | x64, ARM64 et x86 (32 bits) : pour chacun un programme d'installation (`.msi`) et un `.zip` portable, nommés comme `DeskPair-<version>-win-x64.msi`. Signés ; tant qu'une nouvelle version ne s'est pas encore fait une réputation, SmartScreen peut encore demander confirmation avant le premier lancement. |
 | macOS 13 ou ultérieur | `DeskPair-<version>-arm64.dmg` (Apple Silicon), `-x86_64.dmg` (Intel). Signés et notariés par Apple. |
 | Linux, glibc 2.31 ou ultérieure | x64, ARM64 et ARM 32 bits (ARMv7) : pour chacun un `.deb`, un `.rpm`, un paquet Arch et un `.tar.gz`. |
 

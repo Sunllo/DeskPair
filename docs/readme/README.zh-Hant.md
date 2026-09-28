@@ -74,7 +74,7 @@ Windows 上的桌面程式。這些圖由 `tools/DeskPair.Tools.Screenshots` 從
 
 | 系統 | 檔案 |
 |---|---|
-| Windows 10 1809 以上 | x64、ARM64 與 x86（32 位元）：各有安裝程式（`.msi`）與免安裝的 `.zip`，檔名如 `DeskPair-<version>-win-x64.msi`。尚未做程式碼簽章，第一次執行時 SmartScreen 會先詢問。 |
+| Windows 10 1809 以上 | x64、ARM64 與 x86（32 位元）：各有安裝程式（`.msi`）與免安裝的 `.zip`，檔名如 `DeskPair-<version>-win-x64.msi`。已做程式碼簽章；新版本在累積足夠信譽之前，第一次執行時 SmartScreen 仍可能詢問。 |
 | macOS 13 以上 | `DeskPair-<version>-arm64.dmg`（Apple 晶片）、`-x86_64.dmg`（Intel）。已簽章並經 Apple 公證。 |
 | Linux，glibc 2.31 以上 | x64、ARM64 與 32 位元 ARM（ARMv7）：各有 `.deb`、`.rpm`、Arch 套件與 `.tar.gz`。 |
 
