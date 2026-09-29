@@ -37,7 +37,10 @@ public class SessionSettingsTests
         // Before this was wired up the host stored the options and ignored them for the rest of the session.
         await Testbed.WaitUntilAsync(() => bed.Media!.Qos.TargetBitrateKbps(640, 360) == 900, "the custom bitrate reached QoS");
         await Testbed.WaitUntilAsync(() => bed.Media!.Qos.Fps <= 15, "the custom frame rate reached QoS");
-        bed.Media!.Qos.LastRoundTrip(connection).ShouldNotBeNull();
+
+        // Waited for, not looked at once: the options can arrive before the first round trip is measured (on a busy
+        // Windows runner, once). A viewer the new options had dropped from QoS would never get one.
+        await Testbed.WaitUntilAsync(() => bed.Media!.Qos.LastRoundTrip(connection) is not null, "a round trip measured");
 
         await session.CloseAsync("done");
     }

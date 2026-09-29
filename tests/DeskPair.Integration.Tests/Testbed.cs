@@ -93,6 +93,54 @@ public sealed class Testbed : IAsyncDisposable
 
     public static async Task<Testbed> StartAsync(Action<RendezvousOptions>? rendezvous = null)
     {
+        // FreePort finds a port that was free a moment ago: another test starting alongside can bind it first, and
+        // the server's own bind then fails ("address already in use" failed a test at its start in a full local run).
+        // A clash starts over, on new ports.
+        for (int attempt = 1; ; attempt++)
+        {
+            if (await StartOnceAsync(rendezvous, lastAttempt: attempt == 5) is { } bed)
+            {
+                return bed;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether a listener of <paramref name="app"/> could not bind its port because something else had it. Asked of
+    /// the listeners: one that fails while the host starts stops the host, and StartAsync then says only that it was
+    /// cancelled, while the listener's BoundPort keeps the reason.
+    /// </summary>
+    private static bool PortWasTaken(WebApplication? app)
+    {
+        if (app is null)
+        {
+            return false;
+        }
+
+        TcpListenersService? tcp = app.Services.GetService<TcpListenersService>();
+        Task?[] bound =
+        [
+            app.Services.GetService<RelayListener>()?.BoundPort,
+            app.Services.GetService<UdpRelayListener>()?.BoundPort,
+            app.Services.GetService<UdpListener>()?.BoundPort,
+            tcp?.Rendezvous.BoundPort,
+            tcp?.NatTest.BoundPort,
+        ];
+        return bound.Any(t => t is { IsFaulted: true } && IsAddressInUse(t.Exception));
+    }
+
+    private static bool IsAddressInUse(Exception? e) => e switch
+    {
+        null => false,
+        SocketException s => s.SocketErrorCode == SocketError.AddressAlreadyInUse,
+        Microsoft.AspNetCore.Connections.AddressInUseException => true,
+        AggregateException a => a.InnerExceptions.Any(IsAddressInUse),
+        _ => IsAddressInUse(e.InnerException),
+    };
+
+    /// <summary>A started test bed; null when a port it chose was taken first and it is worth another go.</summary>
+    private static async Task<Testbed?> StartOnceAsync(Action<RendezvousOptions>? rendezvous, bool lastAttempt)
+    {
         ILoggerFactory logs = LoggerFactory.Create(b => b.AddSimpleConsole().SetMinimumLevel(LogLevel.Debug));
         // The relay's UDP media port shares the TCP port number, so both are chosen up front.
         int relayPort = FreePort();
@@ -113,35 +161,72 @@ public sealed class Testbed : IAsyncDisposable
             o.MaxBitrateKbps = 1_000_000;
             o.RendezvousPublicKey = keys.PublicKeyBase64;
         });
-        await relay.StartAsync();
-        await relay.Services.GetRequiredService<RelayListener>().BoundPort;
-        await relay.Services.GetRequiredService<UdpRelayListener>().BoundPort;
-
-        // UDP and TCP must share one port number because peers use a single address for both.
-        int port = FreePort();
-        WebApplication rdv = RendezvousServer.Build(["--Logging:LogLevel:Default=Warning"], o =>
+        WebApplication? rdv = null;
+        try
         {
-            o.UdpPort = port;
-            o.TcpPort = port;
-            o.NatTestPort = 0;
-            o.HttpPort = 0;
-            o.KeyPath = string.Empty;
-            o.DatabasePath = string.Empty;
-            o.Relays = [new RelayEndpoint
+            await relay.StartAsync();
+            await relay.Services.GetRequiredService<RelayListener>().BoundPort;
+            await relay.Services.GetRequiredService<UdpRelayListener>().BoundPort;
+
+            // UDP and TCP must share one port number because peers use a single address for both.
+            int port = FreePort();
+            rdv = RendezvousServer.Build(["--Logging:LogLevel:Default=Warning"], o =>
             {
-                Address = $"127.0.0.1:{relayPort}",
-                StatsAddress = $"127.0.0.1:{relayHttpPort}",
-            }];
-            o.RelayHealthInterval = TimeSpan.FromSeconds(1);
-            o.RegisterRateLimitPerMinute = 1000;
-            o.PunchRateLimitPerMinute = 1000;
-            rendezvous?.Invoke(o);
-        }, keys);
-        await rdv.StartAsync();
-        await rdv.Services.GetRequiredService<UdpListener>().BoundPort;
-        await rdv.Services.GetRequiredService<TcpListenersService>().Rendezvous.BoundPort;
-        int natTestPort = await rdv.Services.GetRequiredService<TcpListenersService>().NatTest.BoundPort;
-        return new Testbed(relay, rdv, keys, port, relayPort, logs) { NatTestPort = natTestPort };
+                o.UdpPort = port;
+                o.TcpPort = port;
+                o.NatTestPort = 0;
+                o.HttpPort = 0;
+                o.KeyPath = string.Empty;
+                o.DatabasePath = string.Empty;
+                o.Relays = [new RelayEndpoint
+                {
+                    Address = $"127.0.0.1:{relayPort}",
+                    StatsAddress = $"127.0.0.1:{relayHttpPort}",
+                }];
+                o.RelayHealthInterval = TimeSpan.FromSeconds(1);
+                o.RegisterRateLimitPerMinute = 1000;
+                o.PunchRateLimitPerMinute = 1000;
+                rendezvous?.Invoke(o);
+            }, keys);
+            await rdv.StartAsync();
+            await rdv.Services.GetRequiredService<UdpListener>().BoundPort;
+            await rdv.Services.GetRequiredService<TcpListenersService>().Rendezvous.BoundPort;
+            int natTestPort = await rdv.Services.GetRequiredService<TcpListenersService>().NatTest.BoundPort;
+            return new Testbed(relay, rdv, keys, port, relayPort, logs) { NatTestPort = natTestPort };
+        }
+        catch (Exception e)
+        {
+            bool clash = IsAddressInUse(e) || PortWasTaken(relay) || PortWasTaken(rdv);
+
+            // Whatever this attempt started goes, so that a retry's servers are the only ones running.
+            if (rdv is not null)
+            {
+                await StopQuietlyAsync(rdv);
+            }
+
+            await StopQuietlyAsync(relay);
+            logs.Dispose();
+            if (clash && !lastAttempt)
+            {
+                return null;
+            }
+
+            throw;
+        }
+    }
+
+    private static async Task StopQuietlyAsync(WebApplication app)
+    {
+        try
+        {
+            await app.StopAsync();
+        }
+        catch (Exception)
+        {
+            // It did not start; there is nothing to stop.
+        }
+
+        await app.DisposeAsync();
     }
 
     /// <summary>Disposes the object together with the test bed (in reverse order).</summary>

@@ -136,9 +136,17 @@ public class PixelConversionTests(ITestOutputHelper output)
             return best;
         }
 
-        double toNv12 = Best(10, () => PixelConversion.BgraToNv12(bgra, W * 4, W, H, nv12));
-        double toBgra = Best(10, () => PixelConversion.Nv12ToBgra(nv12, W, W, H, back, W * 4));
-        double reference = Best(3, () => PixelConversion.BgraToNv12Reference(bgra, W * 4, W, H, nv12));
+        // And in rounds, done at the first that shows the vectorized kernel ahead: a runner that stalled through all ten
+        // runs of one kernel and not through the three of the other (a Windows CI runner, once) says nothing about the
+        // kernels, while a vectorized path that has really fallen behind loses every round.
+        double toNv12 = 0, toBgra = 0, reference = 0;
+        for (int round = 0; round < 3 && !(toNv12 < reference); round++)
+        {
+            toNv12 = Best(10, () => PixelConversion.BgraToNv12(bgra, W * 4, W, H, nv12));
+            toBgra = Best(10, () => PixelConversion.Nv12ToBgra(nv12, W, W, H, back, W * 4));
+            reference = Best(3, () => PixelConversion.BgraToNv12Reference(bgra, W * 4, W, H, nv12));
+        }
+
         output.WriteLine($"{W}x{H} (best of): BGRA->NV12 {toNv12:F2} ms, NV12->BGRA {toBgra:F2} ms (vectorized {PixelConversion.IsVectorized}); scalar BGRA->NV12 {reference:F1} ms");
         bool optimized = typeof(PixelConversion).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled != true;
         if (PixelConversion.IsVectorized && optimized)
