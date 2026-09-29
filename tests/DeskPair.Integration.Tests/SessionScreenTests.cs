@@ -43,15 +43,22 @@ public class SessionScreenTests
     {
         await using Testbed bed = await Testbed.StartAsync();
         (HostRuntime host, var passwords, _) = await bed.StartHostAsync(media: true, displays: 2, sessionScreen: true);
+
+        // The owner's screens going off makes their capture fail, as on Windows: the pictures have to come back through
+        // the host's restart of the stream, which the first viewer to try this saw them not do.
+        bed.Capturers!.FailWhenGone = bed.Displays;
+        bed.SessionScreen!.Settling = TimeSpan.FromMilliseconds(300);
         (ControllerSession session, TestCallbacks cb) = await ConnectAsync(bed, host, passwords.TemporaryPassword, Following());
 
         await Testbed.WaitUntilAsync(() => OnlyTheSessionScreen(cb, 1500, 900), "the session screen, alone, the window's size", 15_000);
         bed.SessionScreen!.LastSizes.ShouldBe([new DisplayMode(1920, 1080), new DisplayMode(1920, 1040)], "the viewer's screens, for later");
+        await Testbed.WaitUntilAsync(() => cb.LastFrameSize == (1500, 900), "pictures of the session screen", 15_000);
 
         await session.SetOptionsAsync(new SessionOptions { FollowWindow = BoolOption.BoNo });
 
         await Testbed.WaitUntilAsync(() => !bed.SessionScreen.IsOpen && cb.DisplaysChanges[^1].Displays.Count == 2, "the owner's screens back", 15_000);
         cb.DisplaysChanges[^1].Displays.ShouldAllBe(d => !d.SessionScreen);
+        await Testbed.WaitUntilAsync(() => cb.LastFrameSize == (640, 360), "pictures of the owner's screen again", 15_000);
     }
 
     [Fact]

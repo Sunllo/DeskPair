@@ -1482,7 +1482,10 @@ public sealed class HostMediaModule : IAsyncDisposable
             subscribers = [.. _subscriptions.SelectMany(kv => kv.Value.Displays.Where(Changed).Select(d => (kv.Key, d)))];
         }
 
-        foreach (VideoService v in videos.Where(v => v.IsRunning))
+        // Stopped ones too: a stream whose capture failed as its display went -- Windows turning the owner's screens off for a
+        // private screen, say -- has crashed by the time the change is followed, and left alone it stays dark for its
+        // viewers for the rest of the session. The restart itself leaves a stream nobody watches alone.
+        foreach (VideoService v in videos)
         {
             await v.RestartForDisplayChangeAsync().ConfigureAwait(false);
         }

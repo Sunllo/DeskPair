@@ -149,15 +149,21 @@ public sealed class FakeSessionScreen(FakeDisplayEnumerator displays, FakeDispla
     /// <summary>How many times it was opened.</summary>
     public int Opened { get; private set; }
 
+    /// <summary>
+    /// How long opening and closing take after the displays have changed: Windows takes a moment to settle the new
+    /// arrangement, and a stream capturing a display that just went fails meanwhile -- before the host follows the change.
+    /// </summary>
+    public TimeSpan Settling { get; set; } = TimeSpan.Zero;
+
     public bool IsOpen => _off is not null;
 
     public bool IsSessionScreen(DisplayDescriptor display) => IsOpen && display.Name == Name;
 
-    public Task<DisplayActionResult> OpenAsync(DisplayMode size, IReadOnlyList<DisplayMode> sizes, CancellationToken ct)
+    public async Task<DisplayActionResult> OpenAsync(DisplayMode size, IReadOnlyList<DisplayMode> sizes, CancellationToken ct)
     {
         if (UnavailableReason is { } why)
         {
-            return Task.FromResult(DisplayActionResult.Refused(why));
+            return DisplayActionResult.Refused(why);
         }
 
         lock (displays.Sync)
@@ -175,7 +181,8 @@ public sealed class FakeSessionScreen(FakeDisplayEnumerator displays, FakeDispla
         }
 
         displays.Raise();
-        return Task.FromResult(DisplayActionResult.Done);
+        await Task.Delay(Settling, ct).ConfigureAwait(false);
+        return DisplayActionResult.Done;
     }
 
     public bool IsAlone()
@@ -186,7 +193,7 @@ public sealed class FakeSessionScreen(FakeDisplayEnumerator displays, FakeDispla
         }
     }
 
-    public Task CloseAsync(CancellationToken ct)
+    public async Task CloseAsync(CancellationToken ct)
     {
         if (_off is { } off)
         {
@@ -198,9 +205,8 @@ public sealed class FakeSessionScreen(FakeDisplayEnumerator displays, FakeDispla
             }
 
             displays.Raise();
+            await Task.Delay(Settling, ct).ConfigureAwait(false);
         }
-
-        return Task.CompletedTask;
     }
 
     /// <summary>Somebody at the computer turns the other displays back on, beside the session screen.</summary>
@@ -372,13 +378,19 @@ public sealed class FakeScreenCapturerFactory : IScreenCapturerFactory
     /// <summary>How many capturers were made for a display: one per stream start, so a restarted stream counts again.</summary>
     public int CreatedFor(string display) => _created.GetValueOrDefault(display);
 
+    /// <summary>
+    /// When set, a capturer whose display has left this enumerator throws, the way a real one does when Windows turns its
+    /// display off (GDI's CreateDC fails for it): the stream crashes, and comes back only if the host restarts it.
+    /// </summary>
+    public FakeDisplayEnumerator? FailWhenGone { get; set; }
+
     public IScreenCapturer Create(DisplayDescriptor display, bool preferGpu)
     {
         _created.AddOrUpdate(display.Name, 1, (_, n) => n + 1);
-        return new FakeScreenCapturer(display, UnchangedEvery, Generator);
+        return new FakeScreenCapturer(display, UnchangedEvery, Generator, FailWhenGone);
     }
 
-    private sealed class FakeScreenCapturer(DisplayDescriptor display, int unchangedEvery, FakeFrameGenerator? generator) : IScreenCapturer
+    private sealed class FakeScreenCapturer(DisplayDescriptor display, int unchangedEvery, FakeFrameGenerator? generator, FakeDisplayEnumerator? failWhenGone) : IScreenCapturer
     {
         private readonly byte[] _buffer = new byte[display.Width * display.Height * 4];
         private int _frame;
@@ -389,6 +401,11 @@ public sealed class FakeScreenCapturerFactory : IScreenCapturerFactory
 
         public ValueTask<CaptureResult> AcquireFrameAsync(TimeSpan timeout, CancellationToken ct)
         {
+            if (failWhenGone is not null && !failWhenGone.GetDisplays().Any(d => d.Name == display.Name))
+            {
+                throw new InvalidOperationException($"{display.Name} is not on the desktop any more.");
+            }
+
             _frame++;
             if (unchangedEvery > 0 && _frame % unchangedEvery == 0)
             {
