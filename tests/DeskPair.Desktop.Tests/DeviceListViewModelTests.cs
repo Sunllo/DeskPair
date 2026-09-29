@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using DeskPair.Core.Transport;
 using DeskPair.Desktop.Services;
 using DeskPair.Desktop.ViewModels;
@@ -24,11 +26,15 @@ public class DeviceListViewModelTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private string BookPath => Path.Combine(_dir, "devices.json");
+
     private DeviceListViewModel Create(DeviceBook book) => new(
         book,
         presence: (_, _) => Task.FromResult(new Dictionary<string, PeerOnlineState>()),
         post: action => action(),
-        path: Path.Combine(_dir, "devices.json"));
+        path: BookPath);
+
+    private static List<string> Targets(DeviceListViewModel vm) => [.. vm.Groups.SelectMany(g => g.Devices).Select(d => d.Target)];
 
     private static DeviceBook Book() => new DeviceBook()
         .WithGroup("Taipei")
@@ -204,5 +210,64 @@ public class DeviceListViewModelTests : IDisposable
         vm.SaveGroupCommand.Execute(null);
         vm.IsGroupEditorOpen.ShouldBeTrue();
         vm.Notice.ShouldBe(Localization.Strings.Get("devices.groupRequired"));
+    }
+
+    /// <summary>
+    /// A device another computer of the account added reaches this one's file by a sync, and has to reach the list on
+    /// screen too. Nothing listened for that: the file had the device, the open list did not, until the page was left
+    /// and opened again.
+    /// </summary>
+    [Fact]
+    public void What_a_sync_brings_in_shows_on_an_open_list_and_a_hidden_list_reads_it_when_shown()
+    {
+        Book().Save(BookPath);
+        DeviceListViewModel vm = Create(Book());
+        vm.Activate();
+
+        // What the sync does when another computer added a device: writes the file under the list.
+        DeviceBook.Load(BookPath).With(new SavedDevice { Target = "333333333", Alias = "Added elsewhere" }).Save(BookPath);
+        vm.ReloadAfterSync();
+        Targets(vm).ShouldContain("333333333");
+
+        vm.Deactivate();
+        DeviceBook.Load(BookPath).With(new SavedDevice { Target = "444444444" }).Save(BookPath);
+        vm.ReloadAfterSync();
+        Targets(vm).ShouldNotContain("444444444", "a list not on screen is left alone");
+
+        vm.Activate();
+        Targets(vm).ShouldContain("444444444", "and reads the file when it is shown");
+        vm.Deactivate();
+    }
+
+    /// <summary>
+    /// Closed to the tray the window only hides, and a device list left selected went on asking who is online every
+    /// fifteen seconds -- and, now that an open list also asks the account what changed, would have done that too.
+    /// </summary>
+    [Fact]
+    public void A_hidden_window_stops_the_device_list_and_its_return_restarts_it()
+    {
+        Book().Save(BookPath);
+        DeviceListViewModel devices = Create(Book());
+        var host = new HostLink("ui", NullLogger.Instance);
+        var window = new MainWindowViewModel(
+            new HomeViewModel(host, BookPath),
+            devices,
+            new IncomingConnectionsViewModel(host),
+            new ConnectionHistoryViewModel(host),
+            new SettingsViewModel(host, post: action => action(), time: new FakeTimeProvider(DateTimeOffset.UnixEpoch)),
+            new UpdateNoticeViewModel(() => string.Empty, _ => { }));
+
+        window.SelectedSection = MainWindowViewModel.DevicesSection;
+        devices.IsActive.ShouldBeTrue();
+
+        window.WindowHidden();
+        devices.IsActive.ShouldBeFalse();
+
+        window.WindowShown();
+        devices.IsActive.ShouldBeTrue();
+
+        window.SelectedSection = MainWindowViewModel.HomeSection;
+        window.WindowShown();
+        devices.IsActive.ShouldBeFalse("another page is on screen");
     }
 }

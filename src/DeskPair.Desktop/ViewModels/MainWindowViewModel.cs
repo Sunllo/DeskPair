@@ -30,7 +30,16 @@ public partial class MainWindowViewModel : ObservableObject
         Show(ViewModels.Settings.AccountSettingsViewModel.Current);
         _ = RefreshAccountAsync();
         Settings.AccountLinkChanged += state =>
+        {
             Avalonia.Threading.Dispatcher.UIThread.Post(() => Show(state));
+
+            // Signed in just now: the account's list comes down at once. It used to wait for the next fifteen-minute
+            // round, because the one at start-up had found nobody signed in.
+            if (state.IsLinked)
+            {
+                App.SyncAddressBookSoon();
+            }
+        };
 
         // The window outlives every check, so subscribing here leaks nothing -- unlike the settings
         // screen, which is built and thrown away and therefore only reads the state when it opens.
@@ -151,6 +160,22 @@ public partial class MainWindowViewModel : ObservableObject
     public bool IsHistorySelected => SelectedSection == HistorySection;
 
     public bool IsSettingsSelected => SelectedSection == SettingsSection;
+
+    /// <summary>
+    /// The window went out of sight: closed to the tray, where it only hides, or closed. The device list stops asking who
+    /// is online and what the account changed -- it went on doing both, every fifteen seconds, for as long as the app sat
+    /// in the tray with that page selected.
+    /// </summary>
+    public void WindowHidden() => Devices.Deactivate();
+
+    /// <summary>The window is in front again, and the device list picks up where it was if it is the page on screen.</summary>
+    public void WindowShown()
+    {
+        if (SelectedSection == DevicesSection)
+        {
+            Devices.Activate();
+        }
+    }
 
     /// <summary>The device list only asks who is online while it is the page on screen.</summary>
     partial void OnSelectedSectionChanged(int value)

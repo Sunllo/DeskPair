@@ -7,7 +7,17 @@ reports looks like `0.2.0+8ec4feb`.
 
 Tag each release `vMAJOR.MINOR.PATCH` on the commit that ships.
 
-## Desktop, unreleased
+## Servers, unreleased
+
+The servers only; no app changes.
+
+### Added
+
+- The rendezvous reports its counts once a minute when `Rendezvous:Report:Url` is set. Counters go as running totals
+  with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
+  minute; the relays' own totals ride along on the health poll the rendezvous already makes.
+
+## 0.4.8 — 2026-09-29
 
 Desktop only; the phones stay at 0.4.0.
 
@@ -24,16 +34,12 @@ Desktop only; the phones stay at 0.4.0.
   stayed on their screen. It is taken down now, as it was meant to be.
 - On macOS and Linux, starting DeskPair just after another start had been handed to the open window -- a link opened
   twice in quick succession, say -- could open a second DeskPair instead of handing over to the first.
-
-## Servers, unreleased
-
-The servers only; no app changes.
-
-### Added
-
-- The rendezvous reports its counts once a minute when `Rendezvous:Report:Url` is set. Counters go as running totals
-  with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
-  minute; the relays' own totals ride along on the health poll the rendezvous already makes.
+- A device added to the list on one computer did not show on another computer signed in to the same account. The other
+  computer asked the account only every fifteen minutes -- not when somebody signed in, not when the list was opened --
+  and what it fetched went into its file but not onto a list already on screen. Signing in and opening the device list
+  now fetch the account's list, an open list asks again every minute and shows what arrives, and the sync starts even
+  if this computer had no identity yet when DeskPair opened. A window closed to the tray no longer keeps asking, every
+  fifteen seconds, who on its device list is online.
 
 ## 0.4.7 — 2026-09-29
 

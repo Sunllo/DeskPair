@@ -17,6 +17,13 @@ public partial class DeviceListViewModel : ObservableObject
     /// <summary>How often the list re-checks who is reachable while it is on screen.</summary>
     public static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(15);
 
+    /// <summary>
+    /// How often the list asks the account for what other computers changed while it is on screen, once when it
+    /// opens and then this often. Otherwise only every fifteen minutes: a device added on one computer stayed missing
+    /// from another's open list for that long, and from one opened just before the round, longer.
+    /// </summary>
+    public static readonly TimeSpan VisibleSyncInterval = TimeSpan.FromMinutes(1);
+
     private readonly TimeProvider _time;
     private readonly Func<IReadOnlyList<string>, CancellationToken, Task<Dictionary<string, PeerOnlineState>>> _presence;
     private readonly Action<Action> _post;
@@ -129,17 +136,41 @@ public partial class DeviceListViewModel : ObservableObject
         _book = DeviceBook.Load(_path);
         Rebuild();
 
+        // The user's own list shows what a sync brings in while it is on screen. A test's or the screenshot tool's
+        // list is a file of its own, which no sync writes.
+        if (_path is null)
+        {
+            App.AddressBookPulled += ReloadAfterSync;
+        }
+
         _polling = new CancellationTokenSource();
         _ = PollAsync(_polling.Token);
     }
 
-    /// <summary>Stops polling; called when the page is left, so a hidden list costs nothing.</summary>
+    /// <summary>Stops polling; called when the page is left or the window goes, so a hidden list costs nothing.</summary>
     public void Deactivate()
     {
+        App.AddressBookPulled -= ReloadAfterSync;
         _polling?.Cancel();
         _polling?.Dispose();
         _polling = null;
     }
+
+    /// <summary>Whether the list is on screen and polling.</summary>
+    internal bool IsActive => _polling is not null;
+
+    /// <summary>
+    /// A sync brought in what another computer changed, and the list on screen shows it. Arrives on a timer's thread. A
+    /// list that is not on screen is left alone: it reads the file when it is shown.
+    /// </summary>
+    internal void ReloadAfterSync() => _post(() =>
+    {
+        if (_polling is not null)
+        {
+            _book = DeviceBook.Load(_path);
+            Rebuild();
+        }
+    });
 
     [RelayCommand]
     private void BeginAdd()
@@ -446,8 +477,15 @@ public partial class DeviceListViewModel : ObservableObject
 
     private async Task PollAsync(CancellationToken ct)
     {
+        long? synced = null;
         while (!ct.IsCancellationRequested)
         {
+            if (_path is null && (synced is null || _time.GetElapsedTime(synced.Value) >= VisibleSyncInterval))
+            {
+                App.SyncAddressBookSoon();
+                synced = _time.GetTimestamp();
+            }
+
             await QueryOnceAsync(ct).ConfigureAwait(false);
             try
             {

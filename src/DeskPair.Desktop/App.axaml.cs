@@ -34,6 +34,16 @@ public partial class App : Application
     /// <summary>Keeps the saved-computer list in step with the account's, when this install is linked to one.</summary>
     public static AddressBookSyncService? BookSync { get; private set; }
 
+    /// <summary>
+    /// A sync brought in what another computer of the account changed. Raised on a timer's thread. Static, because the
+    /// device page is built before the sync exists -- and nothing listened to the sync's own event, so a list on screen
+    /// kept showing the old entries while the file under it already had the new ones.
+    /// </summary>
+    public static event Action? AddressBookPulled;
+
+    private static readonly SemaphoreSlim BookSyncGate = new(1, 1);
+    private static bool _saidNoIdentity;
+
     /// <summary>Sends the connection record to the linked account; null until this machine has an identity.</summary>
     public static ConnectionHistoryUploadService? HistoryUpload { get; private set; }
 
@@ -43,31 +53,63 @@ public partial class App : Application
     /// </summary>
     public static UpdateCheckService? Updates { get; private set; }
 
-    private static async Task StartAddressBookSyncAsync()
+    /// <summary>
+    /// Starts the address book's sync unless it runs already. Asked again whenever a sync is wanted: at start-up this
+    /// computer may have no identity yet -- the engine makes one the first time it starts -- and the sync then stayed
+    /// off until the app was reopened, however often the person signed in or opened the list meanwhile.
+    /// </summary>
+    private static async Task<AddressBookSyncService?> EnsureAddressBookSyncAsync()
     {
+        await BookSyncGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            // Null when this machine has no identity yet, which is not a fault: the engine makes one the
-            // first time it starts, and an address book belongs to a machine that exists.
-            if (await AddressBookSyncService.CreateAsync(Logs) is not { } sync)
+            if (BookSync is not null)
             {
-                Logs.CreateLogger("account").LogInformation("No address book sync yet: this computer has no identity until the host engine has started once");
-                return;
+                return BookSync;
             }
 
+            // Null when this machine has no identity yet, which is not a fault: the engine makes one the
+            // first time it starts, and an address book belongs to a machine that exists.
+            if (await AddressBookSyncService.CreateAsync(Logs).ConfigureAwait(false) is not { } sync)
+            {
+                if (!_saidNoIdentity)
+                {
+                    _saidNoIdentity = true;
+                    Logs.CreateLogger("account").LogInformation("No address book sync yet: this computer has no identity until the host engine has started once");
+                }
+
+                return null;
+            }
+
+            sync.Pulled += () => AddressBookPulled?.Invoke();
             BookSync = sync;
             sync.Start();
 
             // The same identity and the same "only when linked" rule, so it goes up beside the book.
             HistoryUpload = ConnectionHistoryUploadService.Create(Host, Logs, () => Config.UploadConnectionHistory);
             HistoryUpload?.Start();
+            return sync;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             // A keystore this app cannot read is a reason not to sync, not a reason not to start.
             Logs.CreateLogger("account").LogWarning(e, "Address book sync is not available");
+            return null;
+        }
+        finally
+        {
+            BookSyncGate.Release();
         }
     }
+
+    /// <summary>
+    /// Syncs the address book in a moment, starting the sync first if it could not start before: when somebody has just
+    /// signed in, and while the device list is on screen. The fifteen-minute round is for a list nobody is looking at;
+    /// one that is looked at shows what another computer of the account added, not what was there a quarter-hour ago.
+    /// </summary>
+    public static void SyncAddressBookSoon() => _ = SyncAddressBookSoonAsync();
+
+    private static async Task SyncAddressBookSoonAsync() => (await EnsureAddressBookSyncAsync().ConfigureAwait(false))?.Nudge();
 
     public static AppRole Role { get; set; } = AppRole.Main;
 
@@ -175,7 +217,7 @@ public partial class App : Application
             // The saved-computer list follows the account, when there is one. Started without being waited
             // for: an unlinked install does nothing here, and a linked one must not hold up the window while
             // it finds out whether a portal is reachable.
-            _ = StartAddressBookSyncAsync();
+            _ = EnsureAddressBookSyncAsync();
 
             // Nothing here can fail -- no keystore, no identity, no token -- so unlike the book sync it
             // needs no guard. Started only on this branch, so --server never asks: it has no screen to

@@ -25,7 +25,11 @@ public partial class MainWindow : Window
         : this()
     {
         DataContext = vm;
-        Activated += (_, _) => vm.Home.ReloadRecent();
+        Activated += (_, _) =>
+        {
+            vm.Home.ReloadRecent();
+            vm.WindowShown();
+        };
 
         // Clicking the account at the foot of the rail. Modal over this window, because signing in is one
         // thing to finish rather than a page to wander away from.
@@ -38,7 +42,9 @@ public partial class MainWindow : Window
             {
                 e.Cancel = true;
                 Hide();
+                vm.WindowHidden();
             }
         };
+        Closed += (_, _) => vm.WindowHidden();
     }
 }
