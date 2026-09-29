@@ -424,6 +424,14 @@ F2 之後兩個擷取器若共用它，還會搶同一個「已取走」計數�
 主機的介面會看起來比本機小（macOS 由 scale 規則處理）；手機與舊版不受惠。X11 對實體輸出也教 CVT-RB 時序：驅動不接受就回報失敗（工具列顯示原因），
 接受了但實體螢幕不支援時，那台螢幕前會顯示「超出範圍」，擷取的畫面不受影響。
 
+**Windows 精準的驗證（階段 B，2026-09-29）**：在 Windows 10 22H2（Secure Boot 開、未開測試簽章）上以自寫的驗證用 IddCx 驅動量測。
+- **模式上限**：每台 IDD 螢幕最多 199 個模式。有 EDID 與無 EDID 都一樣，200 個起 `IddCxMonitorArrival` 回 STATUS_NOT_SUPPORTED；MttVDD 自己只到 100。
+- **執行中更新**：可用模式＝螢幕模式 ∩ 目標模式。`IddCxMonitorUpdateModes` 在執行中有效（新模式 20 ms 內出現），但只限接上時的螢幕模式清單，而且接上後約 2 秒才有效。
+- **同一身分拔插**：固定 connector index 與 container ID 拔插，可到任意精準尺寸。200 次 p95 84 ms、名稱不變、登錄檔不增長，但會把視窗搬到其他螢幕；只留虛擬螢幕時，還會讓 Windows 打開實體螢幕。
+- **縮放**：IDD 不支援縮放的來源解析度。
+
+階段 C 要怎麼組合「清單內即時切換」與「必要時拔插」尚待決定。
+
 ### 6.4 檔案傳輸
 
 128 KiB block；每 session 一個 `FileTransferEngine`；`ReadJob` 每檔先送 `Digest` 等 `SendConfirm{skip|offset_blk}` 再串流 block → `Done`；
