@@ -187,6 +187,8 @@ message DisplayInfo {
   // Set when the host can make up a mode of any size in this range for the display, so a viewer may ask for
   // exactly the size of its window rather than the nearest of modes. Unset: modes is the whole choice.
   SizeRange any_size = 12;
+  // The host's private session screen: while it is up, the only display on, sized by the viewers' windows.
+  bool session_screen = 13;
 }
 
 // Controller -> host: switch a display to one of the modes it advertised, or back to its original
@@ -285,6 +287,9 @@ message VirtualDisplayRequest {
   Action action = 1;
   Resolution resolution = 2;  // VD_ADD: the size to start at; unset leaves it to the host
   int32 display = 3;          // VD_REMOVE: which display
+  // VD_ADD: other sizes this viewer expects to ask the display for later -- its screens and their work areas. A host
+  // whose added displays can take only the sizes they were plugged in with (Windows) plugs it in with these too.
+  repeated Resolution sizes = 4;
 }
 
 // Controller -> host: every display this viewer wants streamed, and the one with its attention (it gets
@@ -788,6 +793,13 @@ message SessionOptions {
   BoolOption lock_after_session_end = 8;
   SupportedDecoding supported_decoding = 9;
   BoolOption lossless_refinement = 10;   // default (not set) = on
+  // The viewer gives the host's screen the size of its window ("Match window"). A host whose owner allows a private
+  // session screen then plugs in a display of the window's size -- viewport, in the display's pixels -- able to take
+  // the viewer's screens' sizes too, and turns every other display off while viewers follow their windows. An older
+  // host ignores all three.
+  BoolOption follow_window = 11;
+  Resolution viewport = 12;
+  repeated Resolution screens = 13;
 }
 
 // ---- lossless tiles (RDP-GFX style progressive refinement) ----

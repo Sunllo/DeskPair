@@ -279,6 +279,8 @@ public static class Strings
         ["settings.codec.auto"] = "Automatic",
         ["settings.allowVirtualDisplay"] = "Let viewers add displays this computer does not have",
         ["settings.allowVirtualDisplayHint"] = "For a viewer with keyboard and mouse control who wants a second screen. Added displays disappear when the last viewer disconnects.",
+        ["settings.allowSessionScreen"] = "Private screen for a viewer who matches the window",
+        ["settings.allowSessionScreenHint"] = "When a viewer with keyboard and mouse control turns on “Match window”, they work on a screen the size of their window and this computer’s own screens are turned off, as in a Windows Remote Desktop session. The screens come back when the viewer turns it off or disconnects; Win+P on this computer brings them back at once.",
         ["settings.displayDriver.missing"] = "The virtual display driver is not installed.",
         ["settings.displayDriver.needsService"] = "The virtual display driver is installed. Displays can be added once “{0}” is on in Settings › {1}.",
         ["settings.displayDriver.ready"] = "The virtual display driver is installed; viewers can add displays.",

@@ -24,11 +24,16 @@ public partial class RemoteSessionView : UserControl
         AddDisplayButton.Click += (_, _) => AddDisplay();
     }
 
-    /// <summary>Asks for a display as big as the screen this tab is on: the new window is meant to fill one like it.</summary>
+    /// <summary>
+    /// Asks for a display as big as the screen this tab is on: the new window is meant to fill one like it. Every screen
+    /// here goes with it, whole and without its taskbar, since the window may end up maximised or full screen on any of
+    /// them -- a host that can give an added display only the sizes it was plugged in with needs to know those.
+    /// </summary>
     private void AddDisplay()
     {
-        PixelSize size = TopLevel.GetTopLevel(this)?.Screens?.ScreenFromVisual(this)?.Bounds.Size ?? default;
-        _vm?.AddDisplay(size.Width, size.Height);
+        List<(int Width, int Height)> sizes = Controls.RemoteDisplayView.ScreenSizes(this);
+        (int width, int height) = sizes.Count > 0 ? sizes[0] : (0, 0);
+        _vm?.AddDisplay(width, height, sizes);
     }
 
     private void Bind(RemoteSessionViewModel? vm)

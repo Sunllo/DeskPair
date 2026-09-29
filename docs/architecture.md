@@ -380,14 +380,27 @@ F2 之後兩個擷取器若共用它，還會搶同一個「已取走」計數�
 測試用 `Core.Testing.FakeVirtualDisplays`：像真的驅動一樣把新螢幕接在清單尾端並發出變動、移除後重新編號。PeerCli：`:vdisplay add [WxH]`、`:vdisplay remove N`。
 
 **Linux 教尺寸**（G2）：`X11ModeTeacher`（`IArbitraryModeSink`）以 C# 算的 CVT-RB 時序（`Cvt`，逐字對 `cvt` 測過）`xrandr --newmode deskpair-WxH` ＋ `--addmode`，之後照一般改解析度流程；`RestoreAllAsync` 還原後先 `--delmode` 再 `--rmmode`。`X11DisplayModes` 切換時依該輸出上這個尺寸的模式**名字**下 `--mode`（xrandr 不依尺寸找）。只限 X11；Wayland 與 DRM daemon 不教。沒有 GPU 的機器用 Xorg＋dummy 驅動得到一個真 X 螢幕，見 `unattended-linux.md` I。
-**Windows 驅動**（G3，路線 A）：直接散布 VDD（MIT）官方、由 SignPath Foundation 簽的版本，`tools/fetch-vdd.ps1` 以網址＋SHA-256 釘死，`publish.ps1` 放進發佈目錄的 `vdd\`；來龍去脈與安裝細節見 `native/vdd/README.md`。
-`WindowsVirtualDisplays`（`IVirtualDisplayProvider`）：驅動只在裝置啟動時讀一次 `vdd_settings.xml`、`RELOAD_DRIVER` 不重讀，所以不用它的 pipe。安裝時照 nefcon／devcon 的做法建一個根列舉裝置（硬體 ID `MttVDD`），裝好驅動就 `CM_Disable_DevNode(PERSIST)`；要改螢幕數就**停用 → 寫檔 → 啟用**。每次啟用所有虛擬螢幕都會重插一次而且改名（`DISPLAY10` → `DISPLAY11`），所以移除拿掉的是最後一台、新增會讓其他虛擬螢幕的串流重啟一次，而已經接上的螢幕**不教新尺寸**（Windows 不實作 `IArbitraryModeSink`）；新增時要求的尺寸先寫進檔案，Windows 若記得別的尺寸，`HostMediaModule` 在新螢幕出現後照一般的改解析度流程設一次。哪些 `\\.\DISPLAYn` 是我們的：`EnumDisplayDevices` 的 adapter `DeviceID` 為 `MttVDD`。啟用／停用要系統管理員權限，所以只有服務的引擎能用，App 模式如實回報不可用；引擎當掉時裝置維持啟用，下一個引擎啟動時先停用。**不用 `SwDeviceCreate`**：它對 LocalSystem 一律回 `0x8007007E`（工作階段 0 或 1、任何裝置都一樣，2026-09-25 以服務的終端機實測）。安裝／移除是 `--install-virtual-display`／`--remove-virtual-display`（提權）：設定目錄 `%ProgramData%\Sunllo\DeskPair\vdd`（SYSTEM／Administrators 可寫、其他人可讀）、`VDDPATH` 指過去（已被別人指走就拒絕）、暫時信任發行者時 `SetupCopyOEMInf` 放進 driver store、裝置 instance ID 與 `oemNN.inf` 記在安裝紀錄；移除時 `DIF_REMOVE` 裝置、`SetupUninstallOEMInf`。
+**Windows 驅動**（G3，2026-09-29 起是自己的）：`native/idd`，自己寫的 IddCx 使用者模式驅動（UMDF 2.25、IddCx 1.4，Windows 10 1809 以上，x64／ARM64；IddCx 沒有 32 位元版，win-x86 不能新增螢幕）。
+`tools/build-idd.ps1` 以 WDK 的 NuGet 套件（版本與 SHA-256 釘死）和 VS 的編譯器建置，`-CodeSigning` 時先簽 DLL、再產生並簽 catalog；`package.ps1` 在建 Windows 版前先建它，`publish.ps1` 放進發佈目錄的 `idd\`。
+控制協定在 `native/idd/src/Control.h`（C# 對應 `Native/IddControl.cs`，`DisplayDriverTests` 讀標頭檔核對 IOCTL 代碼、結構佈局、上限與介面 GUID）：裝置介面的 IOCTL，只有 SYSTEM 與 Administrators 開得了（INF 的 SDDL＋`FILE_DEVICE_SECURE_OPEN`）；4 個槽，每槽固定 connector index 與 container ID；
+`PLUG`（最多 199 個尺寸、起始的那個）、`SELECT`（換成其中另一個）、`UNPLUG`、`WATCHDOG`、`INFO`，接上、拔掉、換尺寸一次只做一件。
+Windows 的規矩（實測見 `native/idd/README.md`）：每台螢幕的螢幕模式＋目標模式合計最多 200 個，可用的是兩者交集，螢幕模式接上時就固定；在目前尺寸**旁邊加上**新尺寸再切，只有第一次有效，
+所以每台螢幕**一次只提供一個目標模式**，換尺寸＝把另一個尺寸變成唯一的目標：舊尺寸不再提供，Windows 自己在 10–70 ms 內換過去，不動視窗、名稱不變、顯示設定資料庫不增長，接上後立刻就能換。
+`WindowsVirtualDisplays`（`IVirtualDisplayProvider`）：前 3 槽給觀看者新增的螢幕，第 4 槽留給私人工作階段螢幕；每台各自接上、拔掉，不動其他台。接上時的尺寸由 `VirtualDisplaySizes` 選：起始尺寸、觀看端送來的其他尺寸（`VirtualDisplayRequest.sizes = 4`：它的每個螢幕與工作區）、常用尺寸，
+其餘以 16 px 為間距，排在起始尺寸四周（環狀）與其他尺寸下方三格寬的窄欄（最大化的視窗少的是標題列與工具列的高度），由近到遠輪流，不超過觀看端說過的最大尺寸。哪台 `\\.\DISPLAYn` 是哪一槽：以 `PLUG` 回的 adapter LUID＋target ID 在 `QueryDisplayConfig` 找（`DisplayConfiguration`）。
+`WindowsDisplayModes` 對我們的螢幕改問它：清單＝接上時那份（最多 199 個），切換＝`SELECT` 後等 Windows 跟上（500 ms 內沒到再送一次）。有螢幕接著時，一條專用執行緒每秒餵驅動的看門狗（5 秒）：引擎被殺或當掉，驅動自己拔掉所有螢幕；下一個引擎啟動時也先拔掉殘留的。
+只有 SYSTEM／系統管理員開得了介面，所以仍然只有服務的引擎能用，App 模式如實回報不可用。
+安裝（`DisplayDriverInstaller`，`--install-virtual-display`，提權）：暫時信任 catalog 的簽章者時 `SetupCopyOEMInf` 放進 driver store，建（或沿用）根列舉裝置 `Root\DeskPairDisplay` 並 `UpdateDriverForPlugAndPlayDevices`，裝置**保持啟用**（沒有螢幕接著時什麼都不顯示），
+紀錄（`oemNN.inf`、裝置、驅動版本）寫在 `%ProgramData%\Sunllo\DeskPair\idd`（SYSTEM／Administrators 可寫、其他人可讀）；移除（`--remove-virtual-display`、MSI 移除時的 `--remove-system-changes`）`DIF_REMOVE` 裝置、`SetupUninstallOEMInf`。
+服務的引擎啟動時（`DisplayDriverInstaller.Update`）：這台之前裝過 VDD，就換成這支（`LegacyVirtualDisplayDriver` 拿掉 VDD 的裝置、driver store 裡的套件、`vdd` 設定目錄與只指向它的 `VDDPATH`）；發佈目錄裡的驅動比裝著的新，就更新；兩者都沒有就什麼都不做（裝驅動是擁有者在設定頁的選擇）。
+**沿革**：2026-09-25 到 0.4.8 直接散布 VDD（MIT，SignPath Foundation 簽）。它只在裝置啟動時讀一次設定檔，要改螢幕數只能停用整個裝置、改檔、再啟用，所有虛擬螢幕都重接一次而且改名，接上後也不能換成清單外的尺寸；它的 pipe 任何本機使用者都能寫，尺寸上限 100 個。
+**不用 `SwDeviceCreate`**：它對 LocalSystem 一律回 `0x8007007E`（工作階段 0 或 1、任何裝置都一樣，2026-09-25 以服務的終端機實測）。
 
 ### 6.4d 遠端解析度跟隨視窗（仿 Windows 遠端桌面，2026-09-29 起）
 
 目標是 RDP 的體驗：視窗多大，遠端桌面就是多大，永遠 1:1、不縮放。RDP 能即時變成任意尺寸，是因為它的顯示驅動是「遠端工作階段驅動」
 （`IDDCX_ADAPTER_FLAGS_REMOTE_SESSION_DRIVER`，才能用 `REMOTE_ALL_TARGET_MODES_MONITOR_COMPATIBLE` 與 `IddCxDisplayConfigUpdate`，只有 Windows 遠端桌面堆疊建立的裝置可以），
-而且 RDP 是獨立的工作階段。DeskPair 分享的是主控台：只能在主機給的模式裡挑，或在能教新尺寸的螢幕（目前只有 X11）上做到精準。Windows 的精準路線（自有 IddCx 驅動、私人工作階段螢幕）另有計畫，尚未開始。
+而且 RDP 是獨立的工作階段。DeskPair 分享的是主控台：只能在主機給的模式裡挑，或在能教新尺寸的螢幕（X11）上做到精準。Windows 上新增的虛擬螢幕接上時帶最多 199 個為這位觀看者選的尺寸（6.4c），精準或差不到一格（16 px）；擁有者允許時，跟隨視窗的觀看者還會拿到一個私人工作階段螢幕（見下）。
 
 **協定**（只加欄位；不加新的 `Misc`，舊主機收到未知的 `Misc` 會關閉連線）：`DisplayInfo.any_size = 12`
 （`SizeRange{min_width, min_height, max_width, max_height, step}`，有這個欄位＝這台螢幕可以做出範圍內任何尺寸）、`MouseEvent.frame_width = 6`／`frame_height = 7`（座標所依據的畫面大小）。
@@ -398,7 +411,7 @@ F2 之後兩個擷取器若共用它，還會搶同一個「已取走」計數�
 （`BitmapInterpolationMode.None`）。視窗搬到不同縮放的螢幕（`TopLevel.ScalingChanged`）時重新排版。排版時的捨入讓 1920 像素的視窗算成 1919.9999，所以接近整數就當整數，否則「剛好等於視窗」這個最重要的情況會被縮一點點而變模糊。
 
 **選尺寸**（`Core/Video/ResolutionFit`，純函式，桌面、PeerCli、日後手機共用）：視窗小於 64 px 不動；有 `any_size` → 視窗大小夾在範圍內、對齊 step（至少 2，編碼器要偶數）；
-否則在寬高都不超過視窗的模式中取面積最大、面積差 2% 內比形狀、再比 macOS 的 scale（最接近「讓主機介面看起來和本機一樣大」的倍率，平手取大的）；都放不下取最小的；
+否則在寬高都不超過視窗的模式中取面積最大、面積差 2% 內取較緊那一邊留白最少的（大致就是視窗的形狀；在 Windows 虛擬螢幕那種間距 16 px 的清單裡，就是剛好填滿一邊的那個，而不是窄一格、形狀略近的）、再比 macOS 的 scale（最接近「讓主機介面看起來和本機一樣大」的倍率，平手取大的）；都放不下取最小的；
 目前的模式放得下、而新的只大不到 3% 就不換（實體螢幕每換一次模式會黑一下）；等於原始模式就送「還原」。
 
 **跟隨器**（`Core/Session/Controller/ResolutionFollower`，`TimeProvider`）：每個畫面一個（分頁、每個螢幕視窗），視窗停止變動 300 ms 後才問；同一時間只有一個請求在途，期間的變動等答覆後以最新尺寸再問；
@@ -420,7 +433,7 @@ F2 之後兩個擷取器若共用它，還會搶同一個「已取走」計數�
 `:resburst WxH WxH …`、`:m X Y [FWxFH]`；顯示器行印出 `any size`。測試：`ResolutionFitTests`、`ResolutionFollowerTests`、`DisplayChangeQueueTests`、`PictureLayoutTests`、
 `MatchWindowTests`、整合測試 `FollowWindowTests`（合併連續請求、切換中滑鼠照常送達、只重啟變了的串流、無變更只回請求者、`any_size` 端到端、切換中最後一人離開仍會還原、跟隨器來回一輪）。
 
-**已知限制**：Windows（沒有 teacher）與 macOS 主機只能選最接近的模式；Wayland、DRM 常駐程式、RDP 主機不能改（開關顯示原因）；HiDPI 觀看端讓 Windows／X11 主機精準等於實體像素時，
+**已知限制**：Windows 的實體螢幕與 macOS 主機只能選最接近的模式，Windows 新增的虛擬螢幕只能在它接上時那份清單裡選；Wayland、DRM 常駐程式、RDP 主機不能改（開關顯示原因）；HiDPI 觀看端讓 Windows／X11 主機精準等於實體像素時，
 主機的介面會看起來比本機小（macOS 由 scale 規則處理）；手機與舊版不受惠。X11 對實體輸出也教 CVT-RB 時序：驅動不接受就回報失敗（工具列顯示原因），
 接受了但實體螢幕不支援時，那台螢幕前會顯示「超出範圍」，擷取的畫面不受影響。
 
@@ -430,7 +443,24 @@ F2 之後兩個擷取器若共用它，還會搶同一個「已取走」計數�
 - **同一身分拔插**：固定 connector index 與 container ID 拔插，可到任意精準尺寸。200 次 p95 84 ms、名稱不變、登錄檔不增長，但會把視窗搬到其他螢幕；只留虛擬螢幕時，還會讓 Windows 打開實體螢幕。
 - **縮放**：IDD 不支援縮放的來源解析度。
 
-階段 C 要怎麼組合「清單內即時切換」與「必要時拔插」尚待決定。
+**階段 C（2026-09-29 起）**：使用者選了「只做清單內（近乎精準）」，不為換尺寸拔插。正式驅動見 6.4c。驅動寫好後又量到：在目前尺寸旁邊加上新尺寸，只有接上後的第一次切得過去；
+目標清單只放新尺寸則每次都成功（300 次，中位數 14–56 ms），而且接上後 2 ms 送也有效，所以階段 B「接上後約 2 秒才有效」只適用於前一種做法。
+只留虛擬螢幕時換尺寸，Windows 會套回資料庫裡這組螢幕的配置（實體螢幕亮回來），除非「只留它」是以 `SDC_SAVE_TO_DATABASE` 存的；私人工作階段螢幕因此要用專屬的槽並存這個配置，結束時拔掉那台，Windows 就套回只有實體螢幕那組。
+
+**私人工作階段螢幕**（C3/C4，2026-09-29）：像 Windows 遠端桌面鎖住主控台：跟隨視窗的觀看者在一個與視窗同大的螢幕上操作，這台電腦自己的螢幕全部關閉。
+- **協定**（只加欄位）：`SessionOptions.follow_window = 11`（`BoolOption`）、`viewport = 12`（視窗以 1:1 顯示時的大小，遠端像素）、`screens = 13`（觀看端每個螢幕與工作區的大小，同樣換成遠端像素：200% 起除以 `PictureLayout.NaturalFactor`）；`DisplayInfo.session_screen = 13`。
+  桌面版在「符合視窗」開關變動、以及視窗大小第一次已知時送 `Misc.options`（`SyncFollowOption`，不是每次縮放都送）；PeerCli 的 `:follow WxH` 同樣送，`:follow off` 送 `follow_window = no`。舊主機忽略這些欄位，照階段 A 跟隨實體螢幕。
+- **抽象**：`ISessionScreen`（`OpenAsync(size, sizes)`、`IsAlone()`、`CloseAsync()`、`IsSessionScreen`）。只有 Windows 有：`WindowsVirtualDisplays` 的第 4 槽（`SessionSlot`），接上後 `DisplayTopology.OnlyThis` 以
+  `SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_APPLY | SDC_SAVE_TO_DATABASE | SDC_ALLOW_CHANGES` 只留它；存進資料庫的是「實體螢幕＋第 4 槽」那組，只有第 4 槽接著時才用得到，所以換尺寸時 Windows 重新評估也維持只留它，而不影響任何其他配置。
+  關閉＝拔掉第 4 槽，Windows 套回只有實體螢幕那組的配置；若一台都沒亮，才 `SDC_APPLY | SDC_USE_DATABASE_CURRENT`。隔離失敗就拔掉、當作沒開（不留一個私人螢幕旁邊亮著實體螢幕）。
+- **主機**（`HostMediaModule`）：擁有者允許（`HostConfig.PrivateSessionScreen` → `AllowSessionScreen`，預設關、即時生效）、有一位已授權、跟隨視窗、有鍵盤權限、說了視窗大小的觀看者時，在 `DisplayChangeQueue` 裡（鍵固定，最新決定勝）開啟，
+  尺寸清單照 6.4c（`viewport` 為起始、`screens` 為其他）；之後改尺寸就是一般的改解析度（`SELECT`）。沒有人跟隨、最後一位觀看者離開（在還原解析度之前）、引擎停止時關閉。
+  螢幕有變動、開啟超過 2 秒、而它不再是唯一亮著的螢幕：那台電腦前的人按了 Win+P，這是他的權利——關閉，而且觀看者持續跟隨期間不再開（沒人跟隨或最後一人離開後才重置）。
+- **當機復原**：開啟前先在資料目錄寫 `session-screen` 標記，正常關閉後刪除。引擎死了，驅動看門狗 5 秒內拔掉第 4 槽，Windows 套回實體螢幕的配置；下一個引擎啟動時看到標記，確認有螢幕亮著（沒有就套用資料庫目前的配置）再刪掉標記。
+  MSI 移除會拿掉驅動的裝置，所有虛擬螢幕跟著消失。
+- **測試**：`SessionScreenTests`（`FakeSessionScreen`：開啟時把清單換成一台 `SESSION`，`TakeBack()` 模擬 Win+P）：跟隨時開、停止跟隨或最後一人離開時還原、擁有者沒允許或只能看時不開、沒有視窗大小就等、Win+P 後關閉且不再開。
+  2026-09-29 在 Windows 10 VM 以服務實測：`:follow 1500x850` 後只剩 1500×850 的私人螢幕、`1404x790` → 1404×786、`1280x720` 精準、`:follow off` 後實體螢幕回到 1024×768；
+  開著時模擬 Win+P（`SetDisplayConfig(SDC_TOPOLOGY_EXTEND | SDC_APPLY)`）→ 主機記錄「turned back on at the computer」並關閉；開著時結束引擎 → 4.6 秒後看門狗拔掉、實體螢幕回來，重啟的引擎處理標記。
 
 ### 6.4 檔案傳輸
 
@@ -454,7 +484,7 @@ F2 之後兩個擷取器若共用它，還會搶同一個「已取走」計數�
 - **變化偵測** `Core/Video/ChangeDetector.cs`：每格 `XxHash3`；`CaptureFrame.DirtyRects`（Windows 由 Desktop Duplication 的 dirty/move rects 填入）有值時只重算相交的格，否則整幀掃描。另記錄每格「最後一次無損送出的雜湊」→ `PendingRefinement` / `RefinementCandidates`（游標附近優先）。
 - **序號與流控**：`TileUpdate.seq` 與 `VideoFrame` 共用 `_seq`，控制端同樣回 `VideoAck`，所以 `VideoQosController` 的 in-flight / 壅塞判斷原樣涵蓋精修流量；精修每 tick 只送 `BytesPerSecondBudget × 幀間隔` 對應的格數。
 - **控制端合成** `Core/Video/FrameCompositor.cs`：`ApplyVideo` 整幀覆蓋、`ApplyTiles` 逐格貼上；尺寸不符則丟棄並送 `RefreshVideo`。`ControllerSession` 在 `SupportedDecoding.tiles=true` 時宣告支援；主機以 `IServiceSubscriber.SupportsLosslessTiles` 過濾，舊控制端只拿 H.264。
-- **編碼協商** `Core/Services/CodecNegotiation.cs`：控制端的 `SupportedDecoding` 由 `IVideoDecoderFactory.Probe()` 填（以前寫死 `h264 = true`），主機端的 `PeerInfo.SupportedEncoding` 由 `IVideoEncoderFactory.Probe()` 填（以前送空的）。主機選的是「自己編得了」∩「**每一個**現有訂閱者都解得了」，优先序為主機偏好（`HostConfig.CodecPreference`，`auto` 代表沒意見）→ 控制端請求（`SupportedDecoding.prefer`）→ `H264 > H265 > AV1 > VP9 > VP8`。一條串流只有一個編碼器，所以**最窄的那個訂閱者決定整條串流**；中途加入的訂閱者若讀不懂現行編碼，`PublisherService.RestartAsync()` 重啟擷取迴圈換成大家都讀得懂的（只收窄、不回升，避免每次有人離線就重啟）。
+- **編碼協商** `Core/Services/CodecNegotiation.cs`：控制端的 `SupportedDecoding` 由 `IVideoDecoderFactory.Probe()` 填（以前寫死 `h264 = true`），主機端的 `PeerInfo.SupportedEncoding` 由 `IVideoEncoderFactory.Probe()` 填（以前送空的）。主機選的是「自己編得了」∩「**每一個**現有訂閱者都解得了」，优先序為主機偏好（`HostConfig.CodecPreference`，`auto` 代表沒意見）→ 控制端請求（`SupportedDecoding.prefer`）→ `H264 > H265 > AV1 > VP9 > VP8`。一條串流只有一個編碼器，所以**最窄的那個訂閱者決定整條串流**；中途加入的訂閱者若讀不懂現行編碼，`PublisherService.RestartAsync()` 重啟擷取迴圈換成大家都讀得懂的（只收窄、不回升，避免每次有人離線就重啟）。機器列出了某個編碼、卻沒有一個編碼器啟動得了（沒有顯示卡驅動的 Windows：Media Foundation 的軟體 H.264 編碼器設定輸出格式時就失敗），`VideoService.CodecFailed` 問 `HostMediaModule.NextCodec`：那個編碼在引擎這次執行期間就此剔除，串流改用下一個大家都讀得懂的（通常是 VP9）；一個都沒有才告訴觀看端原因。以前擷取迴圈直接當掉，觀看端一直沒有畫面。
 - **鏈路分級** `VideoQosController.LinkTier`（每秒依 RTT 平均與 ack backlog 重評，升級一次一階、降級立即）：
 
 | Tier | 條件 | H.264 位元率上探上限 | 直接無損門檻 | 精修延遲 |

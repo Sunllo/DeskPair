@@ -73,6 +73,18 @@ public sealed class ResolutionFitTests
     }
 
     /// <summary>
+    /// A Windows virtual display lists sizes 16 pixels apart. For a window that is 1920 wide, the size that fills its
+    /// width wins over one a step narrower that happens to be a shade closer to the window's shape.
+    /// </summary>
+    [Fact]
+    public void In_a_close_spaced_list_the_size_that_fills_a_side_wins()
+    {
+        DisplayInfo display = Listed(1600, 900, Mode(1920, 1040), Mode(1920, 992), Mode(1904, 992), Mode(1904, 976), Mode(1888, 1000), Mode(1600, 900));
+
+        ShouldSet(ResolutionFit.Choose(1920, 1000, display), 1920, 992);
+    }
+
+    /// <summary>
     /// A Mac lists the same pixels at several scales; the one whose interface looks the size of the viewer's own is
     /// chosen, and between two equally near the larger interface, which is the readable one.
     /// </summary>

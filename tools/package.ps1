@@ -322,6 +322,16 @@ function Add-WindowsInstaller([string]$Rid, [string]$Stage, [string]$Name) {
         -Requires "Windows 10 1809" -Signed ([bool]$CodeSigning) -Format "msi"
 }
 
+# The virtual display driver, for the Windows architectures it exists for, signed with the programs when they are:
+# publish.ps1 takes it from native/idd/out. Built before anything else so that a missing compiler stops the release here.
+$driverArchitectures = @($Rids | Where-Object { $_ -in @("win-x64", "win-arm64") } | ForEach-Object { $_ -replace '^win-', '' })
+if ($driverArchitectures) {
+    Write-Host "==> virtual display driver ($($driverArchitectures -join ', '))"
+    $driverArgs = @{ Architectures = $driverArchitectures }
+    if ($CodeSigning) { $driverArgs.CodeSigning = $CodeSigning }
+    & (Join-Path $PSScriptRoot "build-idd.ps1") @driverArgs
+}
+
 foreach ($rid in $Rids) {
     Write-Host "==> $rid"
     $published = Join-Path $repo "artifacts\publish\$rid-$Build"
@@ -355,11 +365,11 @@ foreach ($rid in $Rids) {
 
         if ($CodeSigning) {
             # Everything in the program's folder that nobody has signed: ours (DeskPair.exe, vpx.dll) and the ANGLE
-            # library Avalonia ships unsigned. Skia's two keep Microsoft's signature, and the virtual display driver is
-            # signed through its catalog, which a signature of ours on its .dll would break.
-            $vdd = Join-Path $stage "vdd"
+            # library Avalonia ships unsigned. Skia's two keep Microsoft's signature, and the virtual display driver was
+            # signed with its catalog when it was built.
+            $idd = Join-Path $stage "idd"
             [string[]]$unsigned = @(Get-ChildItem $stage -Recurse -Include *.exe, *.dll |
-                Where-Object { -not $_.FullName.StartsWith($vdd, [StringComparison]::OrdinalIgnoreCase) } |
+                Where-Object { -not $_.FullName.StartsWith($idd, [StringComparison]::OrdinalIgnoreCase) } |
                 Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -eq "NotSigned" } |
                 ForEach-Object { $_.FullName })
             Set-CodeSignature $unsigned

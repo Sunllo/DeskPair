@@ -654,7 +654,7 @@ namespace DeskPair.Tools.PeerCli
             for (int i = 0; i < info.Displays.Count; i++)
             {
                 DisplayInfo d = info.Displays[i];
-                Console.WriteLine($"*** Display {i} now {d.Width}x{d.Height}{(i == info.Changed ? " (changed)" : string.Empty)}{(d.Original is { } o ? $"; original {Describe(o)}" : string.Empty)}");
+                Console.WriteLine($"*** Display {i} now {d.Width}x{d.Height}{(d.SessionScreen ? " session screen" : d.VirtualDisplay ? " added" : string.Empty)}{(i == info.Changed ? " (changed)" : string.Empty)}{(d.Original is { } o ? $"; original {Describe(o)}" : string.Empty)}");
             }
         }
 
@@ -725,7 +725,8 @@ namespace DeskPair.Tools.PeerCli
     ///   cad | lock            Ctrl+Alt+Del / lock screen
     ///   switch N              switch to display N
     ///   subscribe A,B[ F]     watch displays A and B at once (F the focus, default the first); "subscribe -" for none
-    ///   vdisplay add [WxH] | vdisplay remove N   plug in a display that does not exist, or unplug one
+    ///   vdisplay add [WxH [WxH ...]] | vdisplay remove N   plug in a display that does not exist (at the first size, able
+    ///                                            to take the others), or unplug one
     ///   refresh [N]           ask for a keyframe of display N (default the current one): a still desk sends nothing
     ///   res WxH[@S] | res original   change the current display's resolution (S = scale, e.g. 3840x2160@2)
     ///   clip TEXT             put TEXT on this side's clipboard (controller -> host)
@@ -771,6 +772,7 @@ namespace DeskPair.Tools.PeerCli
                     _follower = null;
                     await running.StopAsync();
                     running.Dispose();
+                    await session.SetOptionsAsync(new SessionOptions { FollowWindow = BoolOption.BoNo }, ct);
                     Console.WriteLine("*** Not following the window any more");
                 }
 
@@ -794,6 +796,9 @@ namespace DeskPair.Tools.PeerCli
 
                 _follower = follower;
                 follower.Start(_display, session.PeerInfo is { } peer && _display < peer.Displays.Count ? peer.Displays[_display] : null);
+
+                // As the desktop app does: a host whose owner allows it gives a following viewer a private screen this size.
+                await session.SetOptionsAsync(new SessionOptions { FollowWindow = BoolOption.BoYes, Viewport = new Resolution { Width = w, Height = h } }, ct);
             }
 
             _follower.Window(w, h, uiScale);
@@ -926,14 +931,11 @@ namespace DeskPair.Tools.PeerCli
                         }
                         else
                         {
-                            Resolution? size = null;
-                            if (parts.Length > 1)
-                            {
-                                (int w, int h) = Size(parts[1]);
-                                size = new Resolution { Width = w, Height = h };
-                            }
-
-                            await session.AddVirtualDisplayAsync(size, ct);
+                            // :vdisplay add [WxH [WxH ...]]: the first is the size to start at, the rest others it may take later.
+                            List<Resolution> sizes = parts.Length > 1
+                                ? [.. parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(Size).Select(s => new Resolution { Width = s.Item1, Height = s.Item2 })]
+                                : [];
+                            await session.AddVirtualDisplayAsync(sizes.FirstOrDefault(), sizes.Skip(1), ct);
                         }
 
                         break;

@@ -21,7 +21,20 @@ public sealed class FakeDisplayEnumerator : IDisplayEnumerator
 
     public List<DisplayDescriptor> Displays { get; }
 
-    public IReadOnlyList<DisplayDescriptor> GetDisplays() => [.. Displays];
+    /// <summary>
+    /// Held by the fakes that change <see cref="Displays"/> -- a mode set, a display added or taken away -- and while it
+    /// is read: the host does those from more than one thread, the last viewer leaving and the host stopping at once, say,
+    /// and a list changed from two threads hands out empty descriptors.
+    /// </summary>
+    public object Sync { get; } = new();
+
+    public IReadOnlyList<DisplayDescriptor> GetDisplays()
+    {
+        lock (Sync)
+        {
+            return [.. Displays];
+        }
+    }
 
     public event EventHandler? DisplaysChanged;
 
@@ -98,17 +111,117 @@ public sealed class FakeDisplayModes : IDisplayModeSwitcher
             return false;
         }
 
-        int i = _displays.Displays.FindIndex(d => d.Name == display.Name);
-        if (i < 0)
+        lock (_displays.Sync)
         {
-            failure = "no such display";
-            return false;
+            int i = _displays.Displays.FindIndex(d => d.Name == display.Name);
+            if (i < 0)
+            {
+                failure = "no such display";
+                return false;
+            }
+
+            DisplayDescriptor d = _displays.Displays[i];
+            _displays.Displays[i] = d with { Width = mode.Width, Height = mode.Height, Scale = mode.Scale == 0 ? d.Scale : mode.Scale };
         }
 
-        DisplayDescriptor d = _displays.Displays[i];
-        _displays.Displays[i] = d with { Width = mode.Width, Height = mode.Height, Scale = mode.Scale == 0 ? d.Scale : mode.Scale };
         failure = null;
         return true;
+    }
+}
+
+/// <summary>
+/// A private session screen over a <see cref="FakeDisplayEnumerator"/>: opening takes every display off the list and
+/// puts one of the asked size in their place, closing puts them back, and <see cref="TakeBack"/> does what somebody at
+/// the computer does with Win+P -- the displays come back on beside it.
+/// </summary>
+public sealed class FakeSessionScreen(FakeDisplayEnumerator displays, FakeDisplayModes modes) : ISessionScreen
+{
+    public const string Name = "SESSION";
+
+    private List<DisplayDescriptor>? _off;
+
+    /// <summary>When set, it reports itself unavailable with this reason.</summary>
+    public string? UnavailableReason { get; set; }
+
+    /// <summary>The sizes it was last opened with, besides the one it came up at.</summary>
+    public IReadOnlyList<DisplayMode> LastSizes { get; private set; } = [];
+
+    /// <summary>How many times it was opened.</summary>
+    public int Opened { get; private set; }
+
+    public bool IsOpen => _off is not null;
+
+    public bool IsSessionScreen(DisplayDescriptor display) => IsOpen && display.Name == Name;
+
+    public Task<DisplayActionResult> OpenAsync(DisplayMode size, IReadOnlyList<DisplayMode> sizes, CancellationToken ct)
+    {
+        if (UnavailableReason is { } why)
+        {
+            return Task.FromResult(DisplayActionResult.Refused(why));
+        }
+
+        lock (displays.Sync)
+        {
+            _off = [.. displays.Displays];
+            LastSizes = sizes;
+            Opened++;
+            displays.Displays.Clear();
+            displays.Displays.Add(new DisplayDescriptor(0, Name, 0, 0, size.Width, size.Height, 1.0, FrameRotation.None, true, 0));
+        }
+
+        foreach (DisplayMode other in sizes)
+        {
+            modes.Teach(Name, other);
+        }
+
+        displays.Raise();
+        return Task.FromResult(DisplayActionResult.Done);
+    }
+
+    public bool IsAlone()
+    {
+        lock (displays.Sync)
+        {
+            return IsOpen && displays.Displays.Count == 1;
+        }
+    }
+
+    public Task CloseAsync(CancellationToken ct)
+    {
+        if (_off is { } off)
+        {
+            lock (displays.Sync)
+            {
+                _off = null;
+                displays.Displays.Clear();
+                displays.Displays.AddRange(off);
+            }
+
+            displays.Raise();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Somebody at the computer turns the other displays back on, beside the session screen.</summary>
+    public void TakeBack()
+    {
+        if (_off is not { } off)
+        {
+            return;
+        }
+
+        lock (displays.Sync)
+        {
+            int x = displays.Displays.Max(d => d.X + d.Width);
+            foreach (DisplayDescriptor d in off)
+            {
+                displays.Displays.Add(d with { Index = displays.Displays.Count, X = x, IsPrimary = false });
+                x += d.Width;
+            }
+        }
+
+        displays.Raise();
     }
 }
 
@@ -131,7 +244,16 @@ public sealed class FakeVirtualDisplays(FakeDisplayEnumerator displays, FakeDisp
     /// </summary>
     public bool IgnoresRequestedSize { get; set; }
 
-    public int Count => displays.Displays.Count(IsVirtual);
+    public int Count
+    {
+        get
+        {
+            lock (displays.Sync)
+            {
+                return displays.Displays.Count(IsVirtual);
+            }
+        }
+    }
 
     /// <summary>Sizes can be taught to every display, not only the ones added here: a Linux desktop's outputs.</summary>
     public bool TeachAll { get; set; }
@@ -143,34 +265,57 @@ public sealed class FakeVirtualDisplays(FakeDisplayEnumerator displays, FakeDisp
 
     public bool IsVirtual(DisplayDescriptor display) => display.Name.StartsWith(Prefix, StringComparison.Ordinal);
 
-    public Task<DisplayActionResult> AddAsync(DisplayMode? mode, CancellationToken ct)
+    /// <summary>The sizes the last display was asked for with, besides the one it came up at.</summary>
+    public IReadOnlyList<DisplayMode> LastSizes { get; private set; } = [];
+
+    public Task<DisplayActionResult> AddAsync(DisplayMode? mode, IReadOnlyList<DisplayMode> sizes, CancellationToken ct)
     {
-        List<DisplayDescriptor> list = displays.Displays;
-        (int width, int height) = mode is { } m && !IgnoresRequestedSize ? (m.Width, m.Height) : (640, 360);
-        int x = list.Count == 0 ? 0 : list.Max(d => d.X + d.Width);
-        list.Add(new DisplayDescriptor(list.Count, $"{Prefix}{_next++}", x, 0, width, height, 1.0, FrameRotation.None, list.Count == 0, 0));
+        LastSizes = sizes;
+        lock (displays.Sync)
+        {
+            List<DisplayDescriptor> list = displays.Displays;
+            (int width, int height) = mode is { } m && !IgnoresRequestedSize ? (m.Width, m.Height) : (640, 360);
+            int x = list.Count == 0 ? 0 : list.Max(d => d.X + d.Width);
+            list.Add(new DisplayDescriptor(list.Count, $"{Prefix}{_next++}", x, 0, width, height, 1.0, FrameRotation.None, list.Count == 0, 0));
+        }
+
         displays.Raise();
         return Task.FromResult(DisplayActionResult.Done);
     }
 
     public Task<DisplayActionResult> RemoveAsync(DisplayDescriptor display, CancellationToken ct)
     {
-        int i = displays.Displays.FindIndex(d => d.Name == display.Name);
-        if (i < 0)
+        lock (displays.Sync)
         {
-            return Task.FromResult(DisplayActionResult.Refused("not there"));
+            int i = displays.Displays.FindIndex(d => d.Name == display.Name);
+            if (i < 0)
+            {
+                return Task.FromResult(DisplayActionResult.Refused("not there"));
+            }
+
+            displays.Displays.RemoveAt(i);
+            Renumber();
         }
 
-        displays.Displays.RemoveAt(i);
-        Renumber();
+        displays.Raise();
         return Task.FromResult(DisplayActionResult.Done);
     }
 
     public Task RemoveAllAsync(CancellationToken ct)
     {
-        if (displays.Displays.RemoveAll(IsVirtual) > 0)
+        bool removed;
+        lock (displays.Sync)
         {
-            Renumber();
+            removed = displays.Displays.RemoveAll(IsVirtual) > 0;
+            if (removed)
+            {
+                Renumber();
+            }
+        }
+
+        if (removed)
+        {
+            displays.Raise();
         }
 
         return Task.CompletedTask;
@@ -197,14 +342,13 @@ public sealed class FakeVirtualDisplays(FakeDisplayEnumerator displays, FakeDisp
         return Task.CompletedTask;
     }
 
+    /// <summary>Under the enumerator's lock; the caller raises the change once it is out of it.</summary>
     private void Renumber()
     {
         for (int i = 0; i < displays.Displays.Count; i++)
         {
             displays.Displays[i] = displays.Displays[i] with { Index = i };
         }
-
-        displays.Raise();
     }
 }
 
@@ -325,6 +469,12 @@ public sealed class FakeVideoEncoderFactory : IVideoEncoderFactory
     /// <summary>How a named encoder misbehaves. A name absent from this map works normally.</summary>
     public IReadOnlyDictionary<string, EncoderFault> Breaks { get; init; } = new Dictionary<string, EncoderFault>();
 
+    /// <summary>
+    /// Codecs this fake lists but cannot start an encoder for, the way Media Foundation's software H.264 encoder lists
+    /// itself on a Windows with no graphics driver and then refuses its output format.
+    /// </summary>
+    public IReadOnlyList<VideoCodec> Unstartable { get; init; } = [];
+
     /// <summary>The name this factory last handed out, which is the one a session is running on.</summary>
     public string? LastCreated { get; private set; }
 
@@ -345,6 +495,11 @@ public sealed class FakeVideoEncoderFactory : IVideoEncoderFactory
 
     public IVideoEncoder Create(VideoEncoderConfig config)
     {
+        if (Unstartable.Contains(config.Codec))
+        {
+            throw new NotSupportedException($"No fake {config.Codec} encoder accepted the configuration.");
+        }
+
         string? name = Names.FirstOrDefault(n => !config.Exclude.Contains(n));
         if (name is null)
         {

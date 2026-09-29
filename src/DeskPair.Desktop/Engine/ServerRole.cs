@@ -88,6 +88,7 @@ public static class ServerRole
             MaxDisplaysPerViewer = config.MaxDisplaysPerViewer,
             MaxConcurrentStreams = config.MaxConcurrentStreams,
             AllowVirtualDisplays = config.AllowVirtualDisplay,
+            AllowSessionScreen = config.PrivateSessionScreen,
         };
         await using var files = new HostFileModule(Core.FileTransfer.LocalFileSystem.Instance, logs)
         {
@@ -147,6 +148,7 @@ public static class ServerRole
             media.MaxDisplaysPerViewer = updated.MaxDisplaysPerViewer;
             media.MaxConcurrentStreams = updated.MaxConcurrentStreams;
             media.AllowVirtualDisplays = updated.AllowVirtualDisplay;
+            media.AllowSessionScreen = updated.PrivateSessionScreen;
             passwords.Configure(updated.TemporaryPasswordLength, updated.TemporaryRotationThreshold, updated.TemporaryPasswordEnabled);
             if (HostConfig.RequiresEngineRestart(config, updated))
             {

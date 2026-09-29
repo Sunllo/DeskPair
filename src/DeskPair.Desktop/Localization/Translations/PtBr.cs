@@ -268,6 +268,8 @@ internal static class PtBr
         ["settings.codec.auto"] = "Automático",
         ["settings.allowVirtualDisplay"] = "Permitir que quem se conecta adicione monitores que este computador não tem",
         ["settings.allowVirtualDisplayHint"] = "Para quem se conecta com controle de teclado e mouse e quer uma segunda tela. Os monitores adicionados somem quando a última pessoa se desconecta.",
+        ["settings.allowSessionScreen"] = "Tela privada para quem usar “Tamanho da janela”",
+        ["settings.allowSessionScreenHint"] = "Quando alguém com controle de teclado e mouse ativa “Tamanho da janela”, passa a trabalhar em uma tela do tamanho da janela e as telas deste computador são desligadas, como numa sessão de Área de Trabalho Remota do Windows. Elas voltam quando a pessoa desativa ou se desconecta; Win+P neste computador as religa na hora.",
         ["settings.displayDriver.missing"] = "O driver de monitor virtual não está instalado.",
         ["settings.displayDriver.needsService"] = "O driver de monitor virtual está instalado. Monitores podem ser adicionados quando “{0}” estiver ativado em Configurações › {1}.",
         ["settings.displayDriver.ready"] = "O driver de monitor virtual está instalado; quem se conecta pode adicionar monitores.",

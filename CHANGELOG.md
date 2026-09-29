@@ -27,6 +27,19 @@ The servers only; no app changes.
   leaves. A Linux (X11) host takes the window's size exactly; Windows and macOS hosts, and any other screen with a
   list of resolutions, take the largest that fits. Off by default -- it changes the host's resolution, which the
   person at that screen sees too -- and the default is in Settings > Display.
+- **DeskPair's own virtual display driver on Windows**, in place of the Virtual Display Driver (VDD) it installed
+  before: a computer that has that one gets this one the next time the service starts. A display a viewer adds now
+  comes and goes on its own, the others staying as they are under the same names, and it can take any of up to 199
+  sizes chosen for that viewer -- its screens, their work areas and sizes close to them -- switching between them in
+  a few hundredths of a second without moving a window. With Match window on, it takes the window's size exactly or
+  to within 16 pixels. Only the service can control the driver, and the driver unplugs its displays by itself within
+  five seconds of the engine stopping, however it stopped.
+- **A private screen while a viewer matches its window** (Windows, unattended access, with the display driver): when
+  the owner allows it in Settings > Display, a viewer with keyboard and mouse control who turns on Match window works
+  on a screen the size of their window, and the computer's own screens are turned off, as in a Windows Remote Desktop
+  session. They come back when the viewer turns Match window off or the last viewer leaves; Win+P at the computer
+  brings them back at once, and if DeskPair stops meanwhile the driver brings them back within five seconds. Off by
+  default.
 
 ### Fixed
 
@@ -47,6 +60,11 @@ The servers only; no app changes.
   measurement that fails is now tried again a second later, up to three times.
 - Stopping the host while viewers were connected could leave some of their sessions unclosed: closing one that was
   already ending on its own threw, and the sessions after it were skipped.
+- The VP9 encoder and decoder could not be loaded on a Windows computer without Microsoft's Visual C++ runtime -- a
+  fresh installation, a virtual machine -- so such a computer had no VP9. `vpx.dll` carries its own runtime now.
+- A Windows host whose H.264 encoder would not start -- a virtual machine without a graphics driver, where Media
+  Foundation's software encoder refuses its output format -- sent no picture at all. It now goes on in the next codec
+  the viewer reads, VP9 usually, and tells the viewer why when there is none.
 
 ## 0.4.8 — 2026-09-29
 

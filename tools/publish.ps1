@@ -146,16 +146,17 @@ if (($Rid -like 'win-*') -and (Test-Path $vpx)) {
     Write-Host "no vpx.dll built; this build offers no VP9 (tools/build-libvpx.ps1 makes one)"
 }
 
-# The virtual display driver, as its project signed and released it (tools/fetch-vdd.ps1 fetches it, pinned).
-# It goes in a vdd folder, where --install-virtual-display looks; without it this build cannot add displays.
-$vdd = Join-Path $repo (Join-Path 'native' (Join-Path 'vdd' $Rid))
-if (($Rid -like 'win-*') -and (Test-Path (Join-Path $vdd 'mttvdd.cat'))) {
-    $vddOut = Join-Path $out 'vdd'
-    New-Item -ItemType Directory -Force $vddOut | Out-Null
-    Copy-Item (Join-Path $vdd '*') $vddOut -Force
+# DeskPair's virtual display driver, when tools/build-idd.ps1 has built it for this architecture (x64 and arm64 only:
+# IddCx has no 32-bit build). It goes in an idd folder, where --install-virtual-display looks; without it this build
+# cannot add displays, and says so.
+$idd = Join-Path $repo (Join-Path 'native' (Join-Path 'idd' (Join-Path 'out' $Rid)))
+if (($Rid -like 'win-*') -and (Test-Path (Join-Path $idd 'deskpairdisplay.cat'))) {
+    $iddOut = Join-Path $out 'idd'
+    New-Item -ItemType Directory -Force $iddOut | Out-Null
+    Copy-Item (Join-Path $idd '*') $iddOut -Force
     Write-Host "included the virtual display driver"
-} elseif ($Rid -like 'win-*') {
-    Write-Host "no virtual display driver fetched; this build cannot add displays (tools/fetch-vdd.ps1 fetches it)"
+} elseif ($Rid -in @('win-x64', 'win-arm64')) {
+    Write-Host "no virtual display driver built; this build cannot add displays (tools/build-idd.ps1 builds it)"
 }
 
 # The Wayland shim, when one has been built (tools/build-wayland-shim.ps1). WaylandShim.targets has already put it

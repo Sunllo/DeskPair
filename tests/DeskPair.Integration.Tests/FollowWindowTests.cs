@@ -71,9 +71,11 @@ public class FollowWindowTests
         follower.Window(900, 640, 1);
         await Testbed.WaitUntilAsync(() => cb.LastFrameSize == (900, 640) && follower.State == FollowState.Matched, "and again after a resize", 15_000);
 
+        // The size is taken back just after the display leaves it, so the two are waited for together.
         await follower.StopAsync();
-        await Testbed.WaitUntilAsync(() => bed.Displays!.Displays[0].Width == 640, "given back when following stops", 15_000);
-        bed.DisplayModes!.TaughtCount.ShouldBe(0, "each size taught was taken back as the display left it");
+        await Testbed.WaitUntilAsync(
+            () => bed.Displays!.Displays[0].Width == 640 && bed.DisplayModes!.TaughtCount == 0,
+            "given back when following stops, each size taught taken back as the display left it", 15_000);
     }
 
     /// <summary>A resize asks faster than a monitor can switch: the requests between two changes collapse into the last.</summary>

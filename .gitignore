@@ -42,10 +42,6 @@ Thumbs.db
 # this repository, deliberately. Building it is fine (BSD-2), shipping it is not — H.264 is patented and
 # Cisco's royalty coverage follows only its own distributed binaries. See native/openh264/README.md.
 
-# The virtual display driver package, fetched pinned by tools/fetch-vdd.ps1. Shipping it is fine (MIT, signed
-# by its project); it is kept out of the tree only because it is a download. See native/vdd/README.md.
-native/vdd/win-*/
-
 # Built macOS shim (build on a Mac via native/macos/SunlloMacShim/build.sh)
 libSunlloMacShim.dylib
 native/macos/SunlloMacShim/*.dylib

@@ -126,6 +126,14 @@ public sealed class VideoService : PublisherService
     /// <summary>Stops the capture loop and starts it again, which is how a codec change takes effect.</summary>
     public Task RestartForCodecChangeAsync() => RestartAsync();
 
+    /// <summary>
+    /// Asked when no encoder of <see cref="Codec"/> would start at all, though the machine lists one -- Media
+    /// Foundation's software H.264 encoder on a Windows without a graphics driver refuses its output format, say. The
+    /// answer is the codec to go on in, one every viewer of the stream reads, or null when there is none; the host
+    /// strikes the failed codec off so that no stream tries it again.
+    /// </summary>
+    public Func<AbstractCodec, AbstractCodec?>? CodecFailed { get; set; }
+
     /// <summary>The same restart after the display changed size: the loop re-reads the descriptor and builds an encoder to match.</summary>
     public Task RestartForDisplayChangeAsync() => RestartAsync();
 
@@ -263,7 +271,27 @@ public sealed class VideoService : PublisherService
                 IVideoEncoder? encoder = null;
                 try
                 {
-                    encoder = _encoders.Create(config);
+                    try
+                    {
+                        encoder = _encoders.Create(config);
+                    }
+                    catch (NotSupportedException e)
+                    {
+                        // Nothing this machine has for the codec would start, or everything it had has since failed:
+                        // the codec is out, not one encoder. Another every viewer reads may still do; without one the
+                        // viewers are told rather than left waiting for a picture that never comes.
+                        if (CodecFailed?.Invoke(Codec) is { } next && next != Codec)
+                        {
+                            Log.LogWarning(e, "{Service}: no {Codec} encoder would start; going on in {Next}", Name, Codec, next);
+                            Codec = next;
+                            continue;
+                        }
+
+                        Log.LogError(e, "{Service}: no {Codec} encoder would start ({Count} failed before), and no other codec suits every viewer", Name, Codec, _failedEncoders.Count);
+                        TellSubscribers(_failedEncoders.Count > 0 ? $"every {Codec} encoder on this computer failed" : $"no {Codec} encoder on this computer would start", ct);
+                        return;
+                    }
+
                     Loop(capturer, encoder, bitrate, ct);
                     return;
                 }
@@ -271,13 +299,6 @@ public sealed class VideoService : PublisherService
                 {
                     Log.LogWarning(e, "{Service}: dropping {Encoder}; {Reason}", Name, e.Encoder.Name, e.Reason);
                     _failedEncoders.Add(e.Encoder.Name);
-                }
-                catch (NotSupportedException e) when (_failedEncoders.Count > 0)
-                {
-                    // Everything this machine had for this codec has now failed.
-                    Log.LogError(e, "{Service}: no encoder left after {Count} failed", Name, _failedEncoders.Count);
-                    TellSubscribers($"every {Codec} encoder on this computer failed", ct);
-                    return;
                 }
                 finally
                 {

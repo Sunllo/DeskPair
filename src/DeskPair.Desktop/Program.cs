@@ -388,8 +388,8 @@ public static class Program
             .SetMinimumLevel(args.Contains("--verbose") ? LogLevel.Debug : LogLevel.Information));
         ILogger log = logs.CreateLogger("vdd");
         int code = install
-            ? Platform.Windows.Capture.VirtualDisplayDriverInstaller.Install(dataDir, Platform.Windows.Capture.VirtualDisplayDriver.PackageDirectory, log)
-            : Platform.Windows.Capture.VirtualDisplayDriverInstaller.Uninstall(dataDir, log);
+            ? Platform.Windows.Capture.DisplayDriverInstaller.Install(dataDir, Platform.Windows.Capture.DisplayDriver.PackageDirectory, log)
+            : Platform.Windows.Capture.DisplayDriverInstaller.Uninstall(dataDir, log);
         if (code != 0 && !console)
         {
             CrashReporter.ShowMessage(install
@@ -434,7 +434,7 @@ public static class Program
             log.LogInformation("Login entries that started {Program} removed: {Count}", exe, StartupEntry.RemoveForSignedInUsers(exe, log));
             return 0;
         });
-        Remove("the virtual display driver", () => Platform.Windows.Capture.VirtualDisplayDriverInstaller.Uninstall(dataDir, log));
+        Remove("the virtual display driver", () => Platform.Windows.Capture.DisplayDriverInstaller.Uninstall(dataDir, log));
         return 0;
 
         void Remove(string what, Func<int> remove)

@@ -268,6 +268,8 @@ internal static class Fr
         ["settings.codec.auto"] = "Automatique",
         ["settings.allowVirtualDisplay"] = "Autoriser les visiteurs à ajouter des écrans que cet ordinateur n’a pas",
         ["settings.allowVirtualDisplayHint"] = "Pour un visiteur qui contrôle le clavier et la souris et veut un second écran. Les écrans ajoutés disparaissent quand le dernier visiteur se déconnecte.",
+        ["settings.allowSessionScreen"] = "Écran privé pour un visiteur qui utilise « Taille de la fenêtre »",
+        ["settings.allowSessionScreenHint"] = "Quand un visiteur qui contrôle le clavier et la souris active « Taille de la fenêtre », il travaille sur un écran de la taille de sa fenêtre et les écrans de cet ordinateur s’éteignent, comme lors d’une session Bureau à distance de Windows. Ils reviennent quand il la désactive ou se déconnecte ; Win+P sur cet ordinateur les rallume aussitôt.",
         ["settings.displayDriver.missing"] = "Le pilote d’écran virtuel n’est pas installé.",
         ["settings.displayDriver.needsService"] = "Le pilote d’écran virtuel est installé. Des écrans peuvent être ajoutés dès que « {0} » est activé dans Paramètres › {1}.",
         ["settings.displayDriver.ready"] = "Le pilote d’écran virtuel est installé ; les visiteurs peuvent ajouter des écrans.",

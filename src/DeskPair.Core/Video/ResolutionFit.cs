@@ -26,7 +26,8 @@ public readonly record struct FitChoice(FitAction Action, Resolution? Mode)
 /// share it, and every rule is tested without a host.
 ///
 /// A display that offers any size gets the window's size exactly. One with a list of modes gets the largest that
-/// fits in the window whole, preferring the window's shape; it is then shown 1:1 with a margin rather than shrunk.
+/// fits in the window whole, preferring the one that fills it best; it is then shown 1:1 with a margin rather than
+/// shrunk.
 /// Changing mode is not free -- a physical monitor goes dark while it resynchronises -- so a mode barely larger
 /// than the one the display is already in is not worth asking for.
 /// </summary>
@@ -35,7 +36,7 @@ public static class ResolutionFit
     /// <summary>Windows smaller than this in either direction (minimised, or being dragged to nothing) ask for nothing.</summary>
     public const int MinimumWindow = 64;
 
-    /// <summary>Areas within this fraction of each other count as the same size, and the shape decides between them.</summary>
+    /// <summary>Areas within this fraction of each other count as the same size, and how well each fills the window decides.</summary>
     private const double SameArea = 0.02;
 
     /// <summary>A fitting mode must be at least this much larger than the current one to be worth a change.</summary>
@@ -92,8 +93,10 @@ public static class ResolutionFit
     }
 
     /// <summary>
-    /// The largest listed mode that fits in the window; of those about as large, the one closest to the window's
-    /// shape, then to <paramref name="uiScale"/>. When none fits, the smallest there is: it is shrunk the least.
+    /// The largest listed mode that fits in the window; of those about as large, the one whose margin is thinnest on
+    /// its tighter side -- the window's shape, near enough, and in a close-spaced list (a Windows virtual display's)
+    /// the one that fills a side exactly rather than one a step narrower but a shade closer in shape -- then the one
+    /// nearest <paramref name="uiScale"/>. When none fits, the smallest there is: it is shrunk the least.
     /// </summary>
     private static Resolution? Nearest(int width, int height, DisplayInfo display, double uiScale)
     {
@@ -104,10 +107,9 @@ public static class ResolutionFit
         }
 
         long largest = fitting.Max(Area);
-        double shape = (double)width / height;
         return fitting
             .Where(m => Area(m) >= largest * (1 - SameArea))
-            .OrderBy(m => Math.Round(Math.Abs(Math.Log((double)m.Width / m.Height / shape)), 3))
+            .OrderByDescending(m => Math.Round(Math.Min((double)m.Width / width, (double)m.Height / height), 3))
             .ThenBy(m => Math.Abs(ScaleOf(m) - uiScale))
             .ThenByDescending(ScaleOf) // a tie between 1x and 2x on a 150 % screen: the larger interface is the readable one
             .ThenByDescending(Area)

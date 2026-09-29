@@ -27,7 +27,8 @@ public sealed record HostPlatform(
     IDisplayModeSwitcher? DisplayModes = null,
     IVirtualDisplayProvider? VirtualDisplays = null,
     IArbitraryModeSink? ModeTeacher = null,
-    IDisplaySession? DisplaySession = null);
+    IDisplaySession? DisplaySession = null,
+    ISessionScreen? SessionScreen = null);
 
 /// <summary>
 /// Wires the publisher services into a <see cref="HostRuntime"/>: subscribes remote-control sessions to
@@ -130,8 +131,35 @@ public sealed class HostMediaModule : IAsyncDisposable
     /// <summary>At most this many displays plugged in from here at once.</summary>
     public const int MaxVirtualDisplays = 4;
 
+    /// <summary>
+    /// A viewer following its window ("Match window") may have a private session screen: a display of the window's size,
+    /// with every other display off, for as long as a viewer follows (<see cref="ISessionScreen"/>). Off unless the owner
+    /// allowed it: the person at the computer sees their screens go dark.
+    /// </summary>
+    public bool AllowSessionScreen { get; set; }
+
+    /// <summary>How long after the session screen opened a display coming back is still its own doing, not somebody's at the computer.</summary>
+    private static readonly TimeSpan SessionScreenSettle = TimeSpan.FromSeconds(2);
+
+    /// <summary>The queue's key for opening and closing it: one decision at a time, the latest standing.</summary>
+    private const string SessionScreenKey = "\0session-screen";
+
+    /// <summary>The options of each viewer that follows its window, by connection.</summary>
+    private readonly Dictionary<int, SessionOptions> _following = [];
+
+    private long _sessionScreenSince;
+
+    /// <summary>Somebody at the computer turned the displays back on: no session screen again until nobody follows.</summary>
+    private bool _sessionScreenTakenBack;
+
     /// <summary>How long a display that was added (or removed) has to show up in (or leave) the list.</summary>
     private static readonly TimeSpan VirtualDisplaySettle = TimeSpan.FromSeconds(5);
+
+    /// <summary>How many of a viewer's other sizes an added display is asked for with: its screens, a few times over.</summary>
+    private const int MaxRequestedSizes = 32;
+
+    /// <summary>Codecs no encoder of this machine would start for (<see cref="NextCodec"/>), as <c>SupportedCodecs</c> bits.</summary>
+    private int _unstartable;
 
     /// <summary>One change of topology is followed at a time: the platform's own notice and a viewer's request can arrive together.</summary>
     private readonly SemaphoreSlim _topologyGate = new(1, 1);
@@ -205,6 +233,25 @@ public sealed class HostMediaModule : IAsyncDisposable
         runtime.OptionsUpdated = (id, options) =>
         {
             Qos.UpdateOptions(id, options);
+            bool remote;
+            lock (_lock)
+            {
+                if (options.FollowWindow == BoolOption.BoYes)
+                {
+                    _following[id] = options.Clone();
+                }
+                else
+                {
+                    _following.Remove(id);
+                }
+
+                remote = _remoteSessions.Contains(id);
+            }
+
+            if (remote)
+            {
+                ReconsiderSessionScreen();
+            }
 
             // A viewer that is not drawing the remote pointer has no use for its position; it still needs the
             // shape, because its own pointer wears it. BO_NOT_SET means a viewer that never said, so it gets both.
@@ -436,12 +483,18 @@ public sealed class HostMediaModule : IAsyncDisposable
         }
 
         Qos.AddUser(ctx.ConnectionId, ctx.Options);
+        bool follows;
         lock (_lock)
         {
             _remoteSessions.Add(ctx.ConnectionId);
+            follows = _following.ContainsKey(ctx.ConnectionId);
         }
 
         ctx.Permissions.Changed += (p, enabled) => OnPermissionChanged(ctx, p, enabled);
+        if (follows)
+        {
+            ReconsiderSessionScreen();
+        }
 
         if (_platform.DisplaySession is { IsOpen: false } shared && !StartOpening(shared) && _notice.Length > 0)
         {
@@ -456,7 +509,7 @@ public sealed class HostMediaModule : IAsyncDisposable
         {
             // A host with no screen at all: without one the session has nothing to show, so it gets one --
             // taken away again with everything else when the last viewer leaves.
-            (string? failure, _) = await PlugAsync(provider, null, ct).ConfigureAwait(false);
+            (string? failure, _) = await PlugAsync(provider, null, [], ct).ConfigureAwait(false);
             if (failure is null)
             {
                 await FollowDisplaysAsync(-1).ConfigureAwait(false);
@@ -488,6 +541,11 @@ public sealed class HostMediaModule : IAsyncDisposable
 
     private void OnPermissionChanged(HostSessionContext ctx, Permission permission, bool enabled)
     {
+        if (permission == Permission.PermKeyboard)
+        {
+            ReconsiderSessionScreen(); // only a viewer who may type turns the owner's screens off
+        }
+
         PublisherService? service = permission switch
         {
             Permission.PermAudio => _audio,
@@ -534,6 +592,7 @@ public sealed class HostMediaModule : IAsyncDisposable
         {
             watched = _subscriptions.Remove(id, out Subscription? sub) ? [.. sub.Displays] : [];
             _remoteSessions.Remove(id);
+            _following.Remove(id);
             last = _remoteSessions.Count == 0;
         }
 
@@ -542,6 +601,16 @@ public sealed class HostMediaModule : IAsyncDisposable
         {
             // A change already under way lands first; one landing after the restore would outlive every viewer.
             await _changes.QuiesceAsync().ConfigureAwait(false);
+            _sessionScreenTakenBack = false;
+            if (_platform.SessionScreen is { IsOpen: true })
+            {
+                // The owner's screens come back before anything else is put back: they are what the person there sees.
+                await CloseSessionScreenAsync(CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            ReconsiderSessionScreen();
         }
 
         if (last && _modes.HasChanges)
@@ -602,9 +671,11 @@ public sealed class HostMediaModule : IAsyncDisposable
             {
                 v = new VideoService(display, _platform.Capturers, _platform.Encoders, Qos, _time, _logs.CreateLogger<VideoService>())
                 {
-                    Codec = CodecNegotiation.Choose(_platform.Encoders.Probe(), [ViewerOf(joining)], Codec),
+                    Codec = CodecNegotiation.Choose(Encodable(), [ViewerOf(joining)], Codec),
                     RefreshDisplay = index => _platform.Displays.GetDisplays().FirstOrDefault(d => d.Index == index),
                 };
+                VideoService created = v;
+                v.CodecFailed = failed => NextCodec(created, failed);
                 _video[display.Index] = v;
             }
 
@@ -617,9 +688,36 @@ public sealed class HostMediaModule : IAsyncDisposable
 
     /// <summary>The codec every current subscriber of this stream can read, preferring what the host asked for.</summary>
     private Platform.Abstractions.Codec.VideoCodec Choose(VideoService video) => CodecNegotiation.Choose(
-        _platform.Encoders.Probe(),
+        Encodable(),
         [.. video.SubscriberCapabilities()],
         Codec);
+
+    /// <summary>What this machine's encoders say they can do, less the codecs none of them would start for.</summary>
+    private Platform.Abstractions.Codec.SupportedCodecs Encodable() =>
+        _platform.Encoders.Probe() & ~(Platform.Abstractions.Codec.SupportedCodecs)Volatile.Read(ref _unstartable);
+
+    /// <summary>
+    /// No encoder of <paramref name="failed"/> would start for <paramref name="video"/>, though this machine lists one:
+    /// the codec is struck off for as long as the host runs, and the stream goes on in the next codec its viewers all
+    /// read -- null when none is left, and the viewers are told.
+    /// </summary>
+    private Platform.Abstractions.Codec.VideoCodec? NextCodec(VideoService video, Platform.Abstractions.Codec.VideoCodec failed)
+    {
+        int struck = (int)Platform.Abstractions.Codec.SupportedCodecsExtensions.Pair(failed);
+        int before;
+        do
+        {
+            before = Volatile.Read(ref _unstartable);
+        }
+        while (Interlocked.CompareExchange(ref _unstartable, before | struck, before) != before);
+
+        List<CodecNegotiation.Viewer> viewers = [.. video.SubscriberCapabilities()];
+        Platform.Abstractions.Codec.VideoCodec next = CodecNegotiation.Choose(Encodable(), viewers, Codec);
+        bool usable = next != failed && Encodable().Supports(next) && viewers.All(v => v.CanDecode(next));
+        _logs.CreateLogger<HostMediaModule>().LogWarning(
+            "Display {Display}: no {Codec} encoder on this computer would start; {Next}", video.Display.Index, failed, usable ? $"going on in {next}" : "no other codec suits every viewer");
+        return usable ? next : null;
+    }
 
     /// <summary>
     /// A stream has one encoder and every subscriber reads it, so a viewer joining a running stream can
@@ -642,6 +740,115 @@ public sealed class HostMediaModule : IAsyncDisposable
         await video.RestartForCodecChangeAsync().ConfigureAwait(false);
     }
 
+    // ---- the private session screen ----
+
+    /// <summary>Opens or closes the session screen as the viewers now want it, in turn with every other change of displays.</summary>
+    private void ReconsiderSessionScreen()
+    {
+        if (_platform.SessionScreen is not { } screen)
+        {
+            return;
+        }
+
+        // Nothing to decide while nobody follows and it is shut: every change of options or permissions would otherwise
+        // put a step in the queue, and the pause after it holds up whatever comes next -- a viewer leaving, say.
+        bool anyone;
+        lock (_lock)
+        {
+            anyone = _following.Count > 0;
+        }
+
+        if (anyone || screen.IsOpen)
+        {
+            _changes.Enqueue(-1, SessionScreenKey, UpdateSessionScreenAsync);
+        }
+    }
+
+    private async Task UpdateSessionScreenAsync(CancellationToken ct)
+    {
+        if (_platform.SessionScreen is not { } screen)
+        {
+            return;
+        }
+
+        SessionOptions? asker = WhoWantsTheSessionScreen();
+        if (asker is null)
+        {
+            _sessionScreenTakenBack = false;
+            if (screen.IsOpen)
+            {
+                await CloseSessionScreenAsync(ct).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
+        if (screen.IsOpen || _sessionScreenTakenBack || !AllowSessionScreen)
+        {
+            return;
+        }
+
+        if (screen.UnavailableReason is { } why)
+        {
+            _log.LogInformation("No private session screen: {Why}", why);
+            return;
+        }
+
+        var size = new DisplayMode(asker.Viewport.Width, asker.Viewport.Height);
+        List<DisplayMode> sizes = [.. asker.Screens.Where(s => s is { Width: > 0, Height: > 0 }).Take(MaxRequestedSizes).Select(s => new DisplayMode(s.Width, s.Height))];
+        DisplayActionResult opened = await screen.OpenAsync(size, sizes, ct).ConfigureAwait(false);
+        if (!opened.Succeeded)
+        {
+            _log.LogWarning("No private session screen: {Why}", opened.Failure);
+            return;
+        }
+
+        Volatile.Write(ref _sessionScreenSince, _time.GetTimestamp());
+        int index = _platform.Displays.GetDisplays().ToList().FindIndex(screen.IsSessionScreen);
+        await FollowDisplaysAsync(index).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The options of a viewer the session screen is for: authorized, following its window, allowed to type -- only such a
+    /// viewer turns the owner's screens off -- and able to say how large its window is. Null when there is none.
+    /// </summary>
+    private SessionOptions? WhoWantsTheSessionScreen()
+    {
+        List<(int Id, SessionOptions Options)> following;
+        lock (_lock)
+        {
+            following = [.. _following.Where(f => _remoteSessions.Contains(f.Key)).Select(f => (f.Key, f.Value))];
+        }
+
+        foreach ((int id, SessionOptions options) in following)
+        {
+            if (options.Viewport is { Width: > 0, Height: > 0 }
+                && _runtime?.Sessions.FirstOrDefault(s => s.Context.ConnectionId == id)?.Context.Permissions.Has(Permission.PermKeyboard) == true)
+            {
+                return options;
+            }
+        }
+
+        return null;
+    }
+
+    private async Task CloseSessionScreenAsync(CancellationToken ct)
+    {
+        if (_platform.SessionScreen is not { IsOpen: true } screen)
+        {
+            return;
+        }
+
+        string? name = _platform.Displays.GetDisplays().FirstOrDefault(screen.IsSessionScreen).Name;
+        await screen.CloseAsync(ct).ConfigureAwait(false);
+        if (name is not null)
+        {
+            _modes.ForgetDisplay(name);
+        }
+
+        await FollowDisplaysAsync(-1).ConfigureAwait(false);
+    }
+
     private IEnumerable<DisplayInfo> DescribeDisplays() =>
         _platform.Displays.GetDisplays().Select(d =>
         {
@@ -656,6 +863,7 @@ public sealed class HostMediaModule : IAsyncDisposable
                 Primary = d.IsPrimary,
                 Scale = d.Scale,
                 VirtualDisplay = _platform.VirtualDisplays?.IsVirtual(d) == true,
+                SessionScreen = _platform.SessionScreen?.IsSessionScreen(d) == true,
             };
             info.Modes.AddRange(_modes.ModesFor(d).Select(m => new Resolution { Width = m.Width, Height = m.Height, Scale = m.Scale }));
             if (_modes.MadeUpSizesFor(d) is { } sizes)
@@ -803,6 +1011,14 @@ public sealed class HostMediaModule : IAsyncDisposable
         try
         {
             await FollowDisplaysAsync(-1).ConfigureAwait(false);
+            if (_platform.SessionScreen is { IsOpen: true } screen && _time.GetElapsedTime(Volatile.Read(ref _sessionScreenSince)) > SessionScreenSettle
+                && !screen.IsAlone())
+            {
+                // Somebody at the computer turned the other displays back on (Win+P): theirs to do, and the end of it.
+                _log.LogInformation("The displays were turned back on at the computer; closing the private session screen");
+                _sessionScreenTakenBack = true;
+                _changes.Enqueue(-1, SessionScreenKey, CloseSessionScreenAsync);
+            }
         }
         catch (Exception e)
         {
@@ -1003,7 +1219,7 @@ public sealed class HostMediaModule : IAsyncDisposable
 
         (string? failure, int changed) = removing is not null
             ? await UnplugAsync(context, removing, ct).ConfigureAwait(false)
-            : await AddForAsync(context, request.Resolution, ct).ConfigureAwait(false);
+            : await AddForAsync(context, request, ct).ConfigureAwait(false);
         if (failure is not null)
         {
             _log.LogInformation("Session {Id}: virtual display {Action} refused: {Why}", context.ConnectionId, request.Action, failure);
@@ -1042,7 +1258,7 @@ public sealed class HostMediaModule : IAsyncDisposable
         return context.Permissions.Has(Permission.PermKeyboard) ? null : "Adding or removing a display needs keyboard and mouse permission.";
     }
 
-    private async Task<(string? Failure, int Changed)> AddForAsync(HostSessionContext context, Resolution? size, CancellationToken ct)
+    private async Task<(string? Failure, int Changed)> AddForAsync(HostSessionContext context, VirtualDisplayRequest request, CancellationToken ct)
     {
         if (WhyNoVirtualDisplays(context) is { } why)
         {
@@ -1055,15 +1271,22 @@ public sealed class HostMediaModule : IAsyncDisposable
             return ($"This computer already has as many added displays as it will ({MaxVirtualDisplays}).", -1);
         }
 
-        DisplayMode? mode = size is { Width: > 0, Height: > 0 } r ? new DisplayMode(r.Width, r.Height, r.Scale) : null;
-        return await PlugAsync(provider, mode, ct).ConfigureAwait(false);
+        if (_platform.SessionScreen is { IsOpen: true })
+        {
+            // A display more is a set of displays Windows has no private arrangement for: it would light the owner's up.
+            return ("This computer is showing a private screen; turn Match window off to add a display.", -1);
+        }
+
+        DisplayMode? mode = request.Resolution is { Width: > 0, Height: > 0 } r ? new DisplayMode(r.Width, r.Height, r.Scale) : null;
+        List<DisplayMode> sizes = [.. request.Sizes.Where(s => s is { Width: > 0, Height: > 0 }).Take(MaxRequestedSizes).Select(s => new DisplayMode(s.Width, s.Height, s.Scale))];
+        return await PlugAsync(provider, mode, sizes, ct).ConfigureAwait(false);
     }
 
     /// <summary>Adds a display and waits for the list to show it: it is there when the enumerator says so, not when the driver said yes.</summary>
-    private async Task<(string? Failure, int Changed)> PlugAsync(IVirtualDisplayProvider provider, DisplayMode? mode, CancellationToken ct)
+    private async Task<(string? Failure, int Changed)> PlugAsync(IVirtualDisplayProvider provider, DisplayMode? mode, IReadOnlyList<DisplayMode> sizes, CancellationToken ct)
     {
         HashSet<string> before = [.. _platform.Displays.GetDisplays().Select(d => d.Name)];
-        DisplayActionResult added = await provider.AddAsync(mode, ct).ConfigureAwait(false);
+        DisplayActionResult added = await provider.AddAsync(mode, sizes, ct).ConfigureAwait(false);
         if (!added.Succeeded)
         {
             return (added.Failure ?? "The display could not be added.", -1);
@@ -1107,6 +1330,7 @@ public sealed class HostMediaModule : IAsyncDisposable
             return (removed.Failure ?? "The display could not be removed.", -1);
         }
 
+        _modes.ForgetDisplay(name);
         int gone = await WaitForDisplaysAsync(list => list.Exists(d => d.Name == name) ? -1 : 0, ct).ConfigureAwait(false);
         return gone == 0 ? (null, -1) : ("The display was removed but is still listed.", -1);
     }
@@ -1313,6 +1537,11 @@ public sealed class HostMediaModule : IAsyncDisposable
         }
 
         timer?.Dispose();
+
+        if (_platform.SessionScreen is { IsOpen: true } sessionScreen)
+        {
+            await sessionScreen.CloseAsync(CancellationToken.None).ConfigureAwait(false);
+        }
 
         if (_modes.HasChanges)
         {

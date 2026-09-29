@@ -115,6 +115,13 @@ public sealed record HostConfig
     public bool AllowVirtualDisplay { get; init; }
 
     /// <summary>
+    /// A viewer with keyboard permission who follows its window ("Match window") works on a private session screen of the
+    /// window's size, and this computer's own screens are off meanwhile. Off by default: the person at the computer sees
+    /// their screens go dark. Windows with the display driver and the service only.
+    /// </summary>
+    public bool PrivateSessionScreen { get; init; }
+
+    /// <summary>
     /// Absolute directories that file transfer is confined to. Empty (the default) means unrestricted: a peer
     /// with file permission may reach any path the host process can. When set, a peer may only list, read or
     /// write paths inside one of these roots and everything else is refused; traversal is resolved first, so

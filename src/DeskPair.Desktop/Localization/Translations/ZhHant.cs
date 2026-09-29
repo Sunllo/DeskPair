@@ -268,6 +268,8 @@ internal static class ZhHant
         ["settings.codec.auto"] = "自動",
         ["settings.allowVirtualDisplay"] = "允許連線者新增這台電腦沒有的顯示器",
         ["settings.allowVirtualDisplayHint"] = "給有鍵盤滑鼠控制權、想多一個螢幕的連線者使用。最後一位連線者離開時，新增的顯示器就會消失。",
+        ["settings.allowSessionScreen"] = "連線者開啟「符合視窗」時，使用私人螢幕",
+        ["settings.allowSessionScreenHint"] = "有鍵盤滑鼠控制權的連線者開啟「符合視窗」時，會在一個與其視窗同大的螢幕上操作，這台電腦自己的螢幕則關閉，就像 Windows 遠端桌面。對方關掉或離線時螢幕就回來；在這台電腦上按 Win+P 也能立刻讓螢幕回來。",
         ["settings.displayDriver.missing"] = "尚未安裝虛擬顯示器驅動程式。",
         ["settings.displayDriver.needsService"] = "已安裝虛擬顯示器驅動程式。在「設定 › {1}」開啟「{0}」後才能新增顯示器。",
         ["settings.displayDriver.ready"] = "已安裝虛擬顯示器驅動程式，連線者可以新增顯示器。",

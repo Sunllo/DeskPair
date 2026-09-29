@@ -4,27 +4,30 @@ using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
 using DeskPair.Platform.Windows.Native;
 
 namespace DeskPair.Platform.Windows.Capture;
 
 /// <summary>
-/// Putting <see cref="VirtualDisplayDriver"/> on this machine and taking it off again. Both need administrator
-/// rights; neither plugs in a display -- the engine does that when a viewer asks for one.
+/// Putting <see cref="DisplayDriver"/> on this machine, bringing it up to date and taking it off again. All of it needs
+/// administrator rights; none of it plugs in a display -- the engine does that when a viewer asks for one.
 ///
-/// Installing stages the package in the driver store, then makes the one root-enumerated device the driver
-/// runs on, the way devcon does, and leaves it disabled with the driver installed on it. The package is signed
-/// with an ordinary Authenticode certificate (SignPath Foundation's), not by Microsoft, and Windows stages such a
-/// package without asking only when its publisher is in the machine's Trusted Publishers -- otherwise it asks, and
-/// with nobody to answer (a service, a script) it fails. So the publisher is trusted while the package is staged
-/// and no longer: left there, it would make this machine accept any driver SignPath signs for anyone, silently.
-/// Installing it on the device afterwards, from the store, does not ask again (measured).
+/// Installing stages the package in the driver store and puts it on the one root-enumerated device it runs on, the way
+/// devcon does, made the first time and kept after. The device stays enabled: with no display plugged in, the adapter
+/// shows nothing, and the engine talks to it through its control interface. The package is signed with an ordinary
+/// Authenticode certificate, not by Microsoft, and Windows stages such a package without asking only when its publisher
+/// is in the machine's Trusted Publishers -- otherwise it asks, and with nobody to answer (a service, a script) it fails.
+/// So the publisher is trusted while the package is staged and no longer: left there, the certificate would make this
+/// machine accept anything else it signs, silently. Installing it on the device afterwards, from the store, does not
+/// ask again (measured).
+///
+/// An install also takes away the Virtual Display Driver an earlier DeskPair installed (<see cref="LegacyVirtualDisplayDriver"/>).
 /// </summary>
 [SupportedOSPlatform("windows")]
-public static class VirtualDisplayDriverInstaller
+public static class DisplayDriverInstaller
 {
     private const string DeviceDescription = "DeskPair virtual displays";
+    private static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(15);
 
     public static int Install(string dataDir, string packageDir, ILogger log)
     {
@@ -34,53 +37,57 @@ public static class VirtualDisplayDriverInstaller
             return 2;
         }
 
-        if (VirtualDisplayDriver.PackageFiles.FirstOrDefault(f => !File.Exists(Path.Combine(packageDir, f))) is { } missing)
+        if (DisplayDriver.PackageFiles.FirstOrDefault(f => !File.Exists(Path.Combine(packageDir, f))) is { } missing)
         {
             log.LogError("This copy of DeskPair carries no virtual display driver ({File} is not in {Dir}).", missing, packageDir);
             return 2;
         }
 
-        // Somebody's own install of the same driver reads its settings from wherever they pointed it. Taking the
-        // pointer over would give their displays DeskPair's settings, and take them away when DeskPair goes.
-        string config = VirtualDisplayDriver.ConfigDirectory(dataDir);
-        if (VirtualDisplayDriver.ConfiguredPath() is { } existing && !SamePath(existing, config))
-        {
-            log.LogError("The Virtual Display Driver is already set up on this computer by something else (its settings are in {Path}); DeskPair will not take it over.", existing);
-            return 2;
-        }
-
         try
         {
-            CreateConfigDirectory(config);
-            VirtualDisplayDriver.WriteSettings(dataDir, 1, null, []);
-            using (RegistryKey key = Registry.LocalMachine.CreateSubKey(VirtualDisplayDriver.RegistryKey))
+            if (LegacyVirtualDisplayDriver.IsInstalled(dataDir))
             {
-                key.SetValue(VirtualDisplayDriver.PathValue, config, RegistryValueKind.String);
+                log.LogInformation("Replacing the Virtual Display Driver an earlier DeskPair installed");
+                LegacyVirtualDisplayDriver.Uninstall(dataDir, log);
             }
 
-            using X509Certificate2 publisher = Publisher(Path.Combine(packageDir, "mttvdd.cat"));
-            bool added = Trust(publisher, log);
-            string published;
-            try
+            CreateRecordDirectory(DisplayDriver.RecordDirectory(dataDir));
+            DisplayDriver.Installation? before = DisplayDriver.Installed(dataDir);
+            string published = StageTrusted(Path.Combine(packageDir, DisplayDriver.PackageFiles[0]), Path.Combine(packageDir, DisplayDriver.PackageFiles[2]), log);
+
+            // A second install keeps the device the first one made rather than adding another beside it.
+            string device = before?.Device is { } kept && Locate(kept) is not null ? kept : CreateDevice(DisplayDriver.HardwareId);
+            InstallOn(device, DisplayDriver.HardwareId, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "INF", published), log);
+
+            // The package an earlier install staged is no longer on any device once this one is.
+            if (before is not null && !string.Equals(before.PublishedInf, published, StringComparison.OrdinalIgnoreCase))
             {
-                published = Stage(Path.Combine(packageDir, "MttVDD.inf"));
-            }
-            finally
-            {
-                if (added)
+                if (DeviceSetup.SetupUninstallOEMInf(before.PublishedInf, 0, 0))
                 {
-                    Distrust(publisher.Thumbprint, log);
+                    log.LogInformation("Removed the earlier package {Inf} from the driver store", before.PublishedInf);
+                }
+                else
+                {
+                    log.LogWarning("Could not remove the earlier package {Inf} from the driver store (error {Error})", before.PublishedInf, Marshal.GetLastPInvokeError());
                 }
             }
 
-            // A second install keeps the device the first one made rather than adding another beside it.
-            string device = VirtualDisplayDriver.Installed(dataDir)?.Device is { } kept && Locate(kept) is not null
-                ? kept
-                : CreateDevice();
-            InstallOn(device, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "INF", published), log);
+            Version? version = DisplayDriver.PackageVersion(packageDir);
+            DisplayDriver.RecordInstallation(dataDir, new DisplayDriver.Installation(published, device, version));
 
-            VirtualDisplayDriver.RecordInstallation(dataDir, new VirtualDisplayDriver.Installation(published, device));
-            log.LogInformation("The virtual display driver is installed as {Inf} on {Device}, switched off until a viewer asks for a display; its settings are in {Config}", published, device, config);
+            long start = Environment.TickCount64;
+            while (!DisplayDriver.IsRunning && Environment.TickCount64 - start < StartTimeout.TotalMilliseconds)
+            {
+                Thread.Sleep(200);
+            }
+
+            if (!DisplayDriver.IsRunning)
+            {
+                log.LogWarning("The virtual display driver {Version} is installed as {Inf} on {Device}, but its adapter has not started; restarting the computer may help", version, published, device);
+                return 1;
+            }
+
+            log.LogInformation("The virtual display driver {Version} is installed as {Inf} on {Device}; it shows nothing until a viewer asks for a display", version, published, device);
             return 0;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException or System.ComponentModel.Win32Exception)
@@ -91,8 +98,43 @@ public static class VirtualDisplayDriverInstaller
     }
 
     /// <summary>
-    /// Takes away the device, the driver package, the settings and the registry pointer. What is already gone is
-    /// skipped: the caller asked for it to be gone, and it is.
+    /// Run as the service's engine starts. When an earlier DeskPair installed the Virtual Display Driver, or this build
+    /// carries a newer package of this driver than the one installed, installs this build's: a viewer's display then
+    /// works the way this build expects. Nothing when neither driver is on the machine -- installing one is the owner's
+    /// choice, made in the settings.
+    /// </summary>
+    public static void Update(string dataDir, string packageDir, ILogger log)
+    {
+        bool legacy = LegacyVirtualDisplayDriver.IsInstalled(dataDir);
+        DisplayDriver.Installation? installed = DisplayDriver.Installed(dataDir);
+        if (!legacy && installed is null)
+        {
+            return;
+        }
+
+        Version? package = DisplayDriver.PackageVersion(packageDir);
+        if (package is null)
+        {
+            if (legacy)
+            {
+                log.LogWarning("This copy of DeskPair carries no virtual display driver to replace the Virtual Display Driver with");
+            }
+
+            return;
+        }
+
+        if (!legacy && installed?.DriverVersion is { } current && current >= package && DisplayDriver.IsRunning)
+        {
+            return;
+        }
+
+        log.LogInformation("Bringing the virtual display driver up to date: {From} -> {To}", legacy ? "Virtual Display Driver" : installed?.DriverVersion?.ToString() ?? "unknown", package);
+        Install(dataDir, packageDir, log);
+    }
+
+    /// <summary>
+    /// Takes away the device, the driver package and the install record -- and the Virtual Display Driver of an earlier
+    /// DeskPair, if it is still there. What is already gone is skipped: the caller asked for it to be gone, and it is.
     /// </summary>
     public static int Uninstall(string dataDir, ILogger log)
     {
@@ -102,10 +144,8 @@ public static class VirtualDisplayDriverInstaller
             return 2;
         }
 
-        string config = VirtualDisplayDriver.ConfigDirectory(dataDir);
-        VirtualDisplayDriver.Installation? installed = VirtualDisplayDriver.Installed(dataDir);
-        int code = 0;
-
+        int code = LegacyVirtualDisplayDriver.IsInstalled(dataDir) ? LegacyVirtualDisplayDriver.Uninstall(dataDir, log) : 0;
+        DisplayDriver.Installation? installed = DisplayDriver.Installed(dataDir);
         if (installed?.Device is { } device)
         {
             if (RemoveDevice(device))
@@ -127,35 +167,15 @@ public static class VirtualDisplayDriverInstaller
             }
             else
             {
-                int error = Marshal.GetLastPInvokeError();
-                log.LogError("Could not remove {Inf} from the driver store (error {Error})", installed.PublishedInf, error);
+                log.LogError("Could not remove {Inf} from the driver store (error {Error})", installed.PublishedInf, Marshal.GetLastPInvokeError());
                 code = 1;
             }
         }
 
-        if (VirtualDisplayDriver.ConfiguredPath() is { } path && SamePath(path, config))
+        string record = DisplayDriver.RecordDirectory(dataDir);
+        if (Directory.Exists(record))
         {
-            using RegistryKey? key = Registry.LocalMachine.OpenSubKey(VirtualDisplayDriver.RegistryKey, writable: true);
-            key?.DeleteValue(VirtualDisplayDriver.PathValue, throwOnMissingValue: false);
-            if (key is { ValueCount: 0, SubKeyCount: 0 })
-            {
-                key.Dispose();
-                Registry.LocalMachine.DeleteSubKey(VirtualDisplayDriver.RegistryKey, throwOnMissingSubKey: false);
-
-                // The vendor key above it came with the same install; left empty it would be the one thing that stayed.
-                string vendor = VirtualDisplayDriver.RegistryKey[..VirtualDisplayDriver.RegistryKey.LastIndexOf('\\')];
-                using RegistryKey? parent = Registry.LocalMachine.OpenSubKey(vendor);
-                if (parent is { ValueCount: 0, SubKeyCount: 0 })
-                {
-                    parent.Dispose();
-                    Registry.LocalMachine.DeleteSubKey(vendor, throwOnMissingSubKey: false);
-                }
-            }
-        }
-
-        if (Directory.Exists(config))
-        {
-            Directory.Delete(config, recursive: true);
+            Directory.Delete(record, recursive: true);
         }
 
         if (code == 0)
@@ -166,12 +186,28 @@ public static class VirtualDisplayDriverInstaller
         return code;
     }
 
+    /// <summary>Stages a package in the driver store, its publisher trusted meanwhile; returns the <c>oemNN.inf</c> it became.</summary>
+    internal static string StageTrusted(string inf, string catalog, ILogger log)
+    {
+        using X509Certificate2 publisher = Publisher(catalog);
+        bool added = Trust(publisher, log);
+        try
+        {
+            return Stage(inf);
+        }
+        finally
+        {
+            if (added)
+            {
+                Distrust(publisher.Thumbprint, log);
+            }
+        }
+    }
+
     /// <summary>
-    /// The root-enumerated device the driver runs on. Returns its instance id. It cannot be made disabled: installing
-    /// the driver starts it whatever flag it was registered with (measured), so one monitor shows for a moment
-    /// before <see cref="InstallOn"/> switches it off.
+    /// The root-enumerated device a driver runs on, answering to <paramref name="hardwareId"/>. Returns its instance id.
     /// </summary>
-    private static unsafe string CreateDevice()
+    internal static unsafe string CreateDevice(string hardwareId)
     {
         nint set = DeviceSetup.SetupDiCreateDeviceInfoList(DeviceSetup.DisplayClass, 0);
         if (set == DeviceSetup.InvalidHandle)
@@ -187,7 +223,7 @@ public static class VirtualDisplayDriverInstaller
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError(), "The device could not be described");
             }
 
-            string ids = VirtualDisplayDriver.HardwareId + "\0\0";
+            string ids = hardwareId + "\0\0";
             fixed (char* idChars = ids)
             {
                 if (!DeviceSetup.SetupDiSetDeviceRegistryProperty(set, ref data, DeviceSetup.SPDRP_HARDWAREID, (byte*)idChars, (uint)(ids.Length * sizeof(char)))
@@ -209,13 +245,10 @@ public static class VirtualDisplayDriverInstaller
         }
     }
 
-    /// <summary>
-    /// Installs the staged package on the device, and makes sure it stays off: across restarts as well, so a
-    /// machine does not boot with a display nobody asked for.
-    /// </summary>
-    private static void InstallOn(string device, string publishedInf, ILogger log)
+    /// <summary>Installs the staged package on the device, and makes sure the device is on.</summary>
+    private static void InstallOn(string device, string hardwareId, string publishedInf, ILogger log)
     {
-        if (!DeviceSetup.UpdateDriverForPlugAndPlayDevices(0, VirtualDisplayDriver.HardwareId, publishedInf, DeviceSetup.INSTALLFLAG_FORCE | DeviceSetup.INSTALLFLAG_NONINTERACTIVE, out bool reboot))
+        if (!DeviceSetup.UpdateDriverForPlugAndPlayDevices(0, hardwareId, publishedInf, DeviceSetup.INSTALLFLAG_FORCE | DeviceSetup.INSTALLFLAG_NONINTERACTIVE, out bool reboot))
         {
             throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError(), $"The driver could not be installed on {device}");
         }
@@ -225,21 +258,22 @@ public static class VirtualDisplayDriverInstaller
             log.LogWarning("Windows says the driver needs a restart to take effect");
         }
 
-        if (Locate(device) is { } node)
+        if (Locate(device) is { } node
+            && !(DeviceSetup.CM_Get_DevNode_Status(out uint status, out _, node, 0) == DeviceSetup.CR_SUCCESS && (status & DeviceSetup.DN_STARTED) != 0))
         {
-            int cr = DeviceSetup.CM_Disable_DevNode(node, DeviceSetup.CM_DISABLE_UI_NOT_OK | DeviceSetup.CM_DISABLE_PERSIST);
-            if (cr != DeviceSetup.CR_SUCCESS && DeviceSetup.CM_Get_DevNode_Status(out uint status, out _, node, 0) == DeviceSetup.CR_SUCCESS && (status & DeviceSetup.DN_STARTED) != 0)
+            int cr = DeviceSetup.CM_Enable_DevNode(node, 0);
+            if (cr != DeviceSetup.CR_SUCCESS)
             {
-                log.LogWarning("The device {Device} is running and could not be switched off (CONFIGRET {Code}); the engine switches it off when it starts", device, cr);
+                log.LogWarning("The device {Device} is not running and could not be switched on (CONFIGRET {Code})", device, cr);
             }
         }
     }
 
-    private static uint? Locate(string device) =>
+    internal static uint? Locate(string device) =>
         DeviceSetup.CM_Locate_DevNode(out uint node, device, DeviceSetup.CM_LOCATE_DEVNODE_NORMAL) == DeviceSetup.CR_SUCCESS ? node : null;
 
     /// <summary>Removes the device node entirely: no disabled entry, no ghost left in Device Manager.</summary>
-    private static unsafe bool RemoveDevice(string device)
+    internal static unsafe bool RemoveDevice(string device)
     {
         nint set = DeviceSetup.SetupDiCreateDeviceInfoList(DeviceSetup.DisplayClass, 0);
         if (set == DeviceSetup.InvalidHandle)
@@ -260,18 +294,16 @@ public static class VirtualDisplayDriverInstaller
     }
 
     /// <summary>
-    /// SYSTEM and administrators may change it; the driver (LocalService) and everybody else may read it -- the
-    /// settings page reads the install record from here. Anybody able to write it could decide what this
-    /// machine's added displays are.
+    /// SYSTEM and administrators may change it; everybody else may read it -- the settings page reads the install record
+    /// from here. Anybody able to write it could make the uninstall take away a driver of somebody else's.
     /// </summary>
-    private static void CreateConfigDirectory(string path)
+    private static void CreateRecordDirectory(string path)
     {
         var security = new DirectorySecurity();
         security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
         const InheritanceFlags both = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
         security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), FileSystemRights.FullControl, both, PropagationFlags.None, AccessControlType.Allow));
         security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null), FileSystemRights.FullControl, both, PropagationFlags.None, AccessControlType.Allow));
-        security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalServiceSid, null), FileSystemRights.ReadAndExecute, both, PropagationFlags.None, AccessControlType.Allow));
         security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null), FileSystemRights.ReadAndExecute, both, PropagationFlags.None, AccessControlType.Allow));
         DirectoryInfo directory = Directory.CreateDirectory(path);
         directory.SetAccessControl(security);
@@ -335,7 +367,4 @@ public static class VirtualDisplayDriverInstaller
 
         return Path.GetFileName(new string(name));
     }
-
-    private static bool SamePath(string a, string b) =>
-        string.Equals(Path.GetFullPath(a).TrimEnd('\\'), Path.GetFullPath(b).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
 }

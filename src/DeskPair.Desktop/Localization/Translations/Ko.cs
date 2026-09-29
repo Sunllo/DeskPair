@@ -268,6 +268,8 @@ internal static class Ko
         ["settings.codec.auto"] = "자동",
         ["settings.allowVirtualDisplay"] = "접속한 사람이 이 컴퓨터에 없는 디스플레이를 추가할 수 있게 허용",
         ["settings.allowVirtualDisplayHint"] = "키보드와 마우스 제어 권한이 있고 화면이 하나 더 필요한 사람을 위한 기능입니다. 추가한 디스플레이는 마지막으로 접속한 사람이 연결을 끊으면 사라집니다.",
+        ["settings.allowSessionScreen"] = "“창 크기로”를 켠 사람에게 전용 화면 사용",
+        ["settings.allowSessionScreenHint"] = "키보드와 마우스 제어 권한이 있는 사람이 “창 크기로”를 켜면 창과 같은 크기의 화면에서 작업하고, 이 컴퓨터 자체의 화면은 Windows 원격 데스크톱처럼 꺼집니다. 그 사람이 끄거나 연결을 끊으면 화면이 돌아오며, 이 컴퓨터에서 Win+P를 눌러도 바로 돌아옵니다.",
         ["settings.displayDriver.missing"] = "가상 디스플레이 드라이버가 설치되어 있지 않습니다.",
         ["settings.displayDriver.needsService"] = "가상 디스플레이 드라이버가 설치되어 있습니다. “설정 › {1}”에서 “{0}”을(를) 켜면 디스플레이를 추가할 수 있습니다.",
         ["settings.displayDriver.ready"] = "가상 디스플레이 드라이버가 설치되어 있습니다. 접속한 사람이 디스플레이를 추가할 수 있습니다.",

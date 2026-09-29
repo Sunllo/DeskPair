@@ -268,6 +268,8 @@ internal static class Es
         ["settings.codec.auto"] = "Automático",
         ["settings.allowVirtualDisplay"] = "Permitir que quien se conecte agregue pantallas que este equipo no tiene",
         ["settings.allowVirtualDisplayHint"] = "Para quien se conecta con control de teclado y ratón y quiere una segunda pantalla. Las pantallas agregadas desaparecen cuando se desconecta la última persona.",
+        ["settings.allowSessionScreen"] = "Pantalla privada para quien use “Tamaño de la ventana”",
+        ["settings.allowSessionScreenHint"] = "Cuando alguien con control de teclado y ratón activa “Tamaño de la ventana”, trabaja en una pantalla del tamaño de su ventana y las pantallas de este equipo se apagan, como en una sesión de Escritorio remoto de Windows. Vuelven cuando lo desactiva o se desconecta; Win+P en este equipo las enciende de inmediato.",
         ["settings.displayDriver.missing"] = "El controlador de pantalla virtual no está instalado.",
         ["settings.displayDriver.needsService"] = "El controlador de pantalla virtual está instalado. Se pueden agregar pantallas cuando “{0}” esté activado en Configuración › {1}.",
         ["settings.displayDriver.ready"] = "El controlador de pantalla virtual está instalado; quien se conecte puede agregar pantallas.",

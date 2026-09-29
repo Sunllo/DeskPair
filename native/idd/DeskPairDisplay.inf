@@ -1,0 +1,74 @@
+;
+; DeskPairDisplay.inf -- DeskPair's virtual displays: an indirect display (IddCx) adapter on which DeskPair's engine
+; plugs in the displays viewers ask for. See native/idd/README.md. $ARCH$ and $DRIVERVER$ are filled in by
+; tools/build-idd.ps1.
+;
+
+[Version]
+PnpLockDown=1
+Signature="$Windows NT$"
+ClassGUID={4D36E968-E325-11CE-BFC1-08002BE10318}
+Class=Display
+ClassVer=2.0
+Provider=%Provider%
+CatalogFile=deskpairdisplay.cat
+DriverVer=$DRIVERVER$
+
+[Manufacturer]
+%Provider%=DeskPair,NT$ARCH$.10.0...17763
+
+[DeskPair.NT$ARCH$.10.0...17763]
+%DeviceName%=DeskPairDisplay_Install, Root\DeskPairDisplay
+
+[SourceDisksFiles]
+DeskPairDisplay.dll=1
+
+[SourceDisksNames]
+1=%DiskName%
+
+[DestinationDirs]
+DeskPairDisplay_Files=12,UMDF
+
+[DeskPairDisplay_Files]
+DeskPairDisplay.dll
+
+[DeskPairDisplay_Install.NT]
+CopyFiles=DeskPairDisplay_Files
+
+[DeskPairDisplay_Install.NT.hw]
+AddReg=DeskPairDisplay_HardwareSettings
+
+[DeskPairDisplay_HardwareSettings]
+HKR,,"UpperFilters",0x00010000,"IndirectKmd"
+HKR,"WUDF","DeviceGroupId",0x00000000,"DeskPairDisplay"
+; Only SYSTEM and administrators may open the device, and so its control interface; opens of names beneath it are
+; checked the same way (FILE_DEVICE_SECURE_OPEN).
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)"
+HKR,,DeviceCharacteristics,0x10001,0x100
+
+; Windows 10 does not always carry wudfrd.inf to include, so the reflector service is added here, as it describes it.
+[DeskPairDisplay_Install.NT.Services]
+AddService=WUDFRd,0x000001fa,WUDFRd_ServiceInstall
+
+[WUDFRd_ServiceInstall]
+DisplayName=%WudfRdDisplayName%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\WUDFRd.sys
+
+[DeskPairDisplay_Install.NT.Wdf]
+UmdfService=DeskPairDisplay,DeskPairDisplay_Umdf
+UmdfServiceOrder=DeskPairDisplay
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+
+[DeskPairDisplay_Umdf]
+UmdfLibraryVersion=2.25.0
+ServiceBinary=%12%\UMDF\DeskPairDisplay.dll
+UmdfExtensions=IddCx0102
+
+[Strings]
+Provider="Sunllo"
+DiskName="DeskPair virtual display driver"
+DeviceName="DeskPair virtual displays"
+WudfRdDisplayName="Windows Driver Foundation - User-mode Driver Framework Reflector"

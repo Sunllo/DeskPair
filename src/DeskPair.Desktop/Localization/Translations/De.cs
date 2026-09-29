@@ -268,6 +268,8 @@ internal static class De
         ["settings.codec.auto"] = "Automatisch",
         ["settings.allowVirtualDisplay"] = "Betrachtern erlauben, Bildschirme hinzuzufügen, die dieser Computer nicht hat",
         ["settings.allowVirtualDisplayHint"] = "Für Betrachter mit Tastatur- und Maussteuerung, die einen zweiten Bildschirm möchten. Hinzugefügte Bildschirme verschwinden, wenn der letzte Betrachter die Verbindung trennt.",
+        ["settings.allowSessionScreen"] = "Privaten Bildschirm für Betrachter mit „Fenstergröße“",
+        ["settings.allowSessionScreenHint"] = "Schaltet ein Betrachter mit Tastatur- und Maussteuerung „Fenstergröße“ ein, wird auf einem Bildschirm in der Größe seines Fensters gearbeitet, und die eigenen Bildschirme dieses Computers werden ausgeschaltet – wie bei einer Windows-Remotedesktopsitzung. Sie kommen zurück, sobald das ausgeschaltet oder die Verbindung getrennt wird; Win+P an diesem Computer holt sie sofort zurück.",
         ["settings.displayDriver.missing"] = "Der Treiber für virtuelle Bildschirme ist nicht installiert.",
         ["settings.displayDriver.needsService"] = "Der Treiber für virtuelle Bildschirme ist installiert. Bildschirme lassen sich hinzufügen, sobald „{0}“ unter Einstellungen › {1} eingeschaltet ist.",
         ["settings.displayDriver.ready"] = "Der Treiber für virtuelle Bildschirme ist installiert; Betrachter können Bildschirme hinzufügen.",

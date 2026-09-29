@@ -10,14 +10,22 @@ namespace DeskPair.Platform.Windows.Capture;
 /// chose, so a host that dies mid-session comes back to it at the next sign-in, and nothing this program
 /// did outlives the session it did it for. A remote desktop session has no modes to offer -- the display
 /// there is the client's window -- and says so with an empty list.
+///
+/// A display DeskPair plugged in itself is the exception: Windows enumerates only the size it is at, and it
+/// switches through its driver (<see cref="WindowsVirtualDisplays"/>), which knows every size it was given.
 /// </summary>
-public sealed class WindowsDisplayModes : IDisplayModeSwitcher
+public sealed class WindowsDisplayModes(WindowsVirtualDisplays? virtualDisplays = null) : IDisplayModeSwitcher
 {
     public IReadOnlyList<DisplayMode> GetModes(DisplayDescriptor display)
     {
         if (User32.GetSystemMetrics(User32.SM_REMOTESESSION) != 0)
         {
             return [];
+        }
+
+        if (virtualDisplays?.ModesOf(display.Name) is { } added)
+        {
+            return added;
         }
 
         User32.DEVMODEW current = User32.DEVMODEW.Create();
@@ -48,6 +56,11 @@ public sealed class WindowsDisplayModes : IDisplayModeSwitcher
 
     public bool TrySetMode(DisplayDescriptor display, DisplayMode wanted, out string? failure)
     {
+        if (virtualDisplays is not null && virtualDisplays.TrySelect(display.Name, wanted, out failure) is { } switched)
+        {
+            return switched;
+        }
+
         User32.DEVMODEW current = User32.DEVMODEW.Create();
         if (User32.EnumDisplaySettingsEx(display.Name, User32.ENUM_CURRENT_SETTINGS, ref current, 0) == 0)
         {

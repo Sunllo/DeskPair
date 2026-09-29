@@ -70,8 +70,12 @@ public class MultiDisplayTests
         await Testbed.WaitUntilAsync(() => cb.DisplaySwitches.Contains(1), "the focus confirmed as a switch", 15_000);
         int zero = Frames(cb, 0), one = Frames(cb, 1);
         long udp = session.VideoFramesReceivedUdp;
-        await Testbed.WaitUntilAsync(() => Frames(cb, 0) >= zero + 30 && Frames(cb, 1) >= one + 30, "both displays keep coming", 15_000);
-        (session.VideoFramesReceivedUdp - udp).ShouldBeGreaterThanOrEqualTo(60, "over UDP, not a TCP fallback");
+        // The UDP count is waited for with the frames rather than read once after them: the frame a callback has just
+        // counted may not be in the transport's count yet, and one look found 59 of 60.
+        await Testbed.WaitUntilAsync(
+            () => Frames(cb, 0) >= zero + 30 && Frames(cb, 1) >= one + 30 && session.VideoFramesReceivedUdp - udp >= 60,
+            "both displays keep coming, over UDP rather than a TCP fallback",
+            15_000);
 
         // Waited for rather than looked at once: a report held up for a moment -- a pause on a busy machine -- leaves a
         // few more frames unacknowledged than the limit, and one look found that in a Linux container. A display that is

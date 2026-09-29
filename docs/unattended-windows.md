@@ -307,26 +307,35 @@ case 檢查完整性。身分不看 hello 裡的角色、也不看權杖檔，�
   3. 登出所有人後改開登入使用者：被拒絕，訊息是「Nobody is signed in…」，而不是得到 SYSTEM。
   4. 在 SYSTEM shell 裡 `Start-Process ping -ArgumentList '-t','127.0.0.1'`，關閉視窗後 `Get-Process ping` 為空。
 
-## H 虛擬顯示器（2026-09-25）
+## H 虛擬顯示器（2026-09-25；自己的驅動 2026-09-29）
 
-驅動是什麼、為什麼這樣用，見 [native/vdd/README.md](../native/vdd/README.md)；實作見 [architecture.md §6.4c](architecture.md)。這裡只記服務特有的部分。
+驅動是什麼、Windows 對它的規矩，見 [native/idd/README.md](../native/idd/README.md)；實作見 [architecture.md §6.4c](architecture.md)。這裡只記服務特有的部分。
 
-- **只有服務的引擎能新增螢幕。** 啟用／停用裝置需要系統管理員權限。App 模式的引擎是使用者身分，
+- **只有服務的引擎能新增螢幕。** 驅動的控制介面只有 SYSTEM 與 Administrators 打得開。App 模式的引擎是使用者身分，
   會回報「This computer can add a display only while DeskPair runs as its service」，控制端看到的就是這句。
 - **驅動要另外裝**：`DeskPair --install-virtual-display`（提權），移除用 `--remove-virtual-display`。與服務互相獨立：
-  移除服務不會移除驅動，反之亦然。記錄寫在服務的 `service.log`。
+  移除服務不會移除驅動，反之亦然；MSI 移除 DeskPair 時兩個都拿掉（`--remove-system-changes`）。記錄寫在服務的 `service.log`，
+  服務啟動時自己做的更新寫在 `server.log`（`vdd:` 開頭）。
+- **從 VDD 換過來**：到 0.4.8 為止裝的是 VDD（Virtual Display Driver）。服務的引擎啟動時看到它的安裝紀錄（`%ProgramData%\Sunllo\DeskPair\vdd\installed`），
+  就拿掉 VDD（裝置、driver store 裡的套件、`vdd` 資料夾、`HKLM\SOFTWARE\MikeTheTech` 裡指向那個資料夾的 `VDDPATH`）並裝上這支；
+  之後發佈目錄裡的驅動比裝著的新，也同樣在啟動時更新。沒裝過任何一支的電腦不會被裝。
 - **擁有者要允許**：「設定 › 顯示」的「允許連線者新增這台電腦沒有的顯示器」（`HostConfig.AllowVirtualDisplay`，預設關）。另外請求者要有鍵盤滑鼠權限。
   同一區塊顯示驅動是否已安裝、是否還缺服務，並提供安裝／移除按鈕（按下後跳 UAC，執行上面兩個角色）。
-- **控制端**：主機是 Windows 且能同時串流多個螢幕時，工具列有「＋」：以控制端自己螢幕的尺寸要求一台，成功後直接在獨立視窗打開。
+- **控制端**：主機是 Windows 且能同時串流多個螢幕時，工具列有「＋」：以控制端自己螢幕的尺寸要求一台，並附上它每個螢幕與工作區的尺寸，
+  成功後直接在獨立視窗打開。這台螢幕接上時就帶著為這位觀看者選的最多 199 個尺寸，之後改解析度或「符合視窗」都在這份清單裡即時切換（幾十毫秒、不動視窗）。
   顯示器清單會在新增的螢幕後面標「新增的」；分頁正在看新增的螢幕時，有「移除這個顯示器」。
-- **引擎結束，虛擬螢幕就收回**：正常結束時停用裝置；當掉的話裝置維持啟用，下一個引擎（服務會自動重啟它）啟動時先停用。
-  停用帶 `CM_DISABLE_PERSIST`，所以重開機也不會冒出沒人要的螢幕。
+- **引擎不在，虛擬螢幕就收回**：正常結束時全部拔掉；被結束或當掉的話，驅動的看門狗在 5 秒內自己拔掉（引擎每秒餵一次），
+  下一個引擎（服務會自動重啟它）啟動時也先拔掉殘留的。驅動的裝置一直啟用著，沒有螢幕接著時什麼都不顯示，重開機後也不會冒出螢幕。
 - **不用 `SwDeviceCreate`**：它對 LocalSystem 一律回 `0x8007007E`，工作階段 0 或 1 都一樣（2026-09-25 以本節的終端機實測）。
-- **尚未在真機實測。** 要在 Windows 11 測試機上驗的是：
-  1. `--install-virtual-display` 成功，`pnputil /enum-drivers` 看得到 `MttVDD`，裝置管理員的「顯示卡」有停用的「Virtual Display Driver」，
-     `certlm.msc` 的「受信任的發行者」裡**沒有**留下 SignPath。
-  2. PeerCli `:vdisplay add 1920x1080`：出現第三個螢幕，尺寸正確，`:subscribe 0,2` 收得到它的畫面。
-  3. `:vdisplay remove 2`：螢幕消失；再斷線：沒有任何虛擬螢幕留著。
-  4. 在工作階段中讓引擎當掉（工作管理員結束），虛擬螢幕跟著消失。
-  5. `--remove-virtual-display` 之後：`pnputil /enum-drivers` 沒有 `MttVDD`，裝置管理員（含隱藏裝置）沒有「Virtual Display Driver」，
-     `HKLM\SOFTWARE\MikeTheTech` 與 `%ProgramData%\Sunllo\DeskPair\vdd` 都不見了。
+- **2026-09-29 在 Windows 10 22H2 VM（Secure Boot 開、未開測試簽章、沒有 GPU）以服務實測**，驅動以該 VM 的測試憑證簽：
+  1. 從 VDD 換過來：服務啟動後約 1 秒完成，VDD 的裝置與套件、`vdd` 資料夾、`HKLM\SOFTWARE\MikeTheTech` 都不見了，新裝置「DeskPair virtual displays」正常執行。
+  2. PeerCli `:vdisplay add 1600x900 1920x1080 1920x1040`：出現 1600×900 的第二個螢幕，199 個尺寸；`:res` 換成 1920×1040、1584×884、1280×720、原始都精準；
+     `:follow` 1700×950 → 1680×932、1920×1000 → 1904×992（之後改了選法，現在會是 1920×992）；`:vdisplay remove 1` 後螢幕消失。
+  3. 有螢幕接著時結束引擎：4.4 秒後驅動自己拔掉，服務重啟的引擎把看門狗關掉。
+- **私人工作階段螢幕**（2026-09-29）：「設定 › 顯示」的「連線者開啟「符合視窗」時，使用私人螢幕」（`HostConfig.PrivateSessionScreen`，預設關，只對 Windows 的服務有效，需要驅動）。
+  有鍵盤滑鼠權限的觀看者開啟「符合視窗」時，主機接上一台與其視窗同大的螢幕（驅動的第 4 槽），並關掉這台電腦自己的螢幕；觀看者關掉開關或最後一人離開時，實體螢幕回到原樣。
+  那台電腦前的人按 Win+P（例如「延伸」）就立刻拿回螢幕，這次連線的觀看者持續跟隨期間不會再關掉它。引擎當掉時，驅動的看門狗 5 秒內拔掉私人螢幕，實體螢幕自己回來。
+  VM 實測：開啟、清單內換尺寸、關閉、Win+P、結束引擎都如上（architecture.md §6.4d）。
+- **還要實機驗的**：`--remove-virtual-display` 與 MSI 移除後，`pnputil /enum-drivers` 沒有 `deskpairdisplay.inf`、裝置管理員（含隱藏裝置）沒有「DeskPair virtual displays」、
+  `%ProgramData%\Sunllo\DeskPair\idd` 不見了；以 Artifact Signing 簽的正式版在乾淨的 Windows 11 上安裝不跳框、「受信任的發行者」裡沒有留下我們的憑證；ARM64；
+  私人螢幕在真的實體螢幕（會休眠、會重新同步的那種）與多螢幕的電腦上：關閉時每台都回到原本的位置與解析度。

@@ -510,6 +510,37 @@ public sealed class RemoteDisplayView : Control
     /// <summary>Raised when <see cref="FillingSize"/> may have changed: the control was resized, or moved to another scaling.</summary>
     public event Action? FillingSizeChanged;
 
+    /// <summary>
+    /// The sizes a window of this app could give a remote display at 1:1 on each of this computer's screens, whole and
+    /// without its taskbar, in the remote display's pixels -- half the screen's own on one scaled to 200 %, where each
+    /// remote pixel takes two (<see cref="PictureLayout.NaturalFactor"/>). The screen <paramref name="visual"/> is on
+    /// comes first. What a host that fixes a display's sizes when it plugs it in is told to include.
+    /// </summary>
+    public static List<(int Width, int Height)> ScreenSizes(Visual visual)
+    {
+        var sizes = new List<(int Width, int Height)>();
+        if (TopLevel.GetTopLevel(visual)?.Screens is not { } screens)
+        {
+            return sizes;
+        }
+
+        Screen? here = screens.ScreenFromVisual(visual);
+        foreach (Screen screen in here is null ? screens.All : [here, .. screens.All.Where(s => !ReferenceEquals(s, here))])
+        {
+            int factor = PictureLayout.NaturalFactor(screen.Scaling);
+            foreach (PixelSize size in new[] { screen.Bounds.Size, screen.WorkingArea.Size })
+            {
+                (int, int) remote = (size.Width / factor, size.Height / factor);
+                if (remote.Item1 > 0 && remote.Item2 > 0 && !sizes.Contains(remote))
+                {
+                    sizes.Add(remote);
+                }
+            }
+        }
+
+        return sizes;
+    }
+
     // ---- input ----
 
     private bool TryToRemote(Point local, out int x, out int y)

@@ -48,10 +48,13 @@ $work = Join-Path $root 'artifacts\vpx'
 $shim = Join-Path $work $Rid
 
 # vcpkg's triplet, the developer prompt that targets the same machine from an x64 host, and link's name for it.
+# The -static triplets compile against the static C runtime (/MT), so the DLL carries it: with the dynamic one it
+# needed VCRUNTIME140.dll, which a Windows without Visual C++'s redistributable does not have -- a fresh install
+# could not load it, and had no VP9.
 $target = @{
-    'win-x64'   = @{ Triplet = 'x64-windows';   Vcvars = 'vcvars64.bat';          Machine = 'X64' }
-    'win-x86'   = @{ Triplet = 'x86-windows';   Vcvars = 'vcvarsamd64_x86.bat';   Machine = 'X86' }
-    'win-arm64' = @{ Triplet = 'arm64-windows'; Vcvars = 'vcvarsamd64_arm64.bat'; Machine = 'ARM64' }
+    'win-x64'   = @{ Triplet = 'x64-windows-static';   Vcvars = 'vcvars64.bat';          Machine = 'X64' }
+    'win-x86'   = @{ Triplet = 'x86-windows-static';   Vcvars = 'vcvarsamd64_x86.bat';   Machine = 'X86' }
+    'win-arm64' = @{ Triplet = 'arm64-windows-static'; Vcvars = 'vcvarsamd64_arm64.bat'; Machine = 'ARM64' }
 }[$Rid]
 
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -114,6 +117,11 @@ try {
 }
 
 $dll = Join-Path $shim 'vpx.dll'
+# Nothing but Windows itself: a DLL that needs a runtime a clean machine lacks loads nowhere that matters.
+$dumpbin = Get-ChildItem (Join-Path $vs 'VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe') | Select-Object -First 1 -ExpandProperty FullName
+$needs = @(& $dumpbin /dependents $dll | Where-Object { $_ -match '^\s+(\S+\.dll)$' } | ForEach-Object { $Matches[1] })
+$foreign = @($needs | Where-Object { $_ -notmatch '^(KERNEL32|USER32|ADVAPI32|api-ms-win-.*)\.dll$' })
+if ($foreign) { throw "vpx.dll needs $($foreign -join ', '), which a clean Windows does not have." }
 $size = [math]::Round((Get-Item $dll).Length / 1MB, 1)
 Write-Host "$dll ($size MB, $($lines.Count) exports)"
 Write-Host 'set SUNLLO_LIBVPX_PATH to it, or let tools/publish.ps1 copy it beside the executables.'

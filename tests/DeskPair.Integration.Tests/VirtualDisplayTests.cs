@@ -1,3 +1,4 @@
+using DeskPair.Platform.Abstractions.Capture;
 using DeskPair.Core.Session.Controller;
 using DeskPair.Core.Session.Host;
 using DeskPair.Core.Transport;
@@ -27,9 +28,10 @@ public class VirtualDisplayTests
         (ControllerSession a, TestCallbacks ca) = await ConnectAsync(bed, host, passwords.TemporaryPassword);
         (ControllerSession b, TestCallbacks cb) = await ConnectAsync(bed, host, passwords.TemporaryPassword);
 
-        await a.AddVirtualDisplayAsync(new Resolution { Width = 1280, Height = 720 });
+        await a.AddVirtualDisplayAsync(new Resolution { Width = 1280, Height = 720 }, [new Resolution { Width = 2560, Height = 1440 }, new Resolution { Width = 2560, Height = 1392 }]);
 
         await Testbed.WaitUntilAsync(() => ca.DisplaysChanges.Count >= 1 && cb.DisplaysChanges.Count >= 1, "both viewers told", 15_000);
+        bed.VirtualDisplays!.LastSizes.ShouldBe([new DisplayMode(2560, 1440), new DisplayMode(2560, 1392)], "the other sizes the viewer named reach the platform");
         DisplaysChanged told = cb.DisplaysChanges[^1];
         told.Failure.ShouldBeEmpty();
         told.Changed.ShouldBe(1, "the display that was added");

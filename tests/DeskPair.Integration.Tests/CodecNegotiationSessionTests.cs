@@ -29,6 +29,44 @@ public class CodecNegotiationSessionTests
         return cb;
     }
 
+    /// <summary>
+    /// A machine that lists an H.264 encoder which will not start -- Media Foundation's software encoder on a Windows
+    /// with no graphics driver refuses its output format -- left the viewer without a picture: the capture loop crashed.
+    /// The stream goes on in the next codec the viewer reads instead, and the next stream does not try H.264 again.
+    /// </summary>
+    [Fact]
+    public async Task A_codec_whose_encoder_will_not_start_gives_way_to_the_next()
+    {
+        await using Testbed bed = await Testbed.StartAsync();
+        var encoders = new FakeVideoEncoderFactory { Codecs = [Codec.H264, Codec.Vp9], Unstartable = [Codec.H264] };
+        (HostRuntime host, var passwords, _) = await bed.StartHostAsync(media: true, encoders: encoders);
+
+        TestCallbacks cb = await RunAsync(bed, host, passwords.TemporaryPassword, Decodes(Codec.H264, Codec.Vp9));
+
+        cb.LastCodec.ShouldBe(Codec.Vp9);
+        bed.Media!.GetVideoService(0)!.Codec.ShouldBe(Codec.Vp9);
+        cb.CloseReason.ShouldBeNull();
+
+        TestCallbacks second = await RunAsync(bed, host, passwords.TemporaryPassword, Decodes(Codec.H264, Codec.Vp9));
+        second.LastCodec.ShouldBe(Codec.Vp9, "struck off for as long as the host runs");
+    }
+
+    /// <summary>With nothing else the viewer reads, it is told why there is no picture rather than left waiting.</summary>
+    [Fact]
+    public async Task When_no_codec_the_viewer_reads_will_start_the_viewer_is_told()
+    {
+        await using Testbed bed = await Testbed.StartAsync();
+        var encoders = new FakeVideoEncoderFactory { Codecs = [Codec.H264, Codec.Vp9], Unstartable = [Codec.H264] };
+        (HostRuntime host, var passwords, _) = await bed.StartHostAsync(media: true, encoders: encoders);
+        (ControllerSession session, TestCallbacks cb, PeerConnector connector) = bed.CreateController(decoders: Decodes(Codec.H264));
+        await session.ConnectAsync(connector, host.Identity.Id, CancellationToken.None);
+        (await session.LoginAsync(passwords.TemporaryPassword, CancellationToken.None)).Success.ShouldBeTrue();
+
+        await Testbed.WaitUntilAsync(() => cb.CloseReason is not null, "a reason for the viewer", 30_000);
+        cb.CloseReason.ShouldNotBeNull().ShouldContain("H264");
+        cb.LastCodec.ShouldBeNull();
+    }
+
     [Fact]
     public async Task The_host_encodes_what_it_asked_for_when_the_viewer_can_read_it()
     {

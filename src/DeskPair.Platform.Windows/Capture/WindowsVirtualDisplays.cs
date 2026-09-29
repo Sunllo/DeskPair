@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using System.ComponentModel;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using DeskPair.Platform.Abstractions.Capture;
@@ -7,233 +7,572 @@ using DeskPair.Platform.Windows.Native;
 namespace DeskPair.Platform.Windows.Capture;
 
 /// <summary>
-/// Displays that do not exist, through <see cref="VirtualDisplayDriver"/>: the device the install made for it,
-/// disabled until a viewer asks for a display, and rebuilt -- disabled, its settings file rewritten, enabled -- each
-/// time the number wanted changes. Enabling and disabling it needs administrator rights, so this is the service's
-/// engine's; the app's reports itself unavailable.
+/// Displays that do not exist, through DeskPair's display driver (<see cref="DisplayDriver"/>, <c>native/idd</c>). Each
+/// is plugged into a slot of its own and unplugged alone, with the sizes the viewer who asked for it is likely to want
+/// (<see cref="VirtualDisplaySizes"/>): up to 199, fixed when it is plugged in, and switched between in tens of
+/// milliseconds without moving a window. <see cref="WindowsDisplayModes"/> lists and sets those sizes through here.
 ///
-/// A rebuild unplugs every virtual monitor and plugs the new count back in, under new names (\\.\DISPLAY10 comes
-/// back as \\.\DISPLAY11). So taking one away takes the last -- they are identical, and whatever was on it moves to
-/// the others the way Windows does for any unplugged monitor -- and adding one restarts the others' streams. For
-/// the same reason a size is not taught to a display already up: it would come back as another display. The size
-/// asked for when a display is added goes into the file first, and the common sizes are always there.
+/// Opening the driver's control interface takes SYSTEM or an administrator, so this is the service's engine's; the
+/// app's reports itself unavailable. While a display is plugged in, a thread feeds the driver's watchdog every second,
+/// so an engine that dies leaves no display behind for longer than <see cref="WatchdogTimeout"/>. The one that starts
+/// next unplugs whatever is still there, and first brings the driver up to date (<see cref="DisplayDriverInstaller.Update"/>).
 ///
-/// An engine that dies with displays plugged in leaves the device enabled; the next one disables it on start.
+/// The last slot is the private session screen's (<see cref="ISessionScreen"/>): plugged in at the size of the viewers'
+/// window and made the only display on (<see cref="DisplayTopology"/>). A file in the data directory says it is open
+/// until it is closed again, so that an engine that died meanwhile has the next one make sure a display came back on.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public sealed class WindowsVirtualDisplays : IVirtualDisplayProvider, IDisposable
+public sealed class WindowsVirtualDisplays : IVirtualDisplayProvider, ISessionScreen, IDisposable
 {
-    private static readonly TimeSpan GoneTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan AppearTimeout = TimeSpan.FromSeconds(20);
+    /// <summary>The slots displays viewers ask for go in; the one after them is the private session screen's.</summary>
+    public const int ViewerSlots = IddControl.Slots - 1;
+
+    /// <summary>The private session screen's slot: a monitor of its own, so what Windows remembers for it is its own.</summary>
+    public const int SessionSlot = IddControl.Slots - 1;
+
+    private const string SessionMarker = "session-screen";
+
+    internal static readonly TimeSpan WatchdogTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan WatchdogFeed = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan AppearTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan SwitchTimeout = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>What a display comes up at when the viewer named no size.</summary>
+    private static readonly DisplayMode DefaultSize = new(1920, 1080);
 
     private readonly string _dataDir;
     private readonly ILogger _log;
-    private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly List<DisplayMode> _asked = [];
-    private DisplayMode? _preferred;
-    private int _count;
+    private readonly object _lock = new();
+    private readonly Plugged?[] _slots = new Plugged?[IddControl.Slots];
+    private readonly Task _setup;
+    private CancellationTokenSource? _feeding;
+    private bool _disposed;
+
+    /// <summary>A display in a slot: every size it can have, and what finds it in the display configuration.</summary>
+    private sealed record Plugged(IReadOnlyList<DisplayMode> Modes, User32.LUID Adapter, uint TargetId);
 
     public WindowsVirtualDisplays(string dataDir, ILogger log)
     {
         _dataDir = dataDir;
         _log = log;
-        if (Environment.IsPrivilegedProcess && Device() is { } device && Started(device))
-        {
-            _log.LogInformation("Virtual displays: the device was left enabled; disabling it");
-            Disable(device);
-        }
+        _setup = Environment.IsPrivilegedProcess ? Task.Run(() => Setup(dataDir)) : Task.CompletedTask;
     }
 
     public string? UnavailableReason =>
         !Environment.IsPrivilegedProcess
             ? "This computer can add a display only while DeskPair runs as its service (unattended access)."
-            : Device() is null
-                ? "DeskPair's virtual display driver is not installed on this computer."
-                : null;
+            : DisplayDriver.IsRunning
+                ? null
+                : DisplayDriver.Installed(_dataDir) is null
+                    ? "DeskPair's virtual display driver is not installed on this computer."
+                    : "DeskPair's virtual display driver is installed on this computer but not running.";
 
-    public int Count => Volatile.Read(ref _count);
-
-    public bool IsVirtual(DisplayDescriptor display) =>
-        Count > 0 && VirtualSources().Contains(display.Name, StringComparer.OrdinalIgnoreCase);
-
-    public async Task<DisplayActionResult> AddAsync(DisplayMode? mode, CancellationToken ct)
+    public int Count
     {
-        await _gate.WaitAsync(ct).ConfigureAwait(false);
-        try
+        get
         {
-            if (UnavailableReason is { } why)
+            lock (_lock)
             {
-                return DisplayActionResult.Refused(why);
+                return _slots.Take(ViewerSlots).Count(s => s is not null);
             }
-
-            // First in the file is what the new monitor comes up at, unless Windows remembers another size for it;
-            // either way the size is on offer, so the host can set it without teaching anything.
-            if (mode is { } m)
-            {
-                _preferred = m;
-                if (!_asked.Any(a => a.Width == m.Width && a.Height == m.Height))
-                {
-                    _asked.Add(m);
-                }
-            }
-
-            return await RebuildAsync(_count + 1, ct).ConfigureAwait(false);
-        }
-        finally
-        {
-            _gate.Release();
         }
     }
 
-    public async Task<DisplayActionResult> RemoveAsync(DisplayDescriptor display, CancellationToken ct)
-    {
-        await _gate.WaitAsync(ct).ConfigureAwait(false);
-        try
-        {
-            if (!IsVirtual(display))
-            {
-                return DisplayActionResult.Refused("Only a display that was added from here can be removed.");
-            }
+    public bool IsVirtual(DisplayDescriptor display) => SlotOf(display.Name) is < ViewerSlots;
 
-            return await RebuildAsync(_count - 1, ct).ConfigureAwait(false);
-        }
-        finally
+    public async Task<DisplayActionResult> AddAsync(DisplayMode? mode, IReadOnlyList<DisplayMode> sizes, CancellationToken ct)
+    {
+        await _setup.WaitAsync(ct).ConfigureAwait(false);
+        if (UnavailableReason is { } why)
         {
-            _gate.Release();
+            return DisplayActionResult.Refused(why);
         }
+
+        int slot;
+        lock (_lock)
+        {
+            slot = Array.FindIndex(_slots, 0, ViewerSlots, s => s is null);
+        }
+
+        if (slot < 0)
+        {
+            return DisplayActionResult.Refused($"This computer already has as many added displays as it will ({ViewerSlots}).");
+        }
+
+        return await PlugAsync(slot, mode ?? DefaultSize, sizes, ct).ConfigureAwait(false) is { } failure
+            ? Failed(failure)
+            : DisplayActionResult.Done;
     }
 
-    public async Task RemoveAllAsync(CancellationToken ct)
+    public Task<DisplayActionResult> RemoveAsync(DisplayDescriptor display, CancellationToken ct)
     {
-        await _gate.WaitAsync(ct).ConfigureAwait(false);
-        try
+        if (SlotOf(display.Name) is not { } slot || slot >= ViewerSlots)
         {
-            if (_count > 0)
-            {
-                await RebuildAsync(0, ct).ConfigureAwait(false);
-            }
+            return Task.FromResult(DisplayActionResult.Refused("Only a display that was added from here can be removed."));
+        }
 
-            // The sizes asked for were for these displays; the next ones start from the common list again.
-            _asked.Clear();
-            _preferred = null;
-        }
-        finally
-        {
-            _gate.Release();
-        }
+        Unplug(slot);
+        _log.LogInformation("Virtual display {Name} in slot {Slot} unplugged", display.Name, slot);
+        return Task.FromResult(DisplayActionResult.Done);
+    }
+
+    public Task RemoveAllAsync(CancellationToken ct)
+    {
+        UnplugAll();
+        return Task.CompletedTask;
     }
 
     public void Dispose()
     {
         // No waiting: this is the engine stopping. Nothing it plugged in outlives it.
-        if (Count > 0 && Device() is { } device)
+        lock (_lock)
         {
-            Disable(device);
+            _disposed = true;
         }
 
-        _gate.Dispose();
+        UnplugAll();
     }
 
-    /// <summary>The GDI names (<c>\\.\DISPLAYn</c>) of the sources the driver's adapter drives.</summary>
-    internal static List<string> VirtualSources()
+    // ---- the private session screen ----
+
+    string? ISessionScreen.UnavailableReason => UnavailableReason;
+
+    public bool IsOpen
     {
-        var names = new List<string>();
-        var device = new User32.DISPLAY_DEVICEW { cb = (uint)Marshal.SizeOf<User32.DISPLAY_DEVICEW>() };
-        for (uint i = 0; User32.EnumDisplayDevices(null, i, ref device, 0); i++)
+        get
         {
-            string name, id;
-            unsafe
+            lock (_lock)
             {
-                name = new string(device.DeviceName);
-                id = new string(device.DeviceID);
+                return _slots[SessionSlot] is not null;
             }
-
-            if (id.Equals(VirtualDisplayDriver.HardwareId, StringComparison.OrdinalIgnoreCase))
-            {
-                names.Add(name);
-            }
-
-            device = new User32.DISPLAY_DEVICEW { cb = (uint)Marshal.SizeOf<User32.DISPLAY_DEVICEW>() };
         }
-
-        return names;
     }
 
-    /// <summary>
-    /// Makes the device show <paramref name="count"/> monitors (none: disabled), or puts back the ones there were
-    /// when that fails: a third display that will not start must not take the first two with it. Under the gate.
-    /// </summary>
-    private async Task<DisplayActionResult> RebuildAsync(int count, CancellationToken ct)
+    public bool IsSessionScreen(DisplayDescriptor display) => SlotOf(display.Name) == SessionSlot;
+
+    public async Task<DisplayActionResult> OpenAsync(DisplayMode size, IReadOnlyList<DisplayMode> sizes, CancellationToken ct)
     {
-        int before = Count;
-        DisplayActionResult result = await BuildAsync(count, ct).ConfigureAwait(false);
-        if (!result.Succeeded && before > 0 && before != count)
+        await _setup.WaitAsync(ct).ConfigureAwait(false);
+        if (UnavailableReason is { } why)
         {
-            await BuildAsync(before, ct).ConfigureAwait(false);
+            return DisplayActionResult.Refused(why);
         }
 
-        return result;
-    }
-
-    private async Task<DisplayActionResult> BuildAsync(int count, CancellationToken ct)
-    {
-        if (Device() is not { } device)
+        if (IsOpen)
         {
-            return Failed("DeskPair's virtual display driver is not installed on this computer.");
-        }
-
-        // Already off is as good as switched off; only one still running is a failure.
-        int disabled = Disable(device);
-        if (disabled != DeviceSetup.CR_SUCCESS && Started(device))
-        {
-            return Failed($"The virtual display device could not be switched off (CONFIGRET {disabled}).");
-        }
-
-        Volatile.Write(ref _count, 0);
-        if (!await WaitForSourcesAsync(0, GoneTimeout, ct).ConfigureAwait(false))
-        {
-            _log.LogWarning("Virtual displays: still listed {Seconds} s after the device was switched off", GoneTimeout.TotalSeconds);
-        }
-
-        if (count <= 0)
-        {
-            _log.LogInformation("Virtual displays: none");
             return DisplayActionResult.Done;
         }
 
-        VirtualDisplayDriver.WriteSettings(_dataDir, count, _preferred, _asked);
-        int enabled = DeviceSetup.CM_Enable_DevNode(device, 0);
-        if (enabled != DeviceSetup.CR_SUCCESS)
+        // Written before anything changes: an engine that dies from here on leaves the next one a reason to look.
+        File.WriteAllText(Path.Combine(_dataDir, SessionMarker), DateTimeOffset.Now.ToString("O"));
+        if (await PlugAsync(SessionSlot, size, sizes, ct).ConfigureAwait(false) is { } failure)
         {
-            return Failed($"The virtual display device could not be switched on (CONFIGRET {enabled}).");
+            AfterSessionScreen();
+            return Failed(failure);
         }
 
-        // Started is not arrived: the driver loads, reads its file and plugs its monitors in after this.
-        if (!await WaitForSourcesAsync(count, AppearTimeout, ct).ConfigureAwait(false))
+        Plugged plugged;
+        lock (_lock)
         {
-            Disable(device);
-            return Failed("The virtual display driver started but its displays did not appear.");
+            plugged = _slots[SessionSlot]!;
         }
 
-        Volatile.Write(ref _count, count);
-        _log.LogInformation("Virtual displays: {Count} ({Sources})", count, string.Join(", ", VirtualSources()));
+        int isolated = DisplayTopology.OnlyThis(plugged.Adapter, plugged.TargetId);
+        if (isolated != User32.ERROR_SUCCESS)
+        {
+            // Private or not at all: a session screen beside a lit physical one is not what the owner allowed.
+            Unplug(SessionSlot);
+            return Failed($"The other displays could not be turned off (SetDisplayConfig {isolated}).");
+        }
+
+        _log.LogInformation("Private session screen {Name}: {Width}x{Height}, the only display on", NameOf(SessionSlot), plugged.Modes[0].Width, plugged.Modes[0].Height);
         return DisplayActionResult.Done;
     }
 
-    private static async Task<bool> WaitForSourcesAsync(int count, TimeSpan timeout, CancellationToken ct)
+    public bool IsAlone()
     {
-        long start = Environment.TickCount64;
-        while (VirtualSources().Count != count)
+        Plugged? plugged;
+        lock (_lock)
         {
-            if (Environment.TickCount64 - start > timeout.TotalMilliseconds)
-            {
-                return false;
-            }
-
-            await Task.Delay(100, ct).ConfigureAwait(false);
+            plugged = _slots[SessionSlot];
         }
 
-        return true;
+        return plugged is not null && DisplayTopology.IsOnlyOne(plugged.Adapter, plugged.TargetId);
+    }
+
+    public Task CloseAsync(CancellationToken ct)
+    {
+        if (IsOpen)
+        {
+            Unplug(SessionSlot);
+            _log.LogInformation("Private session screen closed");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The session screen has gone: Windows brings back what it remembers for the displays left, and only when it has
+    /// not -- nothing on at all -- is it asked to. Then the file saying a session screen was open goes.
+    /// </summary>
+    private void AfterSessionScreen()
+    {
+        string marker = Path.Combine(_dataDir, SessionMarker);
+        if (!File.Exists(marker))
+        {
+            return;
+        }
+
+        long start = Environment.TickCount64;
+        while (!DisplayTopology.AnyOn() && Environment.TickCount64 - start < 2000)
+        {
+            Thread.Sleep(50);
+        }
+
+        if (!DisplayTopology.AnyOn())
+        {
+            int restored = DisplayTopology.RestoreRemembered();
+            _log.LogWarning("No display came back on after the private session screen; asked Windows for the ones it remembers ({Result})", restored);
+        }
+
+        try
+        {
+            File.Delete(marker);
+        }
+        catch (IOException e)
+        {
+            _log.LogWarning(e, "The private session screen's marker could not be removed");
+        }
+    }
+
+    /// <summary>The sizes a display of ours can be switched to, largest first; null when it is not one of ours.</summary>
+    internal IReadOnlyList<DisplayMode>? ModesOf(string gdiName)
+    {
+        if (SlotOf(gdiName) is not { } slot)
+        {
+            return null;
+        }
+
+        lock (_lock)
+        {
+            return _slots[slot] is { } plugged
+                ? [.. plugged.Modes.OrderByDescending(m => (long)m.Width * m.Height).ThenByDescending(m => m.Width)]
+                : null;
+        }
+    }
+
+    /// <summary>
+    /// Switches a display of ours to one of its sizes, and waits for Windows to follow, so that whatever reads the display
+    /// next reads the new size. Null when the display is not one of ours.
+    /// </summary>
+    internal bool? TrySelect(string gdiName, DisplayMode mode, out string? failure)
+    {
+        failure = null;
+        if (SlotOf(gdiName) is not { } slot)
+        {
+            return null;
+        }
+
+        int index;
+        lock (_lock)
+        {
+            index = _slots[slot] is { } plugged ? plugged.Modes.ToList().FindIndex(m => m.Width == mode.Width && m.Height == mode.Height) : -1;
+        }
+
+        if (index < 0)
+        {
+            failure = $"{mode.Width}x{mode.Height} is not a size this display can show.";
+            return false;
+        }
+
+        // Windows moves the display itself as soon as its old size is no longer on offer; once more if it has not.
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            lock (_lock)
+            {
+                try
+                {
+                    DisplayDriver.Select(slot, index);
+                }
+                catch (Win32Exception e)
+                {
+                    failure = $"The virtual display driver refused the size ({e.Message}).";
+                    return false;
+                }
+            }
+
+            if (WaitForSize(gdiName, mode))
+            {
+                return true;
+            }
+        }
+
+        failure = "The display did not switch.";
+        return false;
+    }
+
+    private void Setup(string dataDir)
+    {
+        try
+        {
+            DisplayDriverInstaller.Update(dataDir, DisplayDriver.PackageDirectory, _log);
+            if (!DisplayDriver.IsRunning)
+            {
+                return;
+            }
+
+            // An engine that died leaves its displays to the watchdog; the next one does not wait for it.
+            IddControl.DESKPAIR_DISPLAY_INFO info = DisplayDriver.Info();
+            for (int slot = 0; slot < IddControl.Slots; slot++)
+            {
+                if ((info.PluggedMask & (1u << slot)) != 0)
+                {
+                    _log.LogInformation("Virtual displays: slot {Slot} was left plugged in; unplugging it", slot);
+                    DisplayDriver.Unplug(slot);
+                }
+            }
+
+            DisplayDriver.Watchdog(TimeSpan.Zero);
+
+            // A private session screen was open when the last engine stopped: it is gone now (the watchdog, or the
+            // unplugging above), and a display has to be on again.
+            if (File.Exists(Path.Combine(dataDir, SessionMarker)))
+            {
+                _log.LogInformation("Virtual displays: the last engine stopped with a private session screen open; checking the displays came back");
+                AfterSessionScreen();
+            }
+        }
+        catch (Exception e) when (e is Win32Exception or IOException or UnauthorizedAccessException)
+        {
+            _log.LogWarning(e, "Virtual displays: setting up the driver failed");
+        }
+    }
+
+    /// <summary>
+    /// Plugs a display into <paramref name="slot"/> with the sizes chosen for the viewer, at <paramref name="start"/>, and
+    /// waits for Windows to put it on the desktop. Null when it is there; otherwise why not, with the slot free again.
+    /// </summary>
+    private async Task<string?> PlugAsync(int slot, DisplayMode start, IReadOnlyList<DisplayMode> sizes, CancellationToken ct)
+    {
+        List<DisplayMode> modes = VirtualDisplaySizes.For(start, sizes);
+        lock (_lock)
+        {
+            if (_disposed || _slots[slot] is not null)
+            {
+                return "That display is being plugged in already.";
+            }
+
+            try
+            {
+                (User32.LUID adapter, uint target) = DisplayDriver.Plug(slot, 0, modes);
+                _slots[slot] = new Plugged(modes, adapter, target);
+                StartFeeding();
+            }
+            catch (Win32Exception e)
+            {
+                return $"The virtual display could not be plugged in ({e.Message}).";
+            }
+        }
+
+        // Arrived is not on the desktop yet: Windows gives it a source a moment later -- or never, when it is showing
+        // one screen only (Win+P), which leaves nothing to stream.
+        long started = Environment.TickCount64;
+        string? name;
+        while ((name = NameOf(slot)) is null && Environment.TickCount64 - started < AppearTimeout.TotalMilliseconds)
+        {
+            await Task.Delay(50, ct).ConfigureAwait(false);
+        }
+
+        if (name is null)
+        {
+            Unplug(slot);
+            return "The display was plugged in but Windows did not put it on the desktop; with \"PC screen only\" chosen (Win+P) it shows one screen only.";
+        }
+
+        _log.LogInformation("Virtual display {Name} in slot {Slot}: {Width}x{Height}, {Count} sizes on offer", name, slot, modes[0].Width, modes[0].Height, modes.Count);
+        return null;
+    }
+
+    private void UnplugAll()
+    {
+        for (int slot = 0; slot < IddControl.Slots; slot++)
+        {
+            Unplug(slot);
+        }
+    }
+
+    private void Unplug(int slot)
+    {
+        lock (_lock)
+        {
+            if (_slots[slot] is null)
+            {
+                return;
+            }
+
+            try
+            {
+                DisplayDriver.Unplug(slot);
+            }
+            catch (Win32Exception e) when (e.NativeErrorCode == DisplayDriver.ErrorNotFound)
+            {
+                // Gone already: the watchdog, or the driver restarted.
+            }
+            catch (Win32Exception e)
+            {
+                _log.LogWarning(e, "Virtual displays: unplugging slot {Slot} failed", slot);
+            }
+
+            _slots[slot] = null;
+            if (Array.TrueForAll(_slots, s => s is null))
+            {
+                StopFeeding();
+            }
+        }
+
+        if (slot == SessionSlot)
+        {
+            AfterSessionScreen();
+        }
+    }
+
+    /// <summary>The slot whose display has this GDI name, or null.</summary>
+    private int? SlotOf(string gdiName)
+    {
+        Plugged?[] slots;
+        lock (_lock)
+        {
+            if (Array.TrueForAll(_slots, s => s is null))
+            {
+                return null;
+            }
+
+            slots = (Plugged?[])_slots.Clone();
+        }
+
+        DisplayConfiguration? configuration = DisplayConfiguration.Query();
+        for (int slot = 0; slot < slots.Length; slot++)
+        {
+            if (slots[slot] is { } plugged
+                && string.Equals(configuration?.NameOfTarget(plugged.Adapter, plugged.TargetId), gdiName, StringComparison.OrdinalIgnoreCase))
+            {
+                return slot;
+            }
+        }
+
+        return null;
+    }
+
+    private string? NameOf(int slot)
+    {
+        Plugged? plugged;
+        lock (_lock)
+        {
+            plugged = _slots[slot];
+        }
+
+        return plugged is null ? null : DisplayConfiguration.Query()?.NameOfTarget(plugged.Adapter, plugged.TargetId);
+    }
+
+    private static bool WaitForSize(string gdiName, DisplayMode mode)
+    {
+        long start = Environment.TickCount64;
+        do
+        {
+            User32.DEVMODEW current = User32.DEVMODEW.Create();
+            if (User32.EnumDisplaySettingsEx(gdiName, User32.ENUM_CURRENT_SETTINGS, ref current, 0) != 0
+                && current.dmPelsWidth == (uint)mode.Width && current.dmPelsHeight == (uint)mode.Height)
+            {
+                return true;
+            }
+
+            Thread.Sleep(10);
+        }
+        while (Environment.TickCount64 - start < SwitchTimeout.TotalMilliseconds);
+
+        return false;
+    }
+
+    /// <summary>Arms the watchdog and starts feeding it. Under the lock, with a display just plugged in.</summary>
+    private void StartFeeding()
+    {
+        if (_feeding is not null)
+        {
+            return;
+        }
+
+        try
+        {
+            DisplayDriver.Watchdog(WatchdogTimeout);
+        }
+        catch (Win32Exception e)
+        {
+            _log.LogWarning(e, "Virtual displays: the driver's watchdog could not be armed");
+        }
+
+        var feeding = new CancellationTokenSource();
+        _feeding = feeding;
+        new Thread(() => Feed(feeding)) { IsBackground = true, Name = "Virtual display watchdog" }.Start();
+    }
+
+    /// <summary>Stops feeding the watchdog and disarms it. Under the lock, with nothing plugged in.</summary>
+    private void StopFeeding()
+    {
+        if (_feeding is not { } feeding)
+        {
+            return;
+        }
+
+        _feeding = null;
+        feeding.Cancel();
+        try
+        {
+            DisplayDriver.Watchdog(TimeSpan.Zero);
+        }
+        catch (Win32Exception)
+        {
+            // Nothing is plugged in for it to unplug anyway.
+        }
+    }
+
+    /// <summary>
+    /// Its own thread rather than a timer: a thread pool too busy to run a timer on time must not look like an engine
+    /// that died. Each feed is under the lock, so none lands after <see cref="StopFeeding"/> has disarmed it.
+    /// </summary>
+    private void Feed(CancellationTokenSource feeding)
+    {
+        bool warned = false;
+        try
+        {
+            while (!feeding.Token.WaitHandle.WaitOne(WatchdogFeed))
+            {
+                lock (_lock)
+                {
+                    if (feeding.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        DisplayDriver.Watchdog(WatchdogTimeout);
+                        warned = false;
+                    }
+                    catch (Win32Exception e)
+                    {
+                        if (!warned)
+                        {
+                            _log.LogWarning(e, "Virtual displays: feeding the driver's watchdog failed");
+                            warned = true;
+                        }
+                    }
+                }
+            }
+        }
+        finally
+        {
+            feeding.Dispose();
+        }
     }
 
     private DisplayActionResult Failed(string why)
@@ -241,19 +580,4 @@ public sealed class WindowsVirtualDisplays : IVirtualDisplayProvider, IDisposabl
         _log.LogWarning("Virtual displays: {Why}", why);
         return DisplayActionResult.Refused(why);
     }
-
-    /// <summary>The device the install made, if it is recorded and still there.</summary>
-    private uint? Device() =>
-        VirtualDisplayDriver.Installed(_dataDir)?.Device is { } id
-        && DeviceSetup.CM_Locate_DevNode(out uint device, id, DeviceSetup.CM_LOCATE_DEVNODE_NORMAL) == DeviceSetup.CR_SUCCESS
-            ? device
-            : null;
-
-    private static bool Started(uint device) =>
-        DeviceSetup.CM_Get_DevNode_Status(out uint status, out _, device, 0) == DeviceSetup.CR_SUCCESS
-        && (status & DeviceSetup.DN_STARTED) != 0;
-
-    /// <summary>Disabled across restarts as well: a machine that reboots with displays plugged in must not come back with them.</summary>
-    private static int Disable(uint device) =>
-        DeviceSetup.CM_Disable_DevNode(device, DeviceSetup.CM_DISABLE_UI_NOT_OK | DeviceSetup.CM_DISABLE_PERSIST);
 }

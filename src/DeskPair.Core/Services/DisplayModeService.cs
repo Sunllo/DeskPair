@@ -386,4 +386,17 @@ public sealed class DisplayModeService
             _originals.Remove(name);
         }
     }
+
+    /// <summary>
+    /// A display unplugged from here is gone for good: what was recorded about it goes too, before another display
+    /// plugged in later comes up under the same name (Windows hands its GDI names out again) and inherits it.
+    /// </summary>
+    public void ForgetDisplay(string name)
+    {
+        lock (_originals)
+        {
+            _originals.Remove(name);
+            _taught.Remove(name);
+        }
+    }
 }

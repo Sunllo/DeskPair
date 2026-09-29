@@ -41,6 +41,10 @@ public partial class DisplaySettingsViewModel : SettingsSectionBase
 
     public bool IsCustomQuality => QualityIndex == 3;
 
+    /// <summary>A viewer who matches its window works on a private screen, this computer's own off (<see cref="HostConfig.PrivateSessionScreen"/>).</summary>
+    [ObservableProperty]
+    public partial bool PrivateSessionScreen { get; set; }
+
     /// <summary>Viewers may ask this computer for a display it does not have (<see cref="HostConfig.AllowVirtualDisplay"/>).</summary>
     [ObservableProperty]
     public partial bool AllowVirtualDisplay { get; set; }
@@ -75,6 +79,7 @@ public partial class DisplaySettingsViewModel : SettingsSectionBase
         SmoothPlayback = desktop.SmoothPlayback;
         CodecIndex = host?.CodecPreference switch { "h264" => 1, "h265" => 2, "av1" => 3, "vp9" => 4, _ => 0 };
         AllowVirtualDisplay = host?.AllowVirtualDisplay ?? false;
+        PrivateSessionScreen = host?.PrivateSessionScreen ?? false;
         RefreshDriver();
     }
 
@@ -82,7 +87,7 @@ public partial class DisplaySettingsViewModel : SettingsSectionBase
     public void RefreshDriver()
     {
 #if WINDOWS
-        DriverInstalled = Platform.Windows.Capture.VirtualDisplayDriver.Installed(Engine.ServerRole.DefaultDataDir()) is not null;
+        DriverInstalled = Platform.Windows.Capture.DisplayDriver.Installed(Engine.ServerRole.DefaultDataDir()) is not null;
         DriverStatus = !DriverInstalled
             ? Strings.Get("settings.displayDriver.missing")
             : UnattendedInstall.IsInstalled()
@@ -130,5 +135,6 @@ public partial class DisplaySettingsViewModel : SettingsSectionBase
     {
         CodecPreference = CodecIndex switch { 1 => "h264", 2 => "h265", 3 => "av1", 4 => "vp9", _ => "auto" },
         AllowVirtualDisplay = AllowVirtualDisplay,
+        PrivateSessionScreen = PrivateSessionScreen,
     };
 }

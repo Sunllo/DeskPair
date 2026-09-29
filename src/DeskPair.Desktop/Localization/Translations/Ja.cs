@@ -268,6 +268,8 @@ internal static class Ja
         ["settings.codec.auto"] = "自動",
         ["settings.allowVirtualDisplay"] = "接続した相手がこのコンピューターにないディスプレイを追加できるようにする",
         ["settings.allowVirtualDisplayHint"] = "キーボードとマウスの操作を許可された相手が、もう一つ画面を使いたいときのためのものです。追加したディスプレイは、最後の相手が切断すると消えます。",
+        ["settings.allowSessionScreen"] = "「ウィンドウに合わせる」を使う相手に専用の画面を使わせる",
+        ["settings.allowSessionScreenHint"] = "キーボードとマウスの操作を許可された相手が「ウィンドウに合わせる」をオンにすると、相手はウィンドウと同じ大きさの画面で作業し、このコンピューター自身の画面はオフになります（Windows のリモート デスクトップと同じです）。相手がオフにするか切断すると画面は戻ります。このコンピューターで Win+P を押してもすぐに戻せます。",
         ["settings.displayDriver.missing"] = "仮想ディスプレイ ドライバーはインストールされていません。",
         ["settings.displayDriver.needsService"] = "仮想ディスプレイ ドライバーはインストール済みです。「設定 › {1}」で「{0}」をオンにすると、ディスプレイを追加できます。",
         ["settings.displayDriver.ready"] = "仮想ディスプレイ ドライバーはインストール済みです。接続した相手がディスプレイを追加できます。",

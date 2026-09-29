@@ -49,6 +49,12 @@ since libvpx's MSVC build has no shared-library configuration. The script then l
 library using libvpx's own export lists (`vpx/exports_com`, `exports_enc`, `exports_dec` and the per-codec
 lists) as a module definition file, so the DLL exports exactly what libvpx means to export and nothing more.
 
+The triplets are the `-static` ones (`x64-windows-static` and so on), which compile against the static C runtime:
+the DLL carries its own and needs nothing but Windows. With the ordinary triplets it needed `VCRUNTIME140.dll`,
+which a Windows without Visual C++'s redistributable does not have -- a fresh installation, a virtual machine --
+and there it could not be loaded at all, so such a host had no VP9. The script checks the finished DLL's
+dependencies and stops if it names anything else.
+
 The result is `artifacts/vpx/<rid>/vpx.dll`, which `tools/publish.ps1` copies into the build for that
 architecture when it is there (for win-x64 it also takes `artifacts/vpx/shim/vpx.dll`, where the one x64 build
 used to go).

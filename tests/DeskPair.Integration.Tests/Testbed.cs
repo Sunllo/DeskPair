@@ -56,6 +56,9 @@ public sealed class Testbed : IAsyncDisposable
     /// <summary>The fake virtual display driver; always present with media, allowed only when asked for.</summary>
     public FakeVirtualDisplays? VirtualDisplays { get; private set; }
 
+    /// <summary>The fake private session screen; always present with media, allowed only when asked for.</summary>
+    public FakeSessionScreen? SessionScreen { get; private set; }
+
     /// <summary>Displays that open for the first viewer and close after the last, when the host was started with them.</summary>
     public FakeDisplaySession? DisplaySession { get; private set; }
 
@@ -244,7 +247,8 @@ public sealed class Testbed : IAsyncDisposable
         HostPolicy? policy = null, int directPort = 0, bool media = false, int displays = 1, bool files = false,
         DeskPair.Platform.Abstractions.Codec.IVideoEncoderFactory? encoders = null, HostPlatform? platform = null,
         PeerSettings? settings = null, DeskPair.Platform.Abstractions.Codec.VideoCodec? codec = null,
-        DeskPair.Platform.Abstractions.Terminal.ITerminalHost? terminal = null, bool virtualDisplays = false, bool displaySession = false)
+        DeskPair.Platform.Abstractions.Terminal.ITerminalHost? terminal = null, bool virtualDisplays = false, bool displaySession = false,
+        bool sessionScreen = false)
     {
         string dir = Path.Combine(Path.GetTempPath(), "sunllo-test-" + Guid.NewGuid().ToString("N"));
         _tempDirs.Add(dir);
@@ -268,6 +272,7 @@ public sealed class Testbed : IAsyncDisposable
             Displays = new FakeDisplayEnumerator(count: displaySession ? 0 : displays);
             DisplayModes = new FakeDisplayModes(Displays);
             VirtualDisplays = new FakeVirtualDisplays(Displays, DisplayModes);
+            SessionScreen = new FakeSessionScreen(Displays, DisplayModes);
             DisplaySession = displaySession ? new FakeDisplaySession(Displays, displays) : null;
             platform = new HostPlatform(
                 Displays,
@@ -280,8 +285,9 @@ public sealed class Testbed : IAsyncDisposable
                 DisplayModes,
                 VirtualDisplays,
                 VirtualDisplays,
-                DisplaySession);
-            module = new HostMediaModule(platform, Logs) { Codec = codec, AllowVirtualDisplays = virtualDisplays };
+                DisplaySession,
+                SessionScreen);
+            module = new HostMediaModule(platform, Logs) { Codec = codec, AllowVirtualDisplays = virtualDisplays, AllowSessionScreen = sessionScreen };
             Media = module;
             _disposables.Add(module);
         }

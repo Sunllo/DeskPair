@@ -266,6 +266,33 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
             (int width, int height, double uiScale) = view.FillingSize;
             _follower.Window(width, height, uiScale);
         }
+
+        SyncFollowOption();
+    }
+
+    /// <summary>What the host was last told of this viewer's following: whether it follows, and whether the window's size came with it.</summary>
+    private (bool Follows, bool Sized)? _followTold;
+
+    /// <summary>
+    /// Tells the host when this viewer starts or stops following its window, and the window's size once it is known:
+    /// a host whose owner allows it gives a following viewer a private screen of that size. Not on every resize --
+    /// once the screen is there, the follower sets its size like any other display's.
+    /// </summary>
+    private void SyncFollowOption()
+    {
+        if (Session is not { State: ControllerSessionState.Authorized })
+        {
+            _followTold = null;
+            return;
+        }
+
+        (int width, int height, _) = _view?.FillingSize ?? default;
+        (bool, bool) now = (MatchWindow, MatchWindow && width > 0 && height > 0);
+        if (_followTold != now)
+        {
+            _followTold = now;
+            _ = ApplyOptionsAsync();
+        }
     }
 
     /// <summary>
@@ -289,6 +316,8 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
             IsFollowing = false;
             _ = _follower.StopAsync();
         }
+
+        SyncFollowOption();
 
         foreach (RemoteScreenViewModel screen in ScreensSnapshot())
         {
@@ -496,10 +525,10 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
 
     /// <summary>
     /// Asks the host for a display it does not have, at <paramref name="width"/>x<paramref name="height"/> -- the
-    /// viewer's own screen, so the window it opens in can fill that screen. The answer is the new display list,
-    /// and the new display opens in a window of its own.
+    /// viewer's own screen, so the window it opens in can fill that screen -- and able to take <paramref name="sizes"/>
+    /// later on. The answer is the new display list, and the new display opens in a window of its own.
     /// </summary>
-    internal void AddDisplay(int width, int height)
+    internal void AddDisplay(int width, int height, IEnumerable<(int Width, int Height)> sizes)
     {
         if (Session is not { State: ControllerSessionState.Authorized } session || !CanAddDisplays)
         {
@@ -507,7 +536,10 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         }
 
         _pendingVirtual = true;
-        _ = session.AddVirtualDisplayAsync(width > 0 && height > 0 ? new Resolution { Width = width, Height = height } : null, Cts.Token).AsTask();
+        _ = session.AddVirtualDisplayAsync(
+            width > 0 && height > 0 ? new Resolution { Width = width, Height = height } : null,
+            sizes.Where(s => s.Width > 0 && s.Height > 0).Distinct().Select(s => new Resolution { Width = s.Width, Height = s.Height }),
+            Cts.Token).AsTask();
     }
 
     /// <summary>Takes away the added display the tab is showing; the tab moves to one that is still there.</summary>
@@ -826,6 +858,9 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         DisableAudio = AudioEnabled ? BoolOption.BoNo : BoolOption.BoYes,
         LosslessRefinement = LosslessRefinement ? BoolOption.BoYes : BoolOption.BoNo,
         LockAfterSessionEnd = LockAfterSessionEnd ? BoolOption.BoYes : BoolOption.BoNo,
+        FollowWindow = MatchWindow ? BoolOption.BoYes : BoolOption.BoNo,
+        Viewport = MatchWindow && _view?.FillingSize is (> 0 and var width, > 0 and var height, _) ? new Resolution { Width = width, Height = height } : null,
+        Screens = { MatchWindow && _view is { } view ? RemoteDisplayView.ScreenSizes(view).Select(s => new Resolution { Width = s.Width, Height = s.Height }) : [] },
     };
 
     partial void OnQualityIndexChanged(int value) => _ = ApplyOptionsAsync();

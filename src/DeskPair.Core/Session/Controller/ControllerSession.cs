@@ -1124,11 +1124,20 @@ public sealed class ControllerSession : IAsyncDisposable
         SendAsync(new Message { Misc = new Misc { SwitchDisplay = new SwitchDisplay { Display = display } } }, ct);
 
     /// <summary>
-    /// Asks the host to plug in a display that does not exist, at <paramref name="resolution"/> when given. The answer
-    /// is <see cref="IControllerCallbacks.OnDisplaysChanged"/>: the new list with the display marked virtual, or why not.
+    /// Asks the host to plug in a display that does not exist, at <paramref name="resolution"/> when given, able to take
+    /// <paramref name="sizes"/> later on -- this viewer's screens, say, for a window moved to one or maximised there. The
+    /// answer is <see cref="IControllerCallbacks.OnDisplaysChanged"/>: the new list with the display marked virtual, or why not.
     /// </summary>
-    public ValueTask AddVirtualDisplayAsync(Resolution? resolution = null, CancellationToken ct = default) =>
-        SendAsync(new Message { Misc = new Misc { VirtualDisplayRequest = new VirtualDisplayRequest { Action = VirtualDisplayRequest.Types.Action.VdAdd, Resolution = resolution } } }, ct);
+    public ValueTask AddVirtualDisplayAsync(Resolution? resolution = null, IEnumerable<Resolution>? sizes = null, CancellationToken ct = default)
+    {
+        var request = new VirtualDisplayRequest { Action = VirtualDisplayRequest.Types.Action.VdAdd, Resolution = resolution };
+        if (sizes is not null)
+        {
+            request.Sizes.AddRange(sizes);
+        }
+
+        return SendAsync(new Message { Misc = new Misc { VirtualDisplayRequest = request } }, ct);
+    }
 
     /// <summary>Asks the host to unplug a display that was plugged in from here.</summary>
     public ValueTask RemoveVirtualDisplayAsync(int display, CancellationToken ct = default) =>

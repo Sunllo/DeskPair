@@ -33,8 +33,12 @@ public interface IVirtualDisplayProvider
     /// <summary>Whether <paramref name="display"/> is one this provider added.</summary>
     bool IsVirtual(DisplayDescriptor display);
 
-    /// <summary>Plugs in one more display, at <paramref name="mode"/> when one is given.</summary>
-    Task<DisplayActionResult> AddAsync(DisplayMode? mode, CancellationToken ct);
+    /// <summary>
+    /// Plugs in one more display, at <paramref name="mode"/> when one is given. <paramref name="sizes"/> are others the
+    /// viewer expects to ask for later (its screens, say): a platform that fixes a display's sizes when it is plugged in
+    /// (Windows) makes sure those are among them.
+    /// </summary>
+    Task<DisplayActionResult> AddAsync(DisplayMode? mode, IReadOnlyList<DisplayMode> sizes, CancellationToken ct);
 
     /// <summary>Unplugs a display this provider added.</summary>
     Task<DisplayActionResult> RemoveAsync(DisplayDescriptor display, CancellationToken ct);

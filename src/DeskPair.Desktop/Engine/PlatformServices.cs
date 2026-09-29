@@ -404,8 +404,9 @@ public sealed record PlatformServices(HostPlatform Host, ISecretStore SecretStor
             new Platform.Windows.Input.WindowsCursorProvider(),
             device => new Platform.Windows.Audio.WasapiAudioCapture(logs.CreateLogger("audio"), device),
             new Platform.Windows.Clipboard.WindowsClipboard(logs.CreateLogger("clipboard")),
-            new Platform.Windows.Capture.WindowsDisplayModes(),
-            virtualDisplays);
+            new Platform.Windows.Capture.WindowsDisplayModes(virtualDisplays),
+            virtualDisplays,
+            SessionScreen: virtualDisplays);
         return new PlatformServices(host, WindowsStore(dataDir), new Platform.Windows.Security.WindowsMachineIdProvider(), new Platform.Windows.Terminal.WindowsTerminalHost(logs.CreateLogger("terminal")));
     }
 #endif

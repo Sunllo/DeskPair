@@ -268,6 +268,8 @@ internal static class ZhHans
         ["settings.codec.auto"] = "自动",
         ["settings.allowVirtualDisplay"] = "允许连接者添加这台电脑没有的显示器",
         ["settings.allowVirtualDisplayHint"] = "供拥有键盘鼠标控制权、想多一块屏幕的连接者使用。最后一位连接者离开时，添加的显示器会随之消失。",
+        ["settings.allowSessionScreen"] = "连接者开启“匹配窗口”时，使用私人屏幕",
+        ["settings.allowSessionScreenHint"] = "拥有键盘鼠标控制权的连接者开启“匹配窗口”时，会在一块与其窗口同样大小的屏幕上操作，这台电脑自己的屏幕则关闭，就像 Windows 远程桌面。对方关闭该功能或断开连接时屏幕就会恢复；在这台电脑上按 Win+P 也能立即恢复。",
         ["settings.displayDriver.missing"] = "尚未安装虚拟显示器驱动程序。",
         ["settings.displayDriver.needsService"] = "已安装虚拟显示器驱动程序。在“设置 › {1}”中打开“{0}”后才能添加显示器。",
         ["settings.displayDriver.ready"] = "已安装虚拟显示器驱动程序，连接者可以添加显示器。",
