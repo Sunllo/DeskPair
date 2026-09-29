@@ -214,7 +214,7 @@ public sealed class SessionAgentTests
     /// <summary>An agent on one end of a socketpair and the engine's <see cref="AgentPortal"/> on the other.</summary>
     private sealed class Pair : IAsyncDisposable
     {
-        private readonly int _agentEnd;
+        private int _agentEnd;
         private readonly CancellationTokenSource _stop = new();
         private Task _agent = Task.CompletedTask;
 
@@ -245,7 +245,7 @@ public sealed class SessionAgentTests
         {
             await _stop.CancelAsync();
             await _agent.WaitAsync(TimeSpan.FromSeconds(10));
-            _ = UnixSocketMsg.close(_agentEnd);
+            CloseAgentEnd();
         }
 
         public async ValueTask DisposeAsync()
@@ -253,8 +253,23 @@ public sealed class SessionAgentTests
             await Engine.DisposeAsync();
             await _stop.CancelAsync();
             await _agent.WaitAsync(TimeSpan.FromSeconds(10));
-            _ = UnixSocketMsg.close(_agentEnd);
+            CloseAgentEnd();
             _stop.Dispose();
+        }
+
+        /// <summary>
+        /// Once only. A descriptor's number belongs to the process, not to this test: a test that stopped the agent
+        /// and was then disposed closed it twice, and by the second time another test running alongside could have
+        /// been given the same number -- its socket was closed instead. The likeliest way a CI run's agent hand-off
+        /// test found its daemon waiting on a socket nobody would ever close, and the test run never ended.
+        /// </summary>
+        private void CloseAgentEnd()
+        {
+            int fd = Interlocked.Exchange(ref _agentEnd, -1);
+            if (fd >= 0)
+            {
+                _ = UnixSocketMsg.close(fd);
+            }
         }
     }
 

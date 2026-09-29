@@ -23,7 +23,13 @@ public sealed class AgentHandoffTests
 
         var agents = new AgentHandoff();
         (int engineEnd, int daemonEnd) = UnixSocketMsg.Pair();
-        var server = new Thread(() => DrmCaptureServer.Run(daemonEnd, reader: null, NullLogger.Instance, CancellationToken.None, terminals: null, agents));
+        var server = new Thread(() => DrmCaptureServer.Run(daemonEnd, reader: null, NullLogger.Instance, CancellationToken.None, terminals: null, agents))
+        {
+            // A daemon side that never ends has to fail this test, not keep the test process from ending: as a
+            // foreground thread it did that on a CI runner, and the job ran for half an hour until it was cancelled.
+            IsBackground = true,
+            Name = "daemon-side",
+        };
         server.Start();
         var channel = new DrmCaptureChannel(engineEnd);
         try
@@ -49,8 +55,15 @@ public sealed class AgentHandoffTests
         finally
         {
             channel.Dispose();
-            server.Join(TimeSpan.FromSeconds(10)).ShouldBeTrue("the daemon's side ends with the engine's channel");
-            _ = UnixSocketMsg.close(daemonEnd);
+            bool ended = server.Join(TimeSpan.FromSeconds(10));
+
+            // Closed only once nothing waits on it: the number may be another test's by then otherwise.
+            if (ended)
+            {
+                _ = UnixSocketMsg.close(daemonEnd);
+            }
+
+            ended.ShouldBeTrue("the daemon's side ends with the engine's channel");
         }
     }
 

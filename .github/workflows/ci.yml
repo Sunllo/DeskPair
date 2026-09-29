@@ -12,6 +12,9 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    # About five minutes, tests included. A test that never ended once held the job for half an hour before it was
+    # cancelled by hand; the default would have been six hours.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -19,7 +22,9 @@ jobs:
           global-json-file: global.json
       - run: dotnet restore DeskPair.slnx
       - run: dotnet build DeskPair.slnx --no-restore -c Release
-      - run: dotnet test DeskPair.slnx --no-build -c Release --logger "trx" --results-directory TestResults
+      # A test still running after five minutes (the slowest take under a minute) ends its test run and is named in
+      # the log. No dump: it would only fill the artifact.
+      - run: dotnet test DeskPair.slnx --no-build -c Release --logger "trx" --results-directory TestResults --blame-hang-timeout 5min --blame-hang-dump-type none
       - uses: actions/upload-artifact@v4
         if: always()
         with:
