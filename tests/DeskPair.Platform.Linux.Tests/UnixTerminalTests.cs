@@ -140,7 +140,13 @@ public class UnixTerminalTests
 
         await shell.DisposeAsync();
 
-        await Task.Delay(300);
+        // Waited for rather than given a fixed 300 ms: the kill goes at once, but the process is gone only once reaped,
+        // which a busy machine may take longer over.
+        for (int i = 0; i < 500 && Directory.Exists($"/proc/{child}"); i++)
+        {
+            await Task.Delay(20);
+        }
+
         Directory.Exists($"/proc/{child}").ShouldBeFalse("a child that ignored the hangup was killed with the session");
     }
 }

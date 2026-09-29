@@ -65,6 +65,19 @@ public class FileTransferEngineTests : IAsyncDisposable
         return b;
     }
 
+    /// <summary>
+    /// Waits, up to ten seconds, for what the other engine does with a request that is only sent: renaming, removing,
+    /// a cancelled job going. The assertions after it say what was wrong. A fixed 100 ms was once not enough on a CI
+    /// Mac: the file removed was still there.
+    /// </summary>
+    private static async Task EventuallyAsync(Func<bool> condition)
+    {
+        for (int i = 0; i < 500 && !condition(); i++)
+        {
+            await Task.Delay(20);
+        }
+    }
+
     [Fact]
     public async Task Lists_remote_directories()
     {
@@ -182,7 +195,7 @@ public class FileTransferEngineTests : IAsyncDisposable
         }
 
         last.State.ShouldBe(TransferState.Cancelled);
-        await Task.Delay(100);
+        await EventuallyAsync(() => !_b.Jobs.Any());
         _b.Jobs.ShouldBeEmpty();
     }
 
@@ -260,13 +273,13 @@ public class FileTransferEngineTests : IAsyncDisposable
         _fsB.Write("root/old.txt", "x"u8.ToArray());
         await _a.CreateDirectoryAsync("root/new-dir", _cts.Token);
         await _a.RenameAsync("root/old.txt", "renamed.txt", _cts.Token);
-        await Task.Delay(100);
+        await EventuallyAsync(() => _fsB.Files.Contains("root/renamed.txt") && _fsB.Stat("root/new-dir") is not null);
         _fsB.Files.ShouldContain("root/renamed.txt");
         _fsB.Stat("root/new-dir")!.IsDirectory.ShouldBeTrue();
 
         await _a.RemoveFileAsync("root/renamed.txt", _cts.Token);
         await _a.RemoveDirectoryAsync("root/new-dir", false, _cts.Token);
-        await Task.Delay(100);
+        await EventuallyAsync(() => !_fsB.Files.Any() && _fsB.Stat("root/new-dir") is null);
         _fsB.Files.ShouldBeEmpty();
         _fsB.Stat("root/new-dir").ShouldBeNull();
     }
