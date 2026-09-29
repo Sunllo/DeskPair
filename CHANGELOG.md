@@ -7,6 +7,24 @@ reports looks like `0.2.0+8ec4feb`.
 
 Tag each release `vMAJOR.MINOR.PATCH` on the commit that ships.
 
+## Desktop, unreleased
+
+Desktop only; the phones stay at 0.4.0.
+
+### Fixed
+
+- A remote session's toolbar, in a window too narrow for all of its buttons, scrolled with a scrollbar laid over the
+  lower half of the buttons, and a click there went to the scrollbar. The scrollbar now has a row of its own below
+  them, shown only when the toolbar does not fit; the tabs of the session window likewise. The English toolbar, the
+  widest, met it first.
+- On Windows, DeskPair now and then took its own write to the clipboard for somebody else's copy, and a host could
+  send a viewer's clipboard straight back to them.
+- Linux, unattended access: when the desktop's question whether to share the screen was called off -- the remembered
+  permission no longer held, or the last viewer left while the person at the computer was being asked -- the question
+  stayed on their screen. It is taken down now, as it was meant to be.
+- On macOS and Linux, starting DeskPair just after another start had been handed to the open window -- a link opened
+  twice in quick succession, say -- could open a second DeskPair instead of handing over to the first.
+
 ## Servers, unreleased
 
 The servers only; no app changes.

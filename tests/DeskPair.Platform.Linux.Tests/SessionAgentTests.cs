@@ -144,7 +144,10 @@ public sealed class SessionAgentTests
         Task<IPortalSession> opening = pair.Engine.OpenAsync(pair.Tokens, NullLogger.Instance, giveUp.Token);
         await WaitUntilAsync(() => pair.Portal.Asking);
 
-        giveUp.Cancel();
+        // As the portal host calls it off (PortalHost.CloseAsync): from the thread pool, where no synchronization context
+        // keeps a continuation from running inline. Cancelled from this test's own thread, the one that took the dialog
+        // down only lost a race now and then; from the pool it never ran.
+        await giveUp.CancelAsync();
 
         await Should.ThrowAsync<OperationCanceledException>(opening);
         await WaitUntilAsync(() => pair.Portal.DialogDown, "the agent called off the portal's request");

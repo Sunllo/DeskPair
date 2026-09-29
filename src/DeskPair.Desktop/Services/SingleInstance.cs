@@ -189,32 +189,22 @@ internal sealed class SingleInstance : IDisposable
         return Encoding.UTF8.GetString(payload).Split('\n');
     }
 
+    /// <summary>
+    /// Two instances at most: the one waiting, and, for as long as it takes to hear a launch out, the one that
+    /// launch connected to (see <see cref="AcceptLoopAsync"/>).
+    /// </summary>
     private NamedPipeServerStream NewServer() =>
-        new(_pipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        new(_pipe, PipeDirection.InOut, 2, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 
     private async Task AcceptLoopAsync()
     {
-        while (!_stop.IsCancellationRequested)
+        while (Volatile.Read(ref _server) is { } server)
         {
-            NamedPipeServerStream? server = _server;
-            if (server is null)
-            {
-                return;
-            }
-
+            bool connected;
             try
             {
-                {
-                    await server.WaitForConnectionAsync(_stop.Token).ConfigureAwait(false);
-                    string[] args = await ReadArgumentsAsync(server, _stop.Token).ConfigureAwait(false);
-                    _log.LogInformation("Another instance was started ({Args}); raising this one", string.Join(' ', args));
-                    Launched?.Invoke(args);
-
-                    // Only now, so the other instance exits knowing it was heard rather than knowing it
-                    // managed to write.
-                    server.WriteByte(Received);
-                    server.Flush();
-                }
+                await server.WaitForConnectionAsync(_stop.Token).ConfigureAwait(false);
+                connected = true;
             }
             catch (OperationCanceledException)
             {
@@ -222,26 +212,73 @@ internal sealed class SingleInstance : IDisposable
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or ObjectDisposedException)
             {
-                // One failed handover must not end the listener: the next launch should still be heard.
-                _log.LogDebug(e, "A handover from another instance failed");
+                _log.LogDebug(e, "Waiting for another instance failed");
+                connected = false;
+            }
+
+            // The next instance is made before this one goes. On macOS and Linux every instance of a name shares one
+            // listening socket, which closes with the last of them: this one going first closed it, and a launch
+            // already waiting behind this one was dropped unheard -- told that nobody answered, it started a second
+            // DeskPair. Three launches in a row did that on a Mac every time.
+            bool listening = Renew(server);
+            if (connected)
+            {
+                await AnswerAsync(server).ConfigureAwait(false);
             }
 
             server.Dispose();
-            if (_stop.IsCancellationRequested)
+            if (!listening)
             {
-                return;
-            }
-
-            try
-            {
-                _server = NewServer();
-            }
-            catch (IOException e)
-            {
-                // Nothing left to listen on. Shutting down is the usual reason.
-                _log.LogDebug(e, "Could not listen for the next handover");
                 return;
             }
         }
+    }
+
+    /// <summary>Hears one launch out, and tells it so.</summary>
+    private async Task AnswerAsync(NamedPipeServerStream server)
+    {
+        try
+        {
+            string[] args = await ReadArgumentsAsync(server, _stop.Token).ConfigureAwait(false);
+            _log.LogInformation("Another instance was started ({Args}); raising this one", string.Join(' ', args));
+            Launched?.Invoke(args);
+
+            // Only now, so the other instance exits knowing it was heard rather than knowing it
+            // managed to write.
+            server.WriteByte(Received);
+            server.Flush();
+        }
+        catch (Exception e) when (e is OperationCanceledException or IOException or UnauthorizedAccessException or ObjectDisposedException)
+        {
+            // One failed handover must not end the listener: the next launch should still be heard.
+            _log.LogDebug(e, "A handover from another instance failed");
+        }
+    }
+
+    /// <summary>
+    /// Puts a new instance where <paramref name="current"/> was. False, and nothing more is listened for, when none can
+    /// be made or when this is being disposed: Dispose has let go of the name, and it must not be taken again.
+    /// </summary>
+    private bool Renew(NamedPipeServerStream current)
+    {
+        NamedPipeServerStream next;
+        try
+        {
+            next = NewServer();
+        }
+        catch (IOException e)
+        {
+            // Nothing left to listen on. Shutting down is the usual reason.
+            _log.LogDebug(e, "Could not listen for the next handover");
+            return false;
+        }
+
+        if (Interlocked.CompareExchange(ref _server, next, current) == current)
+        {
+            return true;
+        }
+
+        next.Dispose();
+        return false;
     }
 }

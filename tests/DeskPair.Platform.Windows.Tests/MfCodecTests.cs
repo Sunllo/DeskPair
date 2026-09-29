@@ -36,7 +36,8 @@ public class MfCodecTests
     /// </summary>
     private static bool Available(VideoCodec codec) =>
         new MfVideoEncoderFactory(NullLoggerFactory.Instance).Probe().Supports(codec)
-        && new MfVideoDecoderFactory(NullLoggerFactory.Instance).Probe().Supports(codec);
+        && new MfVideoDecoderFactory(NullLoggerFactory.Instance).Probe().Supports(codec)
+        && MediaFoundationEncoding.CanEncode(codec);
 
     [Theory]
     [InlineData(VideoCodec.H264)]

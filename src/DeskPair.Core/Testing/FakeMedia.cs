@@ -287,6 +287,15 @@ public sealed class FakeVideoEncoderFactory : IVideoEncoderFactory
     /// <summary>The name this factory last handed out, which is the one a session is running on.</summary>
     public string? LastCreated { get; private set; }
 
+    /// <summary>
+    /// Keyframes made because somebody asked for one -- a viewer, the loss handling, the first frame -- across every
+    /// encoder this factory built. The ones an encoder makes on its own every 60 frames are not counted: how many of
+    /// those fall in a stretch of time is the machine's frame rate, not anything a test is asking about.
+    /// </summary>
+    public int KeyFramesRequested => Volatile.Read(ref _keyFramesRequested);
+
+    private int _keyFramesRequested;
+
     public IReadOnlyList<EncoderDescriptor> Describe() => Codecs
         .SelectMany(c => Names.Select(n => new EncoderDescriptor { Codec = c, Backend = CodecBackend.Fake, Name = n, IsHardware = false }))
         .ToList();
@@ -302,10 +311,10 @@ public sealed class FakeVideoEncoderFactory : IVideoEncoderFactory
         }
 
         LastCreated = name;
-        return new FakeVideoEncoder(config, PadToBitrate, name, Breaks.GetValueOrDefault(name, EncoderFault.None));
+        return new FakeVideoEncoder(this, config, PadToBitrate, name, Breaks.GetValueOrDefault(name, EncoderFault.None));
     }
 
-    private sealed class FakeVideoEncoder(VideoEncoderConfig config, bool padToBitrate, string name, EncoderFault fault) : IVideoEncoder
+    private sealed class FakeVideoEncoder(FakeVideoEncoderFactory owner, VideoEncoderConfig config, bool padToBitrate, string name, EncoderFault fault) : IVideoEncoder
     {
         private bool _forceKey = true;
         private int _count;
@@ -346,9 +355,15 @@ public sealed class FakeVideoEncoderFactory : IVideoEncoderFactory
                 return true;
             }
 
-            bool key = _forceKey || _count % 60 == 0;
+            bool asked = _forceKey;
+            bool key = asked || _count % 60 == 0;
             _forceKey = false;
             _count++;
+            if (asked)
+            {
+                Interlocked.Increment(ref owner._keyFramesRequested);
+            }
+
             int w = padToBitrate ? 1 : config.Width / 8;
             int h = padToBitrate ? 1 : config.Height / 8;
             int size = 16 + w * h * 4;

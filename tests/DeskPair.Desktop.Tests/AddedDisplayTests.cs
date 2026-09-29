@@ -14,6 +14,7 @@ namespace DeskPair.Desktop.Tests;
 /// Displays a viewer asks the host for: offered only where they can be made, marked once they exist, and allowed
 /// or not by the host's owner from the display settings.
 /// </summary>
+[Collection("ProcessState")] // reads the string table, which the language tests move
 public class AddedDisplayTests
 {
     private static RemoteSessionViewModel Told(string platform, bool multi, int current = 0, params bool[] added)

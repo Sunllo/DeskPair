@@ -28,6 +28,11 @@ public class WindowsHostSessionTests
             return;
         }
 
+        if (!MediaFoundationEncoding.CanEncode(VideoCodec.H264))
+        {
+            return; // a machine whose Media Foundation lists an H.264 encoder that will not encode
+        }
+
         await using Testbed bed = await Testbed.StartAsync();
         var displays = new WindowsDisplayEnumerator();
         var platform = new HostPlatform(
@@ -70,6 +75,11 @@ public class WindowsHostSessionTests
         if (!InteractiveDesktop.IsReadable)
         {
             return;
+        }
+
+        if (!MediaFoundationEncoding.CanEncode(VideoCodec.H264))
+        {
+            return; // a machine whose Media Foundation lists an H.264 encoder that will not encode
         }
 
         await using Testbed bed = await Testbed.StartAsync();

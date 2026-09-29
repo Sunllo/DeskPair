@@ -4,6 +4,7 @@ using DeskPair.Desktop.ViewModels;
 namespace DeskPair.Desktop.Tests;
 
 /// <summary>The toolbar's frame-rate list: automatic first, the settings page's rate kept when it is not a usual one.</summary>
+[Collection("ProcessState")] // reads the string table, which the language tests move
 public sealed class FrameRateChoicesTests
 {
     /// <summary>Whatever language the process is in: the label is what the table says, not a fixed word.</summary>

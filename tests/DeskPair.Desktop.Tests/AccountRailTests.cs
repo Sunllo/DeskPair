@@ -17,6 +17,7 @@ namespace DeskPair.Desktop.Tests;
 ///
 /// The account tab is gone: the rail says who is signed in, and clicking it opens a window.
 /// </summary>
+[Collection("ProcessState")] // its settings page's general tab sets the process-wide language as it loads, and may announce it
 public class AccountRailTests
 {
     /// <summary>

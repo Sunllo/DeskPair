@@ -112,6 +112,9 @@ dotnet build packaging/windows/DeskPair.wixproj -c Release -p:Platform=x64 -p:Pa
 ## 限制
 
 - 精靈的語言跟著 Windows 的顯示語言，不是 App 設定裡選的語言；十種以外的語言顯示英文。
+- **UAC 視窗的圖示是 Windows Installer 的通用圖示**，不是 DeskPair 的：MSI 檔沒有可放圖示的資源，Windows 只能用 `.msi`
+  這種檔案的圖示，所有 MSI 都一樣。名稱（簽章描述）與已驗證的發行者是對的。要顯示自己的圖示只能改用包住 MSI 的已簽章
+  `.exe`（bootstrapper，例如 WiX Burn）；2026-09-29 決定不做，維持 MSI。
 - 0.4.5 起已做程式碼簽章（Microsoft Artifact Signing，`package.ps1 -CodeSigning`）：`DeskPair.exe`、資料夾裡沒有別人簽過的 DLL
   與 MSI 本身。新版本在 SmartScreen 累積足夠信譽之前，第一次執行時仍可能詢問，但會顯示發行者名稱。
 - 安裝程式不會替你開無人值守服務：那需要先設定固定密碼，仍是 App 設定頁的開關（`docs/unattended-windows.md`）。

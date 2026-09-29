@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using DeskPair.Desktop.Localization;
 using DeskPair.Desktop.Services;
 using DeskPair.Desktop.ViewModels;
 using DeskPair.Desktop.Views;
@@ -16,9 +17,21 @@ namespace DeskPair.Desktop.Tests;
 /// <summary>
 /// A display window and the session tab have to survive being built: XAML that fails to load fails at the
 /// click that opens it, and nothing before that would know.
+///
+/// In English. Its session toolbar is wider than the 1200-pixel window these tests open, so it scrolls, and that is
+/// the case worth clicking through: the scrollbar Avalonia lays over the content sat on the lower half of every button
+/// and took the clicks meant for them. Seen only where CI runs in English; a machine in Chinese, whose toolbar fits,
+/// passed. Pinned, so every machine tests what CI does.
 /// </summary>
-public class DisplayWindowUiTests
+[Collection("ProcessState")] // sets Strings.Language, which is process-wide
+public sealed class DisplayWindowUiTests : IDisposable
 {
+    private readonly string _was = Strings.Language;
+
+    public DisplayWindowUiTests() => Strings.Language = AppLanguages.En;
+
+    public void Dispose() => Strings.Language = _was;
+
     private static RemoteSessionViewModel Session() => new("123456789", "me", new DesktopConfig(), NullLoggerFactory.Instance);
 
     [AvaloniaFact]
@@ -107,6 +120,12 @@ public class DisplayWindowUiTests
     {
         var window = (Window)TopLevel.GetTopLevel(button)!;
         window.UpdateLayout();
+
+        // Input is hit-tested against the last frame drawn, not the layout: draw the one the click is aimed at. A
+        // toolbar that has just grown a scrollbar has moved since the frame drawn when the window opened.
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         Point centre = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
         window.MouseDown(centre, MouseButton.Left);
         window.MouseUp(centre, MouseButton.Left);

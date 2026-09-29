@@ -25,8 +25,10 @@ public class IpcEndpointSystemPathTests
     {
         IpcEndpoint endpoint = IpcEndpoint.ForTest();
 
-        // This test does not run as root anywhere it is run.
-        endpoint.UseSystemPath.ShouldBeFalse();
-        endpoint.ListenPath.ShouldBe(endpoint.UserSocketPath);
+        // Asked of the runtime, not of the code under test. It used to say that this test never runs as root, and in a
+        // container it does.
+        bool root = !OperatingSystem.IsWindows() && Environment.IsPrivilegedProcess;
+        endpoint.UseSystemPath.ShouldBe(root);
+        endpoint.ListenPath.ShouldBe(root ? endpoint.SystemSocketPath : endpoint.UserSocketPath);
     }
 }

@@ -9,7 +9,10 @@
              Background="#101010">
   <DockPanel>
     <Border DockPanel.Dock="Top" Background="#1E1E1E" Padding="8,4">
-      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+      <!-- The scrollbar in a row of its own, below the buttons, when the toolbar is wider than the window. Laid over
+           them, as Avalonia does by default, it covered the lower half of every button and took its clicks: in English
+           the toolbar is wider than a 1200-pixel window. -->
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" AllowAutoHide="False">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <TextBlock Text="{loc:Loc session.display}" VerticalAlignment="Center" Foreground="#CCC" />
           <ComboBox ItemsSource="{Binding Displays}" SelectedIndex="{Binding CurrentDisplay}" MinWidth="120" />

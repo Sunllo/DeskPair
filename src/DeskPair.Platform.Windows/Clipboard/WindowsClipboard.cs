@@ -12,7 +12,8 @@ namespace DeskPair.Platform.Windows.Clipboard;
 /// <summary>
 /// Win32 clipboard with change notifications from <c>AddClipboardFormatListener</c> on a hidden
 /// message-only window. Text, HTML ("HTML Format"), RTF and images (registered "PNG" or CF_DIB) are exchanged.
-/// Own writes are recognised by their clipboard sequence number and not echoed as changes.
+/// Own writes are recognised by their clipboard sequence number, or by arriving while one is under way, and not
+/// echoed as changes.
 /// </summary>
 public sealed class WindowsClipboard : IClipboard, IFilePromiseClipboard
 {
@@ -38,6 +39,15 @@ public sealed class WindowsClipboard : IClipboard, IFilePromiseClipboard
     private readonly User32.WndProc _wndProc; // kept alive for the window's lifetime
     private nint _hwnd;
     private int _ownSequence = -1;
+
+    /// <summary>
+    /// Above zero while this instance is writing, from before it opens the clipboard until the sequence number of its
+    /// write is in <see cref="_ownSequence"/>. Windows announces a write when the clipboard is closed, to the listener
+    /// window on its own thread, and that thread could read the new sequence number before the writer had stored it:
+    /// the write then came back as somebody else's change (seen in tests, about one write in five). A change announced
+    /// meanwhile is this write, or one it is replacing.
+    /// </summary>
+    private int _writing;
     private bool _disposed;
 
     public WindowsClipboard(ILogger log)
@@ -111,6 +121,19 @@ public sealed class WindowsClipboard : IClipboard, IFilePromiseClipboard
     }
 
     private void Write(IReadOnlyList<ClipboardItem> items)
+    {
+        Interlocked.Increment(ref _writing);
+        try
+        {
+            WriteItems(items);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _writing);
+        }
+    }
+
+    private void WriteItems(IReadOnlyList<ClipboardItem> items)
     {
         // Anything we had promised is gone the moment something else is copied, and OLE has to be told before
         // EmptyClipboard takes the clipboard out from under it: mixing the two corrupts OLE's bookkeeping.
@@ -269,8 +292,16 @@ public sealed class WindowsClipboard : IClipboard, IFilePromiseClipboard
         // SetClipboardData corrupts OLE's bookkeeping, so the fork is all or nothing.
         OleClipboardThread ole = _ole ??= new OleClipboardThread(_log);
         var data = new PromisedDataObject(source, items, _log);
-        ole.Publish(data);
-        Volatile.Write(ref _ownSequence, User32.GetClipboardSequenceNumber());
+        Interlocked.Increment(ref _writing);
+        try
+        {
+            ole.Publish(data);
+            Volatile.Write(ref _ownSequence, User32.GetClipboardSequenceNumber());
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _writing);
+        }
 
         _log.LogInformation(
             "Offering {Count} promised file(s) on the clipboard (token {Token})",
@@ -541,7 +572,7 @@ public sealed class WindowsClipboard : IClipboard, IFilePromiseClipboard
         switch (msg)
         {
             case User32.WM_CLIPBOARDUPDATE:
-                if (User32.GetClipboardSequenceNumber() != Volatile.Read(ref _ownSequence))
+                if (Volatile.Read(ref _writing) == 0 && User32.GetClipboardSequenceNumber() != Volatile.Read(ref _ownSequence))
                 {
                     try
                     {

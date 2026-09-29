@@ -27,35 +27,40 @@ public class WindowsClipboardTests
             bgra[i + 3] = 255;
         }
 
+        string text = $"Sunllo 快桌 ✓ {Guid.NewGuid():N}";
         var items = new List<ClipboardItem>
         {
-            new(ClipboardItemFormat.Text, Encoding.UTF8.GetBytes("Sunllo 快桌 ✓")),
+            new(ClipboardItemFormat.Text, Encoding.UTF8.GetBytes(text)),
             new(ClipboardItemFormat.Html, Encoding.UTF8.GetBytes("<b>bold</b> 中文")),
             new(ClipboardItemFormat.ImagePng, PngCodec.Encode(bgra, 16 * 4, 16, 8)),
         };
         await clipboard.WriteAsync(items, CancellationToken.None);
 
         IReadOnlyList<ClipboardItem> back = await clipboard.ReadAsync(CancellationToken.None);
-        Encoding.UTF8.GetString(back.Single(i => i.Format == ClipboardItemFormat.Text).Payload.Span).ShouldBe("Sunllo 快桌 ✓");
+        Encoding.UTF8.GetString(back.Single(i => i.Format == ClipboardItemFormat.Text).Payload.Span).ShouldBe(text);
         Encoding.UTF8.GetString(back.Single(i => i.Format == ClipboardItemFormat.Html).Payload.Span).ShouldBe("<b>bold</b> 中文");
         BgraImage image = PngCodec.Decode(back.Single(i => i.Format == ClipboardItemFormat.ImagePng).Payload.Span);
         image.Width.ShouldBe(16);
         image.Height.ShouldBe(8);
         image.Pixels.ShouldBe(bgra);
 
-        // Our own write must not surface as a change.
+        // Our own write must not surface as a change. Somebody else's may: the clipboard belongs to the whole machine.
+        // The first version of this took any change inside these 300 ms for an echo, and one arrived on a CI runner;
+        // the question is about this test's own text, as in the test below.
         using var cts = new CancellationTokenSource(300);
         bool echoed = false;
         try
         {
-            await clipboard.Changes.ReadAsync(cts.Token);
-            echoed = true;
+            while (true)
+            {
+                echoed |= Carries(await clipboard.Changes.ReadAsync(cts.Token), text);
+            }
         }
         catch (OperationCanceledException)
         {
         }
 
-        echoed.ShouldBeFalse();
+        echoed.ShouldBeFalse("a writer does not hear its own write");
     }
 
     /// <summary>
@@ -88,6 +93,47 @@ public class WindowsClipboardTests
         {
             Carries(own, text).ShouldBeFalse("a writer does not hear its own write");
         }
+    }
+
+    /// <summary>
+    /// Many writes in a row, none of which may come back. Windows announces a write to the listener window's own
+    /// thread, which could read the new sequence number before the writer had stored it, and the write came back as
+    /// somebody else's change -- in the two tests above now and then, and so on a CI runner. Two hundred writes make that
+    /// window wide enough to fall into every time.
+    /// </summary>
+    [Fact]
+    public async Task Two_hundred_writes_in_a_row_never_come_back_as_changes()
+    {
+        if (!InteractiveDesktop.IsAvailable)
+        {
+            return;
+        }
+
+        await using var clipboard = new WindowsClipboard(NullLogger.Instance);
+        string run = Guid.NewGuid().ToString("N");
+        for (int i = 0; i < 200; i++)
+        {
+            await clipboard.WriteAsync([new ClipboardItem(ClipboardItemFormat.Text, Encoding.UTF8.GetBytes($"{run} {i}"))], CancellationToken.None);
+        }
+
+        // An echo would carry one of these; another program's change may arrive as well, and is not the question.
+        using var settle = new CancellationTokenSource(500);
+        var echoed = new List<string>();
+        try
+        {
+            while (true)
+            {
+                echoed.AddRange((await clipboard.Changes.ReadAsync(settle.Token))
+                    .Where(i => i.Format == ClipboardItemFormat.Text)
+                    .Select(i => Encoding.UTF8.GetString(i.Payload.Span))
+                    .Where(t => t.StartsWith(run, StringComparison.Ordinal)));
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        echoed.ShouldBeEmpty("a writer does not hear its own writes");
     }
 
     private static bool Carries(IReadOnlyList<ClipboardItem> items, string text) =>

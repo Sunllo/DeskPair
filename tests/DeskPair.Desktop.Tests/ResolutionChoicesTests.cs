@@ -5,6 +5,7 @@ using DeskPair.Protocol.Messages;
 namespace DeskPair.Desktop.Tests;
 
 /// <summary>The resolution drop-down's items and which one is lit, from what the host advertised.</summary>
+[Collection("ProcessState")] // reads the string table, which the language tests move
 public sealed class ResolutionChoicesTests
 {
     /// <summary>Whatever language the process is in: the label is what the table says, not a fixed word.</summary>

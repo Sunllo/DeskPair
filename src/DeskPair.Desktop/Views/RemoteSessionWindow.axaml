@@ -17,7 +17,9 @@
     -->
     <Border DockPanel.Dock="Top" Background="#161616" BorderBrush="#2A2A2A" BorderThickness="0,0,0,1"
             IsVisible="{Binding ShowTabs}">
-      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+      <!-- The scrollbar below the tabs, not over them: laid over a strip this thin it takes the clicks meant for the tabs
+           and their close buttons, as it did on the session toolbar. -->
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" AllowAutoHide="False">
         <ListBox ItemsSource="{Binding Sessions}" SelectedItem="{Binding Selected}"
                  Background="Transparent" BorderThickness="0" Padding="4,2">
           <ListBox.ItemsPanel>

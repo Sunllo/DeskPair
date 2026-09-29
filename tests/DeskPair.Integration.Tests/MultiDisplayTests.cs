@@ -73,9 +73,14 @@ public class MultiDisplayTests
         await Testbed.WaitUntilAsync(() => Frames(cb, 0) >= zero + 30 && Frames(cb, 1) >= one + 30, "both displays keep coming", 15_000);
         (session.VideoFramesReceivedUdp - udp).ShouldBeGreaterThanOrEqualTo(60, "over UDP, not a TCP fallback");
 
+        // Waited for rather than looked at once: a report held up for a moment -- a pause on a busy machine -- leaves a
+        // few more frames unacknowledged than the limit, and one look found that in a Linux container. A display that is
+        // never acknowledged as itself stays congested for good.
         int connection = host.Sessions.Single().Context.ConnectionId;
-        bed.Media!.Qos.IsCongested(connection, 0).ShouldBeFalse();
-        bed.Media.Qos.IsCongested(connection, 1).ShouldBeFalse();
+        await Testbed.WaitUntilAsync(
+            () => !bed.Media!.Qos.IsCongested(connection, 0) && !bed.Media.Qos.IsCongested(connection, 1),
+            "both displays acknowledged",
+            15_000);
         await session.CloseAsync("done");
     }
 

@@ -13,6 +13,7 @@ namespace DeskPair.Desktop.Tests;
 /// no, and the result looks exactly like a computer that cannot do the thing. Nothing failed, nothing was
 /// logged, and the build was clean.
 /// </summary>
+[Collection("ProcessState")] // reads its notices in English, and they go to the one toast
 public class SecuritySettingsViewModelTests
 {
     private static SecuritySettingsViewModel Create() =>

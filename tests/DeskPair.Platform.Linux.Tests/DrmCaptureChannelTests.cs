@@ -151,7 +151,9 @@ public sealed class DrmCaptureChannelTests
 
         public uint[] LastKnown { get; private set; } = [];
 
-        public int DescriptorsSent { get; private set; }
+        public int DescriptorsSent => Volatile.Read(ref _descriptorsSent);
+
+        private int _descriptorsSent;
 
         private void Serve()
         {
@@ -207,10 +209,13 @@ public sealed class DrmCaptureChannelTests
                 using (SafeFileHandle file = File.OpenHandle(path, FileMode.CreateNew, FileAccess.ReadWrite))
                 {
                     RandomAccess.Write(file, Enumerable.Repeat(fill, Pitch * Height).ToArray(), 0);
+
+                    // Counted before it goes: the engine's poll returns as soon as the reply arrives, and a test that read
+                    // the count right after its last poll could find that reply's descriptor not counted yet (6 of 7, on a
+                    // CI runner).
+                    Volatile.Write(ref _descriptorsSent, _descriptorsSent + 1);
                     UnixSocketMsg.Send(_end, reply.AsSpan(0, n), [(int)file.DangerousGetHandle()]);
                 }
-
-                DescriptorsSent++;
             }
         }
 

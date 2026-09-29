@@ -62,9 +62,18 @@ internal sealed class AgentPortal : IAsyncDisposable
     {
         string? token = offerRestoreToken ? await tokens.LoadAsync(ct).ConfigureAwait(false) : null;
         Reply reply;
-        using (ct.Register(SendClose))
+        try
         {
             reply = await RequestAsync((buffer, id) => AgentWire.WriteOpen(buffer, id, token, offerRestoreToken), ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Said here, not from a registration on ct: cancelling runs the latest registration first, the wait's, and
+            // the continuation that sets off came back through here and disposed ours before it ran -- every time when
+            // cancelled from the thread pool, as the portal host does. The agent never heard, and the portal's dialog
+            // stayed on the person's screen.
+            SendClose();
+            throw;
         }
 
         using (reply.Descriptor)

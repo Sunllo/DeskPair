@@ -1,6 +1,7 @@
 using DeskPair.Core.Services;
 using DeskPair.Core.Session.Controller;
 using DeskPair.Core.Session.Host;
+using DeskPair.Core.Testing;
 using Microsoft.Extensions.Logging;
 using DeskPair.Core.Transport;
 using DeskPair.Core.Transport.Udp;
@@ -11,9 +12,10 @@ namespace DeskPair.Integration.Tests;
 /// <summary>Video over the UDP media channel: direct, lossy, relayed, and the fallbacks to TCP.</summary>
 public class UdpMediaSessionTests
 {
-    private static async Task<(ControllerSession Session, TestCallbacks Cb, HostRuntime Host)> ConnectAsync(Testbed bed, bool forceRelay = false, bool udpMedia = true, double loss = 0, int displays = 1)
+    private static async Task<(ControllerSession Session, TestCallbacks Cb, HostRuntime Host)> ConnectAsync(
+        Testbed bed, bool forceRelay = false, bool udpMedia = true, double loss = 0, int displays = 1, FakeVideoEncoderFactory? encoders = null)
     {
-        (HostRuntime host, var passwords, _) = await bed.StartHostAsync(media: true, displays: displays);
+        (HostRuntime host, var passwords, _) = await bed.StartHostAsync(media: true, displays: displays, encoders: encoders);
         (ControllerSession session, TestCallbacks cb, PeerConnector connector) = bed.CreateController(forceRelay: forceRelay, udpMedia: udpMedia, mediaLoss: loss);
         await session.ConnectAsync(connector, host.Identity.Id, CancellationToken.None);
         (await session.LoginAsync(passwords.TemporaryPassword, CancellationToken.None)).Success.ShouldBeTrue();
@@ -71,30 +73,48 @@ public class UdpMediaSessionTests
             () => cb.FramesByDisplay.GetValueOrDefault(1) >= onSecond + 60 && session.VideoFramesReceivedUdp >= udpBefore + 60,
             "display 1 keeps coming, over UDP rather than a TCP fallback",
             15_000);
-        bed.Media!.Qos.IsCongested(host.Sessions.Single().Context.ConnectionId, 1).ShouldBeFalse();
+
+        // Waited for, not looked at once: a report held up for a moment leaves a few frames over the limit for that
+        // moment. Never acknowledged as itself, display 1 stays congested for good.
+        await Testbed.WaitUntilAsync(
+            () => !bed.Media!.Qos.IsCongested(host.Sessions.Single().Context.ConnectionId, 1),
+            "display 1 acknowledged",
+            15_000);
 
         await session.CloseAsync("done");
     }
 
+    /// <summary>
+    /// A keyframe storm is the host being asked for keyframes over and over, so that is what is counted: keyframes
+    /// asked for. This used to count every keyframe the viewer saw, and the test encoder makes one of its own every 60
+    /// frames -- at about 42 frames a second, three or four in five seconds depending on where the five seconds fall,
+    /// all of them with nothing lost (frames given up: 0). "At most three" then failed on CI for a fourth that had
+    /// nothing to do with loss. Asked-for keyframes are held to one a second (KeyFrameMinInterval): a viewer made to ask
+    /// without pause came to three in these five seconds, repaired loss to none.
+    /// </summary>
     [Fact]
     public async Task Eight_percent_packet_loss_is_repaired_by_fec_without_keyframe_storms()
     {
         await using Testbed bed = await Testbed.StartAsync();
-        (ControllerSession session, TestCallbacks cb, HostRuntime host) = await ConnectAsync(bed, loss: 0.08);
+        var encoders = new FakeVideoEncoderFactory();
+        (ControllerSession session, TestCallbacks cb, HostRuntime host) = await ConnectAsync(bed, loss: 0.08, encoders: encoders);
 
         await Testbed.WaitUntilAsync(() => session.VideoFramesReceivedUdp >= 10, "UDP video started", 15_000);
         long sentBefore = host.Sessions.Single().MediaFramesSent;
         long receivedBefore = session.VideoFramesReceivedUdp;
         int keyframesBefore = cb.KeyFrames;
+        int askedBefore = encoders.KeyFramesRequested;
         await Task.Delay(5000);
         long sent = host.Sessions.Single().MediaFramesSent - sentBefore;
         long received = session.VideoFramesReceivedUdp - receivedBefore;
         UdpMediaChannel hostChannel = host.Sessions.Single().MediaChannel!;
         UdpMediaChannel viewerChannel = session.MediaChannel!;
-        bed.Logs.CreateLogger("test").LogInformation("lossy: sent {Sent} received {Received}; host loss estimate {Loss:P1}; viewer loss {Permille}‰, given up {GivenUp}, recovered {Recovered}, rejected {Rejected}",
-            sent, received, hostChannel.Planner.Loss, viewerChannel.Link.LossPermille, viewerChannel.Streams.FramesGivenUp, viewerChannel.Streams.ShardsRecovered, viewerChannel.DatagramsRejected);
+        int asked = encoders.KeyFramesRequested - askedBefore;
+        bed.Logs.CreateLogger("test").LogInformation("lossy: sent {Sent} received {Received}; host loss estimate {Loss:P1}; viewer loss {Permille}‰, given up {GivenUp}, recovered {Recovered}, rejected {Rejected}; keyframes {Keyframes}, asked for {Asked}",
+            sent, received, hostChannel.Planner.Loss, viewerChannel.Link.LossPermille, viewerChannel.Streams.FramesGivenUp, viewerChannel.Streams.ShardsRecovered, viewerChannel.DatagramsRejected,
+            cb.KeyFrames - keyframesBefore, asked);
         received.ShouldBeGreaterThan((long)(sent * 0.95));
-        (cb.KeyFrames - keyframesBefore).ShouldBeLessThanOrEqualTo(3);
+        asked.ShouldBeLessThanOrEqualTo(2, "keyframes asked for while FEC repaired the loss");
         session.MediaChannel!.Streams.ShardsRecovered.ShouldBeGreaterThan(0u);
         hostChannel.Planner.Loss.ShouldBeGreaterThan(0.02);
 

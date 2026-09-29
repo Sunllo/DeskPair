@@ -7,6 +7,7 @@ using DeskPair.Core.Transport;
 using DeskPair.Core.Testing;
 using DeskPair.Integration.Tests;
 using Xunit.Abstractions;
+using DeskPair.Platform.Abstractions.Codec;
 using DeskPair.Platform.Windows.Codec;
 
 namespace DeskPair.Platform.Windows.Tests;
@@ -17,6 +18,11 @@ public class MfSessionTests(ITestOutputHelper output)
     [Fact]
     public async Task Synthetic_desktop_streams_as_h264_and_decodes_at_full_size()
     {
+        if (!MediaFoundationEncoding.CanEncode(VideoCodec.H264))
+        {
+            return; // a machine whose Media Foundation lists an H.264 encoder that will not encode
+        }
+
         await using Testbed bed = await Testbed.StartAsync();
         (HostRuntime host, var passwords, _) = await bed.StartHostAsync(media: true, encoders: new MfVideoEncoderFactory(bed.Logs));
         (ControllerSession session, TestCallbacks cb, PeerConnector connector) = bed.CreateController(decoders: new MfVideoDecoderFactory(bed.Logs));
@@ -39,6 +45,11 @@ public class MfSessionTests(ITestOutputHelper output)
     [Fact]
     public async Task Full_screen_motion_at_1440p_sustains_the_frame_rate()
     {
+        if (!MediaFoundationEncoding.CanEncode(VideoCodec.H264))
+        {
+            return; // a machine whose Media Foundation lists an H.264 encoder that will not encode
+        }
+
         const int W = 2560, H = 1440;
         _ = timeBeginPeriod(1); // the fake capturer bypasses the DXGI factory that normally raises the timer resolution
         await using Testbed bed = await Testbed.StartAsync();
