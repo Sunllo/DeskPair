@@ -17,6 +17,13 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## Desktop, unreleased
+
+### Fixed
+
+- Stopping the host while viewers were connected could leave some of their sessions unclosed: closing one that was
+  already ending on its own threw, and the sessions after it were skipped.
+
 ## 0.4.8 — 2026-09-29
 
 Desktop only; the phones stay at 0.4.0.

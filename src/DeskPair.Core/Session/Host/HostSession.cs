@@ -580,7 +580,16 @@ public sealed class HostSession
             await _pump.CloseAsync(reason).ConfigureAwait(false);
         }
 
-        await _cts.CancelAsync().ConfigureAwait(false);
+        try
+        {
+            await _cts.CancelAsync().ConfigureAwait(false);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Closing the pump let the session run to its end meanwhile, and its shutdown disposes this source: there is
+            // nothing left to cancel. It threw out of HostRuntime.DisposeAsync instead, and the sessions after this one
+            // were not closed (a CI run, as a test bed went down).
+        }
     }
 
     private async Task ShutdownAsync(string reason)
