@@ -41,6 +41,10 @@ The servers only; no app changes.
   screens that changed restart. Asking for the resolution a screen already has changes nothing and bothers nobody.
 - A Linux host kept every size it had been taught for a viewer until the last viewer left; each now goes as soon
   as the screen moves on to another.
+- A connection whose picture was busy from its first second -- a window being dragged, a video playing -- could stay
+  well below what the link carries for as long as it stayed busy, when the host was too busy at that moment to
+  measure the link: the measurement made at the start was the only one while the picture kept changing. A start-up
+  measurement that fails is now tried again a second later, up to three times.
 - Stopping the host while viewers were connected could leave some of their sessions unclosed: closing one that was
   already ending on its own threw, and the sessions after it were skipped.
 

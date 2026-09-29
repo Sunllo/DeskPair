@@ -34,6 +34,10 @@ public sealed class UdpMediaChannel : IAsyncDisposable
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan IdleProbeInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan FailedProbeBackoff = TimeSpan.FromSeconds(15);
+
+    /// <summary>How many times the start-up probe is tried, a second apart, before it waits like any other.</summary>
+    private const int StartUpProbeAttempts = 3;
+    private static readonly TimeSpan StartUpProbeRetry = TimeSpan.FromSeconds(1);
     /// <summary>Default probe ceiling until the host tells the channel what the picture can use.</summary>
     public const double DefaultCeilingBps = 80_000_000;
 
@@ -74,6 +78,7 @@ public sealed class UdpMediaChannel : IAsyncDisposable
     private int _probeClusterId;
     private long _nextProbeAt;
     private bool _initialProbeDone;
+    private int _startUpProbeFailures;
     private double _ceilingBps = DefaultCeilingBps;
     private bool _ceilingKnown;
     private long _readyAt;
@@ -441,7 +446,7 @@ public sealed class UdpMediaChannel : IAsyncDisposable
                     LastProbe = $"{inFlight.RateBps / 1e6:F1} Mb/s timed out";
                     _probe = null;
                     _probeResults.Clear();
-                    _nextProbeAt = now + (long)(FailedProbeBackoff.TotalSeconds * _time.TimestampFrequency);
+                    ProbeFailed(inFlight, now);
                 }
 
                 return;
@@ -452,7 +457,7 @@ public sealed class UdpMediaChannel : IAsyncDisposable
             {
                 // Wait for the host to say what the picture can use (first feedback), but not forever.
                 _readyAt = _readyAt == 0 ? now : _readyAt;
-                if (!_ceilingKnown && _time.GetElapsedTime(_readyAt, now) < TimeSpan.FromSeconds(1))
+                if ((!_ceilingKnown && _time.GetElapsedTime(_readyAt, now) < TimeSpan.FromSeconds(1)) || now < _nextProbeAt)
                 {
                     return;
                 }
@@ -549,14 +554,37 @@ public sealed class UdpMediaChannel : IAsyncDisposable
             {
                 SendProbe(Math.Min(_ceilingBps, 2 * estimate!.Value), initial: true, now);
             }
+            else if (estimate is null)
+            {
+                ProbeFailed(probe, now);
+            }
             else
             {
-                TimeSpan wait = estimate is null ? FailedProbeBackoff : IdleProbeInterval;
-                _nextProbeAt = now + (long)(wait.TotalSeconds * _time.TimestampFrequency);
+                _nextProbeAt = now + (long)(IdleProbeInterval.TotalSeconds * _time.TimestampFrequency);
             }
         }
 
         return target;
+    }
+
+    /// <summary>
+    /// A probe that timed out or measured nothing waits <see cref="FailedProbeBackoff"/> before the next -- except at
+    /// start-up. After it, probes go out only while the stream is idle, so a stream busy from its first second (a window
+    /// being dragged, a video playing) would ramp slowly for as long as it stays busy, on the strength of one burst the
+    /// machine happened to be too busy to send at its rate. A failed start-up probe is tried again a second later, a
+    /// few times. Under <see cref="_probeLock"/>.
+    /// </summary>
+    private void ProbeFailed(ProbeCluster probe, long now)
+    {
+        if (probe.Initial && ++_startUpProbeFailures < StartUpProbeAttempts)
+        {
+            _initialProbeDone = false;
+            _nextProbeAt = now + (long)(StartUpProbeRetry.TotalSeconds * _time.TimestampFrequency);
+        }
+        else
+        {
+            _nextProbeAt = now + (long)(FailedProbeBackoff.TotalSeconds * _time.TimestampFrequency);
+        }
     }
 
     private int CountLostOnPath(List<TransportFeedback.Arrival> received)
