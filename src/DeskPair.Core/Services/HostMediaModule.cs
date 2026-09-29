@@ -69,6 +69,7 @@ public sealed class HostMediaModule : IAsyncDisposable
     private readonly object _lock = new();
     private readonly InputHandler _input;
     private readonly DisplayModeService _modes;
+    private readonly DisplayChangeQueue _changes;
     private HostRuntime? _runtime;
     private ITimer? _displayChangeTimer;
     private string _topology = string.Empty;
@@ -86,6 +87,7 @@ public sealed class HostMediaModule : IAsyncDisposable
         Qos = new VideoQosController(_time);
         _input = new InputHandler(platform.Input, platform.Displays, _time);
         _modes = new DisplayModeService(platform.Displays, platform.DisplayModes, _time, logs.CreateLogger<DisplayModeService>(), platform.ModeTeacher);
+        _changes = new DisplayChangeQueue(_time, logs.CreateLogger<DisplayChangeQueue>());
         _cursor = new CursorService(platform.Cursor, _time, logs.CreateLogger<CursorService>())
         {
             IsEchoFor = id => _input.InjectedRecently(id, EchoWindow),
@@ -535,6 +537,13 @@ public sealed class HostMediaModule : IAsyncDisposable
             last = _remoteSessions.Count == 0;
         }
 
+        _changes.Drop(id);
+        if (last)
+        {
+            // A change already under way lands first; one landing after the restore would outlive every viewer.
+            await _changes.QuiesceAsync().ConfigureAwait(false);
+        }
+
         if (last && _modes.HasChanges)
         {
             // The last viewer has gone: the screen goes back to how its owner left it. Counted by sessions,
@@ -649,6 +658,18 @@ public sealed class HostMediaModule : IAsyncDisposable
                 VirtualDisplay = _platform.VirtualDisplays?.IsVirtual(d) == true,
             };
             info.Modes.AddRange(_modes.ModesFor(d).Select(m => new Resolution { Width = m.Width, Height = m.Height, Scale = m.Scale }));
+            if (_modes.MadeUpSizesFor(d) is { } sizes)
+            {
+                info.AnySize = new SizeRange
+                {
+                    MinWidth = sizes.MinWidth,
+                    MinHeight = sizes.MinHeight,
+                    MaxWidth = sizes.MaxWidth,
+                    MaxHeight = sizes.MaxHeight,
+                    Step = sizes.Step,
+                };
+            }
+
             if (_modes.OriginalFor(d.Name) is { } original)
             {
                 info.Original = new Resolution { Width = original.Width, Height = original.Height, Scale = original.Scale };
@@ -659,37 +680,101 @@ public sealed class HostMediaModule : IAsyncDisposable
 
     /// <summary>
     /// A viewer asked for a display mode. Refused without keyboard permission -- somebody who may only watch
-    /// must not reshape the screen -- and for anything the display did not advertise. On success every
-    /// stream is restarted at the new geometry (a Windows mode change moves the other monitors too) and
-    /// every remote viewer is told, so each picker keeps telling the truth; on refusal only the asker is.
+    /// must not reshape the screen -- and for anything the display cannot be given. The change is made by
+    /// <see cref="DisplayChangeQueue"/>, so the session goes on reading this viewer's input meanwhile, and a
+    /// later request for the same display replaces this one if it has not started.
     /// </summary>
     public async Task SetResolutionAsync(HostSessionContext context, DisplayResolution request, CancellationToken ct)
     {
-        string? failure;
-        if (!context.Permissions.Has(Permission.PermKeyboard))
-        {
-            failure = "Changing the resolution needs keyboard and mouse permission.";
-        }
-        else
-        {
-            DisplayMode? wanted = request.Resolution is { } r && (r.Width > 0 || r.Height > 0)
-                ? new DisplayMode(r.Width, r.Height, r.Scale)
-                : null;
-            failure = await _modes.ChangeAsync(request.Display, wanted, ct).ConfigureAwait(false);
-        }
-
+        IReadOnlyList<DisplayDescriptor> displays = _platform.Displays.GetDisplays();
+        string? failure = !context.Permissions.Has(Permission.PermKeyboard) ? "Changing the resolution needs keyboard and mouse permission."
+            : request.Display < 0 || request.Display >= displays.Count ? "That display is not there any more."
+            : null;
         if (failure is not null)
         {
             await context.SendAsync(new Message { Misc = new Misc { DisplaysChanged = Describe(context.CurrentDisplay, request.Display, failure) } }, MessagePriority.Control, ct).ConfigureAwait(false);
             return;
         }
 
-        await RestartStreamsForNewGeometryAsync().ConfigureAwait(false);
+        // By name: indices move when a monitor comes or goes, and the change may wait behind another.
+        string name = displays[request.Display].Name;
+        DisplayMode? wanted = request.Resolution is { } r && (r.Width > 0 || r.Height > 0)
+            ? new DisplayMode(r.Width, r.Height, r.Scale)
+            : null;
+        _changes.Enqueue(context.ConnectionId, name, token => ChangeResolutionAsync(context, name, wanted, token));
+    }
 
-        // This change is handled; the platform's own notice of it, still to arrive, must not restart everything again.
-        _topologyDisplays = _platform.Displays.GetDisplays();
-        _topology = Signature(_topologyDisplays);
-        await BroadcastDisplaysAsync(request.Display, ct).ConfigureAwait(false);
+    /// <summary>
+    /// Makes one queued resolution change. On a change, the streams of the displays whose geometry moved restart --
+    /// a Windows mode change can move its neighbours too, the rest are left running -- and every remote viewer is
+    /// told, so each picker keeps telling the truth. A refusal, or a request for what the display already is,
+    /// restarts nothing and is answered to the asker alone.
+    /// </summary>
+    private async Task ChangeResolutionAsync(HostSessionContext context, string name, DisplayMode? wanted, CancellationToken ct)
+    {
+        if (!IsRemoteSession(context.ConnectionId))
+        {
+            return; // gone while the change waited: nobody left to change it for
+        }
+
+        string? failure;
+        int index;
+        bool broadcast = false;
+        await _topologyGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            index = _platform.Displays.GetDisplays().ToList().FindIndex(d => d.Name == name);
+            failure = index < 0 ? "That display is not there any more."
+                : !context.Permissions.Has(Permission.PermKeyboard) ? "Changing the resolution needs keyboard and mouse permission."
+                : await _modes.ChangeAsync(index, wanted, ct).ConfigureAwait(false);
+
+            IReadOnlyList<DisplayDescriptor> displays = _platform.Displays.GetDisplays();
+            string now = Signature(displays);
+            if (failure is null && now != _topology)
+            {
+                // Handled here, under the gate: the platform's own notice of this change, still to arrive, finds
+                // nothing new and restarts nothing again.
+                IReadOnlyList<DisplayDescriptor> built = _topologyDisplays;
+                _topology = now;
+                _topologyDisplays = displays;
+                if (built.Select(d => d.Name).SequenceEqual(displays.Select(d => d.Name), StringComparer.Ordinal))
+                {
+                    await RestartStreamsForNewGeometryAsync(built, displays).ConfigureAwait(false);
+                    await BroadcastDisplaysAsync(index, CancellationToken.None).ConfigureAwait(false);
+                }
+                else
+                {
+                    // Displays came or went meanwhile: subscriptions move by name, as for any change of topology.
+                    await ApplyDisplaysAsync(built, displays, index).ConfigureAwait(false);
+                }
+
+                broadcast = true;
+            }
+        }
+        finally
+        {
+            _topologyGate.Release();
+        }
+
+        if (!broadcast)
+        {
+            try
+            {
+                await context.SendAsync(new Message { Misc = new Misc { DisplaysChanged = Describe(context.CurrentDisplay, index, failure ?? string.Empty) } }, MessagePriority.Control, ct).ConfigureAwait(false);
+            }
+            catch (Exception e) when (e is IOException or ObjectDisposedException or OperationCanceledException)
+            {
+                // The asker left meanwhile.
+            }
+        }
+    }
+
+    private bool IsRemoteSession(int connectionId)
+    {
+        lock (_lock)
+        {
+            return _remoteSessions.Contains(connectionId);
+        }
     }
 
     /// <summary>
@@ -895,15 +980,42 @@ public sealed class HostMediaModule : IAsyncDisposable
     /// A viewer asked to plug in a display, or to unplug one that was plugged in that way. The answer is the
     /// one a resolution change gets: the new list to everyone, or the reason to the asker alone.
     /// </summary>
-    public async Task VirtualDisplayAsync(HostSessionContext context, VirtualDisplayRequest request, CancellationToken ct)
+    public Task VirtualDisplayAsync(HostSessionContext context, VirtualDisplayRequest request, CancellationToken ct)
     {
-        (string? failure, int changed) = request.Action == VirtualDisplayRequest.Types.Action.VdRemove
-            ? await UnplugAsync(context, request.Display, ct).ConfigureAwait(false)
+        // Queued like a resolution change, and for the same reason: plugging a display in takes seconds.
+        string? removing = null;
+        if (request.Action == VirtualDisplayRequest.Types.Action.VdRemove)
+        {
+            IReadOnlyList<DisplayDescriptor> displays = _platform.Displays.GetDisplays();
+            removing = request.Display >= 0 && request.Display < displays.Count ? displays[request.Display].Name : string.Empty;
+        }
+
+        _changes.Enqueue(context.ConnectionId, null, token => ChangeVirtualDisplaysAsync(context, request, removing, token));
+        return Task.CompletedTask;
+    }
+
+    private async Task ChangeVirtualDisplaysAsync(HostSessionContext context, VirtualDisplayRequest request, string? removing, CancellationToken ct)
+    {
+        if (!IsRemoteSession(context.ConnectionId))
+        {
+            return;
+        }
+
+        (string? failure, int changed) = removing is not null
+            ? await UnplugAsync(context, removing, ct).ConfigureAwait(false)
             : await AddForAsync(context, request.Resolution, ct).ConfigureAwait(false);
         if (failure is not null)
         {
             _log.LogInformation("Session {Id}: virtual display {Action} refused: {Why}", context.ConnectionId, request.Action, failure);
-            await context.SendAsync(new Message { Misc = new Misc { DisplaysChanged = Describe(context.CurrentDisplay, -1, failure) } }, MessagePriority.Control, ct).ConfigureAwait(false);
+            try
+            {
+                await context.SendAsync(new Message { Misc = new Misc { DisplaysChanged = Describe(context.CurrentDisplay, -1, failure) } }, MessagePriority.Control, ct).ConfigureAwait(false);
+            }
+            catch (Exception e) when (e is IOException or ObjectDisposedException or OperationCanceledException)
+            {
+                // The asker left meanwhile.
+            }
+
             return;
         }
 
@@ -974,7 +1086,7 @@ public sealed class HostMediaModule : IAsyncDisposable
         return (null, index);
     }
 
-    private async Task<(string? Failure, int Changed)> UnplugAsync(HostSessionContext context, int index, CancellationToken ct)
+    private async Task<(string? Failure, int Changed)> UnplugAsync(HostSessionContext context, string name, CancellationToken ct)
     {
         if (WhyNoVirtualDisplays(context) is { } why)
         {
@@ -983,12 +1095,12 @@ public sealed class HostMediaModule : IAsyncDisposable
 
         IVirtualDisplayProvider provider = _platform.VirtualDisplays!;
         IReadOnlyList<DisplayDescriptor> displays = _platform.Displays.GetDisplays();
-        if (index < 0 || index >= displays.Count || !provider.IsVirtual(displays[index]))
+        int index = displays.ToList().FindIndex(d => d.Name == name);
+        if (index < 0 || !provider.IsVirtual(displays[index]))
         {
             return ("Only a display that was added from here can be removed.", -1);
         }
 
-        string name = displays[index].Name;
         DisplayActionResult removed = await provider.RemoveAsync(displays[index], ct).ConfigureAwait(false);
         if (!removed.Succeeded)
         {
@@ -1129,15 +1241,21 @@ public sealed class HostMediaModule : IAsyncDisposable
         return msg;
     }
 
-    /// <summary>Every running stream is re-created at whatever size its display now has; the QoS starts each viewer clean.</summary>
-    private async Task RestartStreamsForNewGeometryAsync()
+    /// <summary>
+    /// Running streams are re-created at whatever size their display now has, and the QoS starts each of their viewers
+    /// clean. Given the displays before and after, only the streams of displays that moved or changed size restart:
+    /// one viewer's window following its size should not cost everybody watching another display a keyframe.
+    /// </summary>
+    private async Task RestartStreamsForNewGeometryAsync(IReadOnlyList<DisplayDescriptor>? before = null, IReadOnlyList<DisplayDescriptor>? after = null)
     {
+        bool Changed(int index) => before is null || after is null || index >= before.Count || index >= after.Count || before[index] != after[index];
+
         VideoService[] videos;
         List<(int Connection, int Display)> subscribers;
         lock (_lock)
         {
-            videos = _video.Values.ToArray();
-            subscribers = [.. _subscriptions.SelectMany(kv => kv.Value.Displays.Select(d => (kv.Key, d)))];
+            videos = [.. _video.Where(kv => Changed(kv.Key)).Select(kv => kv.Value)];
+            subscribers = [.. _subscriptions.SelectMany(kv => kv.Value.Displays.Where(Changed).Select(d => (kv.Key, d)))];
         }
 
         foreach (VideoService v in videos.Where(v => v.IsRunning))
@@ -1179,6 +1297,7 @@ public sealed class HostMediaModule : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await _changes.DisposeAsync().ConfigureAwait(false);
         _platform.Displays.DisplaysChanged -= OnDisplaysChanged;
         if (_platform.DisplaySession is { } shared)
         {

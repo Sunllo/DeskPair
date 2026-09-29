@@ -34,6 +34,8 @@
       <CheckBox IsChecked="{Binding ShowRemoteCursor}" Content="{loc:Loc settings.showCursor}" />
       <CheckBox IsChecked="{Binding LosslessRefinement}" Content="{loc:Loc settings.lossless}" />
       <CheckBox IsChecked="{Binding FitToWindow}" Content="{loc:Loc settings.fitToWindow}" />
+      <CheckBox IsChecked="{Binding MatchWindowResolution}" Content="{loc:Loc settings.matchWindow}" />
+      <TextBlock Text="{loc:Loc settings.matchWindowHint}" Classes="hint" TextWrapping="Wrap" Margin="28,-6,0,0" />
       <CheckBox IsChecked="{Binding SmoothPlayback}" Content="{loc:Loc settings.smoothPlayback}" />
 
       <TextBlock Text="{loc:Loc settings.thisComputer}" Classes="section" Margin="0,14,0,0" />

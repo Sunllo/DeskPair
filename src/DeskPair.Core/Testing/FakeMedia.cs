@@ -48,6 +48,9 @@ public sealed class FakeDisplayModes : IDisplayModeSwitcher
     /// <summary>When set, every switch fails with this reason.</summary>
     public string? Refuse { get; set; }
 
+    /// <summary>How long a switch takes, the way a monitor takes a second or two to resynchronise.</summary>
+    public TimeSpan Delay { get; set; }
+
     public List<(string Display, DisplayMode Mode)> Calls { get; } = [];
 
     private readonly Dictionary<string, List<DisplayMode>> _taught = new(StringComparer.Ordinal);
@@ -70,11 +73,25 @@ public sealed class FakeDisplayModes : IDisplayModeSwitcher
         taught.Add(mode);
     }
 
+    /// <summary>Takes one taught size off one display's list.</summary>
+    public void Forget(string display, DisplayMode mode)
+    {
+        if (_taught.TryGetValue(display, out List<DisplayMode>? taught))
+        {
+            taught.RemoveAll(m => m.Width == mode.Width && m.Height == mode.Height);
+        }
+    }
+
     public void ForgetTaught() => _taught.Clear();
 
     public bool TrySetMode(DisplayDescriptor display, DisplayMode mode, out string? failure)
     {
         Calls.Add((display.Name, mode));
+        if (Delay > TimeSpan.Zero)
+        {
+            Thread.Sleep(Delay);
+        }
+
         if (Refuse is { } why)
         {
             failure = why;
@@ -116,6 +133,14 @@ public sealed class FakeVirtualDisplays(FakeDisplayEnumerator displays, FakeDisp
 
     public int Count => displays.Displays.Count(IsVirtual);
 
+    /// <summary>Sizes can be taught to every display, not only the ones added here: a Linux desktop's outputs.</summary>
+    public bool TeachAll { get; set; }
+
+    public TeachableSizes Limits { get; set; } = new(64, 64, 8192, 8192, 1);
+
+    /// <summary>Sizes taken back one at a time, as a display left them.</summary>
+    public List<(string Display, DisplayMode Mode)> Forgotten { get; } = [];
+
     public bool IsVirtual(DisplayDescriptor display) => display.Name.StartsWith(Prefix, StringComparison.Ordinal);
 
     public Task<DisplayActionResult> AddAsync(DisplayMode? mode, CancellationToken ct)
@@ -151,12 +176,19 @@ public sealed class FakeVirtualDisplays(FakeDisplayEnumerator displays, FakeDisp
         return Task.CompletedTask;
     }
 
-    public bool CanTeach(DisplayDescriptor display) => IsVirtual(display);
+    public bool CanTeach(DisplayDescriptor display) => TeachAll || IsVirtual(display);
 
     public Task<DisplayActionResult> TeachAsync(DisplayDescriptor display, DisplayMode mode, CancellationToken ct)
     {
         modes.Teach(display.Name, mode);
         return Task.FromResult(DisplayActionResult.Done);
+    }
+
+    public Task ForgetAsync(DisplayDescriptor display, DisplayMode mode, CancellationToken ct)
+    {
+        Forgotten.Add((display.Name, mode));
+        modes.Forget(display.Name, mode);
+        return Task.CompletedTask;
     }
 
     public Task ForgetTaughtModesAsync(CancellationToken ct)
@@ -191,7 +223,16 @@ public sealed class FakeScreenCapturerFactory : IScreenCapturerFactory
     /// <summary>Custom picture source; null keeps the default moving gradient.</summary>
     public FakeFrameGenerator? Generator { get; set; }
 
-    public IScreenCapturer Create(DisplayDescriptor display, bool preferGpu) => new FakeScreenCapturer(display, UnchangedEvery, Generator);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _created = new(StringComparer.Ordinal);
+
+    /// <summary>How many capturers were made for a display: one per stream start, so a restarted stream counts again.</summary>
+    public int CreatedFor(string display) => _created.GetValueOrDefault(display);
+
+    public IScreenCapturer Create(DisplayDescriptor display, bool preferGpu)
+    {
+        _created.AddOrUpdate(display.Name, 1, (_, n) => n + 1);
+        return new FakeScreenCapturer(display, UnchangedEvery, Generator);
+    }
 
     private sealed class FakeScreenCapturer(DisplayDescriptor display, int unchangedEvery, FakeFrameGenerator? generator) : IScreenCapturer
     {

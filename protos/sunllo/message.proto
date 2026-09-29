@@ -163,6 +163,15 @@ message Resolution {
   double scale = 3;
 }
 
+// Every width and height from min to max that is a multiple of step.
+message SizeRange {
+  int32 min_width = 1;
+  int32 min_height = 2;
+  int32 max_width = 3;
+  int32 max_height = 4;
+  int32 step = 5;
+}
+
 message DisplayInfo {
   int32 x = 1;
   int32 y = 2;
@@ -175,10 +184,14 @@ message DisplayInfo {
   repeated Resolution modes = 9;   // sizes this display can be switched to, largest first; empty = not from here
   Resolution original = 10;        // set only while a viewer-chosen mode is in force: what "original" restores
   bool virtual_display = 11;       // plugged in by the host at a viewer's request; one it can take away again
+  // Set when the host can make up a mode of any size in this range for the display, so a viewer may ask for
+  // exactly the size of its window rather than the nearest of modes. Unset: modes is the whole choice.
+  SizeRange any_size = 12;
 }
 
 // Controller -> host: switch a display to one of the modes it advertised, or back to its original
-// (resolution unset). Refused without keyboard permission, and for a size not in the list.
+// (resolution unset). Refused without keyboard permission, and for a size not in the list -- unless the
+// display offers any_size and the size lies in it.
 message DisplayResolution {
   int32 display = 1;
   Resolution resolution = 2;
@@ -318,6 +331,11 @@ message MouseEvent {
   int32 y = 3;
   repeated ControlKey modifiers = 4;
   int32 display = 5;
+  // The size of the picture x and y are pixels of. The display may have changed size since that picture was
+  // taken -- a new resolution is on its way to the viewer -- and the host scales the point onto the size it
+  // has now. Unset (an older viewer): x and y are taken as they are.
+  int32 frame_width = 6;
+  int32 frame_height = 7;
 }
 
 enum KeyboardMode {

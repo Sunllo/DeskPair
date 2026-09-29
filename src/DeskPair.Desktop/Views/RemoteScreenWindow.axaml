@@ -17,9 +17,11 @@
     <Border DockPanel.Dock="Top" Background="#1E1E1E" Padding="8,3">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <TextBlock Text="{Binding Title}" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,8,0" />
-        <ToggleButton IsChecked="{Binding FitToWindow}" Content="{loc:Loc session.fit}" />
+        <ToggleButton IsChecked="{Binding FitToWindow}" Content="{loc:Loc session.fit}" IsEnabled="{Binding !IsFollowing}" />
         <Button Command="{Binding RefreshCommand}" Content="⟳" ToolTip.Tip="{loc:Loc screen.refresh}" />
         <Button Command="{Binding ShowSessionCommand}" Content="{loc:Loc screen.showSession}" />
+        <TextBlock Text="{Binding MatchWindowStatus}" VerticalAlignment="Center" Foreground="#E8C06A"
+                   IsVisible="{Binding MatchWindowStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
       </StackPanel>
     </Border>
     <ScrollViewer x:Name="DisplayScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">

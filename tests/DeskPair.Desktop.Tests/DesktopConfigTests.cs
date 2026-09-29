@@ -41,10 +41,12 @@ public class DesktopConfigTests
     [Fact]
     public void Turning_on_a_setting_that_defaults_to_off_survives_a_restart()
     {
-        DesktopConfig read = RoundTrip(new DesktopConfig { ForceRelay = true, AudioEnabled = true });
+        DesktopConfig read = RoundTrip(new DesktopConfig { ForceRelay = true, AudioEnabled = true, MatchWindowResolution = true });
 
         read.ForceRelay.ShouldBeTrue();
         read.AudioEnabled.ShouldBeTrue();
+        read.MatchWindowResolution.ShouldBeTrue();
+        new DesktopConfig().MatchWindowResolution.ShouldBeFalse("it changes the host's resolution, so it is asked for");
     }
 
     [Fact]

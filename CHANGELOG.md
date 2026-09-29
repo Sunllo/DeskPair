@@ -19,8 +19,28 @@ The servers only; no app changes.
 
 ## Desktop, unreleased
 
+### Added
+
+- **Match window**: a switch on the session toolbar that gives the remote screen the size of the window, the way a
+  Windows Remote Desktop session does, so the picture is shown pixel for pixel instead of scaled. It asks when the
+  window stops changing size, and gives the screen its own resolution back when it is turned off or the last viewer
+  leaves. A Linux (X11) host takes the window's size exactly; Windows and macOS hosts, and any other screen with a
+  list of resolutions, take the largest that fits. Off by default -- it changes the host's resolution, which the
+  person at that screen sees too -- and the default is in Settings > Display.
+
 ### Fixed
 
+- On a screen scaled to 125-175 %, the remote picture at 1:1 was drawn half as large again and blurred with it, and
+  "fit to the window" enlarged small pictures the same way. 1:1 now means one pixel of the remote screen for one of
+  this one, drawn without smoothing; from 200 % each remote pixel takes exactly two, so the picture keeps its size
+  there and loses the blur.
+- While a host changed a screen's resolution for a viewer -- a second or two, or up to five to add a screen -- that
+  viewer's mouse and keyboard stopped until it was done. They now carry on, and a click made on the old picture
+  lands where it was aimed on the new one.
+- Changing one screen's resolution restarted the picture of every screen the host was streaming; now only the
+  screens that changed restart. Asking for the resolution a screen already has changes nothing and bothers nobody.
+- A Linux host kept every size it had been taught for a viewer until the last viewer left; each now goes as soon
+  as the screen moves on to another.
 - Stopping the host while viewers were connected could leave some of their sessions unclosed: closing one that was
   already ending on its own threw, and the sessions after it were skipped.
 

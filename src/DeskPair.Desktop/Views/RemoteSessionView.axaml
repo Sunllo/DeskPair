@@ -23,7 +23,7 @@
           <Button x:Name="AddDisplayButton" Content="＋" IsVisible="{Binding CanAddDisplays}" ToolTip.Tip="{loc:Loc session.addDisplay}" />
           <Button Content="{loc:Loc session.removeDisplay}" Command="{Binding RemoveDisplayCommand}" IsVisible="{Binding CurrentDisplayIsAdded}" />
           <ComboBox ItemsSource="{Binding Resolutions}" SelectedIndex="{Binding ResolutionIndex}" MinWidth="130"
-                    IsVisible="{Binding CanChangeResolution}" ToolTip.Tip="{loc:Loc session.resolution}" />
+                    IsVisible="{Binding CanChangeResolution}" IsEnabled="{Binding !IsFollowing}" ToolTip.Tip="{loc:Loc session.resolution}" />
           <TextBlock Text="{loc:Loc session.quality}" VerticalAlignment="Center" Foreground="#CCC" Margin="8,0,0,0" />
           <ComboBox SelectedIndex="{Binding QualityIndex}" MinWidth="100">
             <ComboBoxItem Content="{loc:Loc session.quality.low}" />
@@ -35,7 +35,11 @@
           <ComboBox ItemsSource="{Binding FrameRates}" SelectedIndex="{Binding FrameRateIndex}" MinWidth="80"
                     ToolTip.Tip="{loc:Loc session.frameRate.tip}" />
           <ToggleButton IsChecked="{Binding TranslateMode}" Content="{loc:Loc session.keyboard.translate}" ToolTip.Tip="{loc:Loc session.keyboardMode}" />
-          <ToggleButton IsChecked="{Binding FitToWindow}" Content="{loc:Loc session.fit}" />
+          <ToggleButton IsChecked="{Binding FitToWindow}" Content="{loc:Loc session.fit}" IsEnabled="{Binding !IsFollowing}" />
+          <!-- The remote display the size of this window, as a Windows remote desktop session is; Fit and the picker wait meanwhile. -->
+          <ToggleButton IsChecked="{Binding MatchWindow}" Content="{loc:Loc session.matchWindow}" ToolTip.Tip="{loc:Loc session.matchWindow.tip}" />
+          <TextBlock Text="{Binding MatchWindowStatus}" VerticalAlignment="Center" Foreground="#E8C06A"
+                     IsVisible="{Binding MatchWindowStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <ToggleButton IsChecked="{Binding ShowRemoteCursor}" Content="🖱" ToolTip.Tip="{loc:Loc session.remoteCursor}" />
           <ToggleButton IsChecked="{Binding AudioEnabled}" Content="{loc:Loc session.audio}" />
           <Button Command="{Binding CtrlAltDelCommand}" Content="{loc:Loc session.ctrlAltDel}" />

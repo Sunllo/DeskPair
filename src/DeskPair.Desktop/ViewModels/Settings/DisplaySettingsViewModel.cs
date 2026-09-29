@@ -29,6 +29,10 @@ public partial class DisplaySettingsViewModel : SettingsSectionBase
     [ObservableProperty]
     public partial bool FitToWindow { get; set; }
 
+    /// <summary>New sessions start with the remote display following their window (<see cref="DesktopConfig.MatchWindowResolution"/>).</summary>
+    [ObservableProperty]
+    public partial bool MatchWindowResolution { get; set; }
+
     [ObservableProperty]
     public partial bool SmoothPlayback { get; set; }
 
@@ -67,6 +71,7 @@ public partial class DisplaySettingsViewModel : SettingsSectionBase
         ShowRemoteCursor = desktop.ShowRemoteCursor;
         LosslessRefinement = desktop.LosslessRefinement;
         FitToWindow = desktop.FitToWindow;
+        MatchWindowResolution = desktop.MatchWindowResolution;
         SmoothPlayback = desktop.SmoothPlayback;
         CodecIndex = host?.CodecPreference switch { "h264" => 1, "h265" => 2, "av1" => 3, "vp9" => 4, _ => 0 };
         AllowVirtualDisplay = host?.AllowVirtualDisplay ?? false;
@@ -114,6 +119,7 @@ public partial class DisplaySettingsViewModel : SettingsSectionBase
         ShowRemoteCursor = ShowRemoteCursor,
         LosslessRefinement = LosslessRefinement,
         FitToWindow = FitToWindow,
+        MatchWindowResolution = MatchWindowResolution,
         SmoothPlayback = SmoothPlayback,
     };
 

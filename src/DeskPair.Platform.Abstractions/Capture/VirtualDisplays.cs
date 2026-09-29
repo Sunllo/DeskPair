@@ -53,12 +53,29 @@ public interface IVirtualDisplayProvider
 /// </summary>
 public interface IArbitraryModeSink
 {
+    /// <summary>The sizes this can teach. A viewer is offered these, so it can ask for its window's size exactly.</summary>
+    TeachableSizes Limits { get; }
+
     /// <summary>Whether sizes can be taught to <paramref name="display"/>.</summary>
     bool CanTeach(DisplayDescriptor display);
 
     /// <summary>Adds <paramref name="mode"/> to what the display can show.</summary>
     Task<DisplayActionResult> TeachAsync(DisplayDescriptor display, DisplayMode mode, CancellationToken ct);
 
+    /// <summary>
+    /// Takes back one size taught to <paramref name="display"/>, which it has just left for another. A viewer whose
+    /// window is resized asks for a new size each time; without this every one of them would stay behind.
+    /// </summary>
+    Task ForgetAsync(DisplayDescriptor display, DisplayMode mode, CancellationToken ct);
+
     /// <summary>Takes back every size taught, once the displays are back in their original modes.</summary>
     Task ForgetTaughtModesAsync(CancellationToken ct);
+}
+
+/// <summary>Sizes from the minimum to the maximum, in both directions, in whole steps.</summary>
+public readonly record struct TeachableSizes(int MinWidth, int MinHeight, int MaxWidth, int MaxHeight, int Step)
+{
+    public bool Contains(int width, int height) =>
+        width >= MinWidth && width <= MaxWidth && height >= MinHeight && height <= MaxHeight
+        && (Step <= 1 || (width % Step == 0 && height % Step == 0));
 }

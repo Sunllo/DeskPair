@@ -637,7 +637,12 @@ public sealed class TestCallbacks : IControllerCallbacks
         {
             DisplaysChanges.Add(info);
         }
+
+        DisplaysChangedHook?.Invoke(info);
     }
+
+    /// <summary>Called with each list as it arrives, once it is recorded: how a follower under test hears the host.</summary>
+    public Action<DisplaysChanged>? DisplaysChangedHook { get; set; }
 
     public void OnDisplaySubscription(DisplaySubscription subscription)
     {

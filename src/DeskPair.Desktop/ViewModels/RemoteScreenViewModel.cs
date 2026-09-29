@@ -1,6 +1,9 @@
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DeskPair.Core.Session.Controller;
 using DeskPair.Desktop.Controls;
+using DeskPair.Protocol.Messages;
 
 namespace DeskPair.Desktop.ViewModels;
 
@@ -17,13 +20,75 @@ public sealed partial class RemoteScreenViewModel : ObservableObject
 {
     private RemoteDisplayView? _view;
 
+    /// <summary>Keeps this window's display the size of this window, while the session follows windows.</summary>
+    private readonly ResolutionFollower _follower;
+
     public RemoteScreenViewModel(RemoteSessionViewModel owner, string name, int index)
     {
         Owner = owner;
         DisplayName = name;
         DisplayIndex = index;
         FitToWindow = owner.FitToWindow;
+        _follower = owner.NewFollower();
+        _follower.StateChanged += () => Dispatcher.UIThread.Post(UpdateStatus);
     }
+
+    /// <summary>This window's display is being kept the size of this window; Fit waits meanwhile.</summary>
+    [ObservableProperty]
+    public partial bool IsFollowing { get; set; }
+
+    /// <summary>What following the window is doing, when there is something to say.</summary>
+    [ObservableProperty]
+    public partial string MatchWindowStatus { get; set; } = string.Empty;
+
+    /// <summary>A request of this window's follower is waiting for its answer.</summary>
+    internal bool IsWaiting => IsFollowing && _follower.IsWaiting;
+
+    /// <summary>Starts or stops following, as the session decides; <paramref name="again"/> starts a running follower over.</summary>
+    internal void Follow(bool on, DisplayInfo? info, bool again = false)
+    {
+        if (on && (!IsFollowing || again))
+        {
+            IsFollowing = true;
+            FitToWindow = true;
+            _follower.Start(DisplayIndex, info);
+            ReportWindow();
+        }
+        else if (!on && IsFollowing)
+        {
+            IsFollowing = false;
+            _ = _follower.StopAsync();
+        }
+
+        UpdateStatus();
+    }
+
+    /// <summary>What the host said about the displays, for this window's follower.</summary>
+    internal void Heard(DisplayInfo? info, int changed, string failure)
+    {
+        if (IsFollowing)
+        {
+            _follower.Heard(DisplayIndex, info, changed, failure);
+        }
+    }
+
+    /// <summary>The window is going: its display goes back to its own size if it is still the one set here.</summary>
+    internal void StopFollowing()
+    {
+        Follow(false, null);
+        _follower.Dispose();
+    }
+
+    private void ReportWindow()
+    {
+        if (_view is { } view)
+        {
+            (int width, int height, double uiScale) = view.FillingSize;
+            _follower.Window(width, height, uiScale);
+        }
+    }
+
+    private void UpdateStatus() => MatchWindowStatus = RemoteSessionViewModel.FollowStatus(IsFollowing, true, _follower);
 
     public RemoteSessionViewModel Owner { get; }
 
@@ -55,6 +120,8 @@ public sealed partial class RemoteScreenViewModel : ObservableObject
         view.Origin = Owner.OriginOf(DisplayIndex);
         view.MouseInput += e => Owner.SendMouse(e);
         view.KeyInput += (e, down) => Owner.SendKey(e, down);
+        view.FillingSizeChanged += ReportWindow;
+        ReportWindow();
     }
 
     partial void OnDisplayIndexChanged(int value)

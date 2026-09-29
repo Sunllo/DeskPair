@@ -625,12 +625,16 @@ namespace DeskPair.Tools.PeerCli
             for (int i = 0; i < info.Displays.Count; i++)
             {
                 DisplayInfo d = info.Displays[i];
-                Console.WriteLine($"*** Display {i}: {d.Width}x{d.Height} scale {d.Scale}{(d.Primary ? " primary" : string.Empty)} \"{d.Name}\"; modes: {string.Join(", ", d.Modes.Select(Describe))}{(d.Original is { } o ? $"; original {Describe(o)}" : string.Empty)}");
+                Console.WriteLine($"*** Display {i}: {d.Width}x{d.Height} scale {d.Scale}{(d.Primary ? " primary" : string.Empty)} \"{d.Name}\"; modes: {string.Join(", ", d.Modes.Select(Describe))}{(d.AnySize is { } any ? $"; any size {any.MinWidth}x{any.MinHeight}..{any.MaxWidth}x{any.MaxHeight} step {any.Step}" : string.Empty)}{(d.Original is { } o ? $"; original {Describe(o)}" : string.Empty)}");
             }
         }
 
+        /// <summary>Hears every list as it arrives, before it is printed: how <c>:follow</c> learns the answers.</summary>
+        public event Action<DisplaysChanged>? DisplaysChangedHook;
+
         public void OnDisplaysChanged(DisplaysChanged info)
         {
+            DisplaysChangedHook?.Invoke(info);
             if (info.Notice.Length > 0)
             {
                 Console.WriteLine($"*** Host says: {info.Notice}");
@@ -743,10 +747,56 @@ namespace DeskPair.Tools.PeerCli
         private int _display;
         private int _terminals;
 
+        /// <summary>What <c>:follow</c> started: the display kept the size of a pretend window.</summary>
+        private ResolutionFollower? _follower;
+        private bool _hearing;
+
         private static (int Columns, int Rows) Size(string arg)
         {
             string[] parts = arg.Trim().Split('x', 2);
             return (int.Parse(parts[0]), int.Parse(parts[1]));
+        }
+
+        /// <summary>
+        /// <c>:follow WxH[@S]</c> keeps the current display the size of a window WxH (at interface scale S) the way the
+        /// desktop app's "Match window" does; each further <c>:follow</c> is the window resized. <c>:follow off</c> stops,
+        /// giving the display back its own size.
+        /// </summary>
+        private async Task FollowAsync(string arg, CancellationToken ct)
+        {
+            if (arg.Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_follower is { } running)
+                {
+                    _follower = null;
+                    await running.StopAsync();
+                    running.Dispose();
+                    Console.WriteLine("*** Not following the window any more");
+                }
+
+                return;
+            }
+
+            string[] scaleSplit = arg.Split('@');
+            (int w, int h) = Size(scaleSplit[0]);
+            double uiScale = scaleSplit.Length > 1 ? double.Parse(scaleSplit[1], CultureInfo.InvariantCulture) : 1;
+            if (_follower is null)
+            {
+                var follower = new ResolutionFollower(TimeProvider.System, (display, mode) => session.SetResolutionAsync(display, mode, ct).AsTask());
+                follower.StateChanged += () => Console.WriteLine(
+                    $"*** Following the window: {follower.State}{(follower.State == FollowState.Failed ? $" ({(follower.Failure.Length > 0 ? follower.Failure : "no answer")})" : string.Empty)}");
+                if (!_hearing)
+                {
+                    _hearing = true;
+                    callbacks.DisplaysChangedHook += info =>
+                        _follower?.Heard(_display, _display < info.Displays.Count ? info.Displays[_display] : null, info.Changed, info.Failure);
+                }
+
+                _follower = follower;
+                follower.Start(_display, session.PeerInfo is { } peer && _display < peer.Displays.Count ? peer.Displays[_display] : null);
+            }
+
+            _follower.Window(w, h, uiScale);
         }
 
         private static (int Id, string Text) IdAndRest(string arg)
@@ -810,9 +860,20 @@ namespace DeskPair.Tools.PeerCli
                 switch (verb)
                 {
                     case "m" or "move":
-                        (_x, _y) = TwoInts(arg);
-                        await session.SendMouseAsync(new MouseEvent { Mask = 0, X = _x, Y = _y, Display = _display }, ct);
+                    {
+                        // :m X Y [FWxFH] -- with a frame size, the point is on a picture of that size, as a viewer
+                        // still showing the old picture during a resolution change would send it.
+                        string[] parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        (_x, _y) = (int.Parse(parts[0], CultureInfo.InvariantCulture), int.Parse(parts[1], CultureInfo.InvariantCulture));
+                        var move = new MouseEvent { Mask = 0, X = _x, Y = _y, Display = _display };
+                        if (parts.Length > 2)
+                        {
+                            (move.FrameWidth, move.FrameHeight) = Size(parts[2]);
+                        }
+
+                        await session.SendMouseAsync(move, ct);
                         break;
+                    }
                     case "down":
                         await session.SendMouseAsync(new MouseEvent { Mask = 1 | (Button(arg) << 3), X = _x, Y = _y, Display = _display }, ct);
                         break;
@@ -901,6 +962,23 @@ namespace DeskPair.Tools.PeerCli
                         }
 
                         await session.SetResolutionAsync(_display, wanted, ct);
+                        break;
+                    }
+                    case "follow":
+                        await FollowAsync(arg.Trim(), ct);
+                        break;
+                    case "resburst":
+                    {
+                        // :resburst WxH WxH ... -- requests back to back, the way a window being resized asks: the host
+                        // should make the first and the last, not every one.
+                        string[] sizes = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        foreach (string size in sizes)
+                        {
+                            (int w, int h) = Size(size);
+                            await session.SetResolutionAsync(_display, new Resolution { Width = w, Height = h }, ct);
+                        }
+
+                        Console.WriteLine($"*** Sent {sizes.Length} resolution requests for display {_display} back to back");
                         break;
                     }
                     case "ls":

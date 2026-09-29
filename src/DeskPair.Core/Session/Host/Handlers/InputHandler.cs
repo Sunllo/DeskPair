@@ -80,8 +80,14 @@ public sealed class InputHandler : ISessionHandler<HostSessionContext>
         int y = e.Y;
         if (e.Display >= 0 && e.Display < displays.Count)
         {
-            x += displays[e.Display].X;
-            y += displays[e.Display].Y;
+            DisplayDescriptor display = displays[e.Display];
+            if (type is TypeMove or TypeDown or TypeUp)
+            {
+                (x, y) = OntoDisplay(x, y, e.FrameWidth, e.FrameHeight, display.Width, display.Height);
+            }
+
+            x += display.X;
+            y += display.Y;
         }
 
         MouseInput input = type switch
@@ -98,6 +104,28 @@ public sealed class InputHandler : ISessionHandler<HostSessionContext>
         {
             _injector.InjectMouse(input, virt);
         }
+    }
+
+    /// <summary>
+    /// A point on the viewer's picture, <paramref name="frameWidth"/>x<paramref name="frameHeight"/>, put on the
+    /// display as it is now. The two differ for a moment whenever the display changes size -- at this viewer's
+    /// request, while the new picture is still on its way, or at another viewer's -- and without this a click in
+    /// that moment lands where the same pixel numbers fall on the new size. An unset frame size (an older viewer)
+    /// leaves the point as it is, and so does a frame that is the display turned on its side: that is a rotated
+    /// monitor whose picture is sent unrotated, not a change of size.
+    /// </summary>
+    internal static (int X, int Y) OntoDisplay(int x, int y, int frameWidth, int frameHeight, int width, int height)
+    {
+        if (frameWidth <= 0 || frameHeight <= 0 || width <= 0 || height <= 0
+            || (frameWidth == width && frameHeight == height)
+            || (frameWidth == height && frameHeight == width))
+        {
+            return (x, y);
+        }
+
+        return (
+            Math.Clamp((int)((x + 0.5) * width / frameWidth), 0, width - 1),
+            Math.Clamp((int)((y + 0.5) * height / frameHeight), 0, height - 1));
     }
 
     private void HandleKey(KeyEvent e)

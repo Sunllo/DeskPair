@@ -142,6 +142,28 @@ public class MediaSessionTests
     }
 
     /// <summary>
+    /// A click on a picture of another size than the display has now -- the viewer is still showing the old one while
+    /// a new resolution is on its way -- lands where it was aimed, not where the same pixel numbers fall.
+    /// </summary>
+    [Fact]
+    public async Task A_click_on_a_picture_of_another_size_is_scaled_onto_the_display()
+    {
+        await using Testbed bed = await Testbed.StartAsync();
+        (HostRuntime host, var passwords, _) = await bed.StartHostAsync(media: true);
+        (ControllerSession session, _) = await ConnectAndLoginAsync(bed, host, passwords.TemporaryPassword);
+        FakeInputInjector injector = bed.Injector!;
+        int before = injector.MouseCount;
+
+        // The fake display is 640x360; the picture the viewer clicked on was 1280x720.
+        await session.SendMouseAsync(new MouseEvent { Mask = 0, X = 640, Y = 360, FrameWidth = 1280, FrameHeight = 720 });
+        await session.SendMouseAsync(new MouseEvent { Mask = 0, X = 640, Y = 360 });
+        await Testbed.WaitUntilAsync(() => injector.MouseCount == before + 2, "moves injected");
+
+        (injector.Mouse[before].X, injector.Mouse[before].Y).ShouldBe((320, 180));
+        (injector.Mouse[before + 1].X, injector.Mouse[before + 1].Y).ShouldBe((640, 360), "an older viewer's point is taken as it is");
+    }
+
+    /// <summary>
     /// A monitor is pulled out while a viewer is watching it. The host notices on its own -- nobody asked
     /// for anything -- moves the viewer to the primary, drops the stream nobody can capture any more, and
     /// tells everyone the new list. Without this the viewer sat on a dead stream until it happened to switch.

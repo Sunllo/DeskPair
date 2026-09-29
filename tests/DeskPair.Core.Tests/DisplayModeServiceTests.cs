@@ -125,4 +125,74 @@ public class DisplayModeServiceTests
         (DisplayModeService service, _, _) = Create();
         (await service.ChangeAsync(5, new DisplayMode(1280, 720), CancellationToken.None)).ShouldContain("not there");
     }
+
+    // ---- sizes made up on request ----
+
+    private static (DisplayModeService Service, FakeDisplayEnumerator Displays, FakeDisplayModes Modes, FakeVirtualDisplays Teacher) CreateTeachable()
+    {
+        var displays = new FakeDisplayEnumerator(1920, 1080);
+        var switcher = new FakeDisplayModes(displays, new DisplayMode(1920, 1080), new DisplayMode(1280, 720));
+        var teacher = new FakeVirtualDisplays(displays, switcher) { TeachAll = true };
+        var service = new DisplayModeService(displays, switcher, new FakeTimeProvider(), NullLogger.Instance, teacher);
+        return (service, displays, switcher, teacher);
+    }
+
+    [Fact]
+    public void A_display_that_can_be_taught_offers_even_sizes_up_to_what_an_encoder_takes()
+    {
+        (DisplayModeService service, FakeDisplayEnumerator displays, _, FakeVirtualDisplays teacher) = CreateTeachable();
+        teacher.Limits = new TeachableSizes(641, 480, 8192, 8191, 1);
+
+        service.MadeUpSizesFor(displays.Displays[0]).ShouldBe(new TeachableSizes(642, 480, DisplayModeService.MaxMadeUpSide, DisplayModeService.MaxMadeUpSide, 2));
+    }
+
+    [Fact]
+    public void A_display_nothing_can_teach_offers_only_its_list()
+    {
+        (DisplayModeService service, FakeDisplayEnumerator displays, _, FakeVirtualDisplays teacher) = CreateTeachable();
+        teacher.TeachAll = false;
+
+        service.MadeUpSizesFor(displays.Displays[0]).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task A_size_outside_the_offer_is_refused_before_anything_is_taught()
+    {
+        (DisplayModeService service, _, FakeDisplayModes modes, _) = CreateTeachable();
+
+        (await service.ChangeAsync(0, new DisplayMode(5000, 3000), CancellationToken.None)).ShouldNotBeNull().ShouldContain("5000x3000");
+        (await service.ChangeAsync(0, new DisplayMode(1001, 600), CancellationToken.None)).ShouldNotBeNull("odd widths are not offered");
+
+        modes.TaughtCount.ShouldBe(0);
+        modes.Calls.ShouldBeEmpty();
+    }
+
+    /// <summary>A window being resized asks for a new size at every pause; the one the display left is taken back at once.</summary>
+    [Fact]
+    public async Task A_taught_size_the_display_leaves_is_forgotten_at_once()
+    {
+        (DisplayModeService service, FakeDisplayEnumerator displays, FakeDisplayModes modes, FakeVirtualDisplays teacher) = CreateTeachable();
+
+        (await service.ChangeAsync(0, new DisplayMode(1000, 600), CancellationToken.None)).ShouldBeNull();
+        (await service.ChangeAsync(0, new DisplayMode(1200, 700), CancellationToken.None)).ShouldBeNull();
+        teacher.Forgotten.ShouldBe([("FAKE0", new DisplayMode(1000, 600))]);
+        modes.TaughtCount.ShouldBe(1);
+
+        (await service.ChangeAsync(0, null, CancellationToken.None)).ShouldBeNull();
+        displays.Displays[0].Width.ShouldBe(1920);
+        teacher.Forgotten.Count.ShouldBe(2, "back at the original, the last taught size goes too");
+        modes.TaughtCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task A_size_taught_for_a_change_that_failed_is_forgotten()
+    {
+        (DisplayModeService service, _, FakeDisplayModes modes, FakeVirtualDisplays teacher) = CreateTeachable();
+        modes.Refuse = "the monitor said no";
+
+        (await service.ChangeAsync(0, new DisplayMode(1000, 600), CancellationToken.None)).ShouldBe("the monitor said no");
+
+        teacher.Forgotten.Count.ShouldBe(1);
+        modes.TaughtCount.ShouldBe(0);
+    }
 }

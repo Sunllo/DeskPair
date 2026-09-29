@@ -25,6 +25,15 @@ public sealed class DisplayModeService
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly Dictionary<string, DisplayMode> _originals = new(StringComparer.Ordinal);
 
+    /// <summary>The size taught to each display and in force there now: forgotten as soon as the display leaves it.</summary>
+    private readonly Dictionary<string, DisplayMode> _taught = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The largest width or height offered for a size made up on request. A hardware H.264 encoder goes no further,
+    /// and a stream the encoder refuses is worth less than a picture a little smaller than the window.
+    /// </summary>
+    public const int MaxMadeUpSide = 4096;
+
     /// <param name="displays">What the displays are now, read again to confirm a change took.</param>
     /// <param name="switcher">What sets a mode; null on a platform that cannot.</param>
     /// <param name="time">The clock the confirmation waits on.</param>
@@ -72,6 +81,26 @@ public sealed class DisplayModeService
         }
     }
 
+    /// <summary>
+    /// The sizes <paramref name="display"/> can be given beyond its own list, or null when it has only that list. A
+    /// viewer offered these may ask for exactly the size of its window.
+    /// </summary>
+    public TeachableSizes? MadeUpSizesFor(DisplayDescriptor display)
+    {
+        if (_switcher is null || _teacher is not { } teacher || !teacher.CanTeach(display))
+        {
+            return null;
+        }
+
+        TeachableSizes limits = teacher.Limits;
+        int step = Math.Max(2, limits.Step); // encoders want even sizes
+        int Up(int v) => (v + step - 1) / step * step;
+        int Down(int v) => v / step * step;
+        var sizes = new TeachableSizes(
+            Up(limits.MinWidth), Up(limits.MinHeight), Down(Math.Min(limits.MaxWidth, MaxMadeUpSide)), Down(Math.Min(limits.MaxHeight, MaxMadeUpSide)), step);
+        return sizes.MinWidth <= sizes.MaxWidth && sizes.MinHeight <= sizes.MaxHeight ? sizes : null;
+    }
+
     /// <summary>The mode the display was in before a viewer changed it, or null when nobody has.</summary>
     public DisplayMode? OriginalFor(string displayName)
     {
@@ -109,6 +138,7 @@ public sealed class DisplayModeService
                 return "This computer cannot change its resolution from here.";
             }
             DisplayMode target;
+            bool teaching = false;
             if (wanted is { } chosen)
             {
                 IReadOnlyList<DisplayMode> modes = ModesFor(display);
@@ -118,14 +148,20 @@ public sealed class DisplayModeService
                 // A size the display does not have: one that can be taught it learns it, and everything after
                 // this -- recording the original, confirming the change, restoring it -- is the same as for a
                 // size it always had.
-                if (!Listed(modes) && _teacher is { } teacher && teacher.CanTeach(display))
+                if (!Listed(modes) && _teacher is { } teacher && MadeUpSizesFor(display) is { } sizes)
                 {
+                    if (!sizes.Contains(chosen.Width, chosen.Height))
+                    {
+                        return $"{chosen.Width}x{chosen.Height} is not a size this display can be given.";
+                    }
+
                     DisplayActionResult taught = await teacher.TeachAsync(display, chosen, ct).ConfigureAwait(false);
                     if (!taught.Succeeded)
                     {
                         return taught.Failure ?? $"{chosen.Width}x{chosen.Height} could not be added to this display.";
                     }
 
+                    teaching = true;
                     modes = ModesFor(display);
                 }
 
@@ -150,6 +186,12 @@ public sealed class DisplayModeService
                 if (wanted is null || original is { } back && SameMode(target, back))
                 {
                     Forget(display.Name);
+                }
+
+                if (teaching)
+                {
+                    // Taught a size the display already has under another name: the copy is of no use.
+                    await _teacher!.ForgetAsync(display, target, CancellationToken.None).ConfigureAwait(false);
                 }
 
                 return null;
@@ -184,6 +226,11 @@ public sealed class DisplayModeService
                     Forget(display.Name);
                 }
 
+                if (teaching)
+                {
+                    await _teacher!.ForgetAsync(display, target, CancellationToken.None).ConfigureAwait(false);
+                }
+
                 _log.LogWarning("Display {Name}: could not switch to {W}x{H}: {Why}", display.Name, target.Width, target.Height, failure);
                 return failure;
             }
@@ -192,6 +239,8 @@ public sealed class DisplayModeService
             {
                 Forget(display.Name);
             }
+
+            await ForgetLeftSizeAsync(display, target, teaching).ConfigureAwait(false);
 
             _log.LogInformation("Display {Name}: {FromW}x{FromH} -> {ToW}x{ToH}", display.Name, current.Width, current.Height, target.Width, target.Height);
             return null;
@@ -213,6 +262,7 @@ public sealed class DisplayModeService
             {
                 pending = _originals.ToList();
                 _originals.Clear();
+                _taught.Clear();
             }
 
             try
@@ -294,6 +344,34 @@ public sealed class DisplayModeService
             }
 
             await Task.Delay(ConfirmPoll, _time, ct).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// The display has just moved to <paramref name="now"/>: a size taught to it earlier, which it has now left, is
+    /// taken back at once -- a window being resized leaves one behind at every pause. The size now in force is
+    /// remembered when it was taught, to be taken back in its turn.
+    /// </summary>
+    private async Task ForgetLeftSizeAsync(DisplayDescriptor display, DisplayMode now, bool taughtNow)
+    {
+        DisplayMode? left = null;
+        lock (_originals)
+        {
+            if (_taught.TryGetValue(display.Name, out DisplayMode before) && !SameMode(before, now))
+            {
+                left = before;
+                _taught.Remove(display.Name);
+            }
+
+            if (taughtNow)
+            {
+                _taught[display.Name] = now;
+            }
+        }
+
+        if (left is { } size && _teacher is { } teacher)
+        {
+            await teacher.ForgetAsync(display, size, CancellationToken.None).ConfigureAwait(false);
         }
     }
 

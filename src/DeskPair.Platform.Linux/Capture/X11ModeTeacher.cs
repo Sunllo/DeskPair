@@ -43,6 +43,12 @@ public sealed class X11ModeTeacher : IArbitraryModeSink
         _xrandr = xrandr ?? (arguments => XrandrTool.Run(arguments, log));
     }
 
+    /// <summary>
+    /// From the smallest size <see cref="X11DisplayModes"/> lists -- a size taught below it could be made but never
+    /// chosen -- to the largest an X screen takes.
+    /// </summary>
+    public TeachableSizes Limits { get; } = new(640, 480, 8192, 8192, 1);
+
     public bool CanTeach(DisplayDescriptor display) => !_wayland && XrandrTool.IsSafeName(display.Name);
 
     public Task<DisplayActionResult> TeachAsync(DisplayDescriptor display, DisplayMode mode, CancellationToken ct)
@@ -52,7 +58,7 @@ public sealed class X11ModeTeacher : IArbitraryModeSink
             return Task.FromResult(DisplayActionResult.Refused("A size can be added only to a display of an X11 desktop."));
         }
 
-        if (mode.Width is < 320 or > 8192 || mode.Height is < 200 or > 8192)
+        if (!Limits.Contains(mode.Width, mode.Height))
         {
             return Task.FromResult(DisplayActionResult.Refused($"{mode.Width}x{mode.Height} is not a size a display can be given."));
         }
@@ -90,6 +96,44 @@ public sealed class X11ModeTeacher : IArbitraryModeSink
             _log.LogInformation("Taught {Output} {Mode}", display.Name, name);
             return Task.FromResult(DisplayActionResult.Done);
         }
+    }
+
+    /// <summary>
+    /// Takes one size back off an output that has moved on to another, and out of the server when no other output
+    /// has it. A window being resized asks for a size at every pause; each would otherwise stay in xrandr's list.
+    /// </summary>
+    public Task ForgetAsync(DisplayDescriptor display, DisplayMode mode, CancellationToken ct)
+    {
+        string name = $"{Prefix}{mode.Width}x{mode.Height}";
+        lock (_lock)
+        {
+            if (!_added.Remove((display.Name, name)))
+            {
+                return Task.CompletedTask;
+            }
+
+            if (_xrandr(["--delmode", display.Name, name]) is { } failure)
+            {
+                // Still on the output, so still ours to take away with the rest at the end.
+                _added.Add((display.Name, name));
+                _log.LogWarning("Could not take {Mode} off {Output}: {Why}", name, display.Name, failure);
+                return Task.CompletedTask;
+            }
+
+            if (!_added.Exists(a => a.Mode == name) && _made.Contains(name))
+            {
+                if (_xrandr(["--rmmode", name]) is { } notRemoved)
+                {
+                    _log.LogWarning("Could not remove {Mode}: {Why}", name, notRemoved);
+                }
+                else
+                {
+                    _made.Remove(name);
+                }
+            }
+        }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>

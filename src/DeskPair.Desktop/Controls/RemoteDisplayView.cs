@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -39,6 +40,7 @@ public sealed class RemoteDisplayView : Control
     private (int HotX, int HotY) _cursorHotspot;
     private readonly Dictionary<ulong, RemoteCursor> _cursors = new();
     private DateTime _lastMove;
+    private TopLevel? _topLevel;
 
     public RemoteDisplayView()
     {
@@ -55,6 +57,7 @@ public sealed class RemoteDisplayView : Control
     /// <summary>
     /// Fit shrinks the picture to the control when it does not fit but never enlarges it (1:1 whenever it fits,
     /// so lossless pixels stay lossless); Original always paints 1:1 (scrolling is left to a parent ScrollViewer).
+    /// 1:1 is in the screen's pixels, not in layout units -- see <see cref="PictureLayout"/>.
     /// </summary>
     public bool FitToWindow { get; set; } = true;
 
@@ -192,7 +195,10 @@ public sealed class RemoteDisplayView : Control
         }
     }
 
-    /// <summary>Cheap bilinear while frames are flowing; cubic once the picture has settled (a no-op at 1:1 either way).</summary>
+    /// <summary>
+    /// Cheap bilinear while frames are flowing; cubic once the picture has settled. Neither is used when every remote
+    /// pixel covers whole screen pixels: the picture is then copied as it is.
+    /// </summary>
     private void UseMovingInterpolation()
     {
         if (!_movingInterpolation)
@@ -350,8 +356,20 @@ public sealed class RemoteDisplayView : Control
                 return;
             }
 
-            Rect dest = DestinationRect();
-            context.DrawImage(_bitmap, new Rect(0, 0, RemoteWidth, RemoteHeight), dest);
+            PictureLayout layout = Layout();
+            Rect dest = layout.Destination;
+            if (layout.IsWhole)
+            {
+                using (context.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.None }))
+                {
+                    context.DrawImage(_bitmap, new Rect(0, 0, RemoteWidth, RemoteHeight), dest);
+                }
+            }
+            else
+            {
+                context.DrawImage(_bitmap, new Rect(0, 0, RemoteWidth, RemoteHeight), dest);
+            }
+
             if (ShowRemoteCursor && _cursorBitmap is not null && _cursorPosition is (int px, int py)
                 && px - Origin.X is var cx and >= 0 && cx < RemoteWidth && py - Origin.Y is var cy and >= 0 && cy < RemoteHeight)
             {
@@ -437,33 +455,66 @@ public sealed class RemoteDisplayView : Control
     protected override Size MeasureOverride(Size availableSize)
     {
         // Infinite constraints (inside a ScrollViewer) must never be returned as a size.
-        double w = double.IsInfinity(availableSize.Width) ? RemoteWidth : availableSize.Width;
-        double h = double.IsInfinity(availableSize.Height) ? RemoteHeight : availableSize.Height;
-        return FitToWindow || RemoteWidth == 0 ? new Size(w, h) : new Size(RemoteWidth, RemoteHeight);
+        Size natural = PictureLayout.NaturalSize(Scaling, RemoteWidth, RemoteHeight);
+        double w = double.IsInfinity(availableSize.Width) ? natural.Width : availableSize.Width;
+        double h = double.IsInfinity(availableSize.Height) ? natural.Height : availableSize.Height;
+        return FitToWindow || RemoteWidth == 0 ? new Size(w, h) : natural;
     }
 
-    private Rect DestinationRect()
+    private PictureLayout Layout() => PictureLayout.Compute(Bounds.Size, Scaling, RemoteWidth, RemoteHeight, FitToWindow);
+
+    /// <summary>Screen pixels per layout unit where this control is shown; 1 until it is in a window.</summary>
+    private double Scaling => VisualRoot is null ? 1 : LayoutHelper.GetLayoutScale(this);
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        if (RemoteWidth == 0 || RemoteHeight == 0)
+        base.OnAttachedToVisualTree(e);
+        _topLevel = TopLevel.GetTopLevel(this);
+        if (_topLevel is not null)
         {
-            return default;
+            _topLevel.ScalingChanged += OnScalingChanged;
         }
-
-        if (!FitToWindow)
-        {
-            return new Rect(0, 0, RemoteWidth, RemoteHeight);
-        }
-
-        double scale = Math.Min(1.0, Math.Min(Bounds.Width / RemoteWidth, Bounds.Height / RemoteHeight));
-        double w = RemoteWidth * scale, h = RemoteHeight * scale;
-        return new Rect(Math.Floor((Bounds.Width - w) / 2), Math.Floor((Bounds.Height - h) / 2), w, h);
     }
+
+    /// <summary>
+    /// The window went to a screen with another scaling: the same picture now takes a different number of units,
+    /// and may now be drawn whole where it was smoothed, or the other way round.
+    /// </summary>
+    private void OnScalingChanged(object? sender, EventArgs e)
+    {
+        InvalidateMeasure();
+        InvalidateVisual();
+        FillingSizeChanged?.Invoke();
+    }
+
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
+        FillingSizeChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// The remote size that would fill this control at 1:1, in the remote display's pixels, and the scale at which the
+    /// host's own interface would look the size of this screen's: what a display following its window asks for.
+    /// </summary>
+    public (int Width, int Height, double UiScale) FillingSize
+    {
+        get
+        {
+            double scaling = Scaling;
+            (int width, int height) = PictureLayout.RemoteSizeFilling(Bounds.Size, scaling);
+            return (width, height, scaling / PictureLayout.NaturalFactor(scaling));
+        }
+    }
+
+    /// <summary>Raised when <see cref="FillingSize"/> may have changed: the control was resized, or moved to another scaling.</summary>
+    public event Action? FillingSizeChanged;
 
     // ---- input ----
 
     private bool TryToRemote(Point local, out int x, out int y)
     {
-        Rect dest = DestinationRect();
+        Rect dest = Layout().Destination;
         if (dest.Width <= 0)
         {
             x = y = 0;
@@ -490,6 +541,13 @@ public sealed class RemoteDisplayView : Control
     private void Send(int type, int buttons, int x, int y, KeyModifiers modifiers)
     {
         var e = new MouseEvent { Mask = type | (buttons << 3), X = x, Y = y, Display = DisplayIndex };
+        if (type != TypeWheel)
+        {
+            // Pixels of this picture: should the display have changed size meanwhile, the host scales the point.
+            e.FrameWidth = RemoteWidth;
+            e.FrameHeight = RemoteHeight;
+        }
+
         if ((modifiers & KeyModifiers.Shift) != 0)
         {
             e.Modifiers.Add(Protocol.Messages.ControlKey.CkShift);
@@ -580,6 +638,12 @@ public sealed class RemoteDisplayView : Control
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        if (_topLevel is not null)
+        {
+            _topLevel.ScalingChanged -= OnScalingChanged;
+            _topLevel = null;
+        }
+
         _bitmap?.Dispose();
         _bitmap = null;
         foreach (RemoteCursor cursor in _cursors.Values)

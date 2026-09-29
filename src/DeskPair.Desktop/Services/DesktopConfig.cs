@@ -67,6 +67,13 @@ public sealed record DesktopConfig
 
     public bool FitToWindow { get; init; } = true;
 
+    /// <summary>
+    /// Sessions start with the remote display following the size of their window, the way a Windows remote desktop
+    /// session does: sharp at 1:1 whatever the window. Off by default, because it changes the host's resolution --
+    /// for anybody sitting at that screen too -- and a physical monitor goes dark for a moment at every change.
+    /// </summary>
+    public bool MatchWindowResolution { get; init; }
+
     public bool SmoothPlayback { get; init; }
 
     /// <summary>

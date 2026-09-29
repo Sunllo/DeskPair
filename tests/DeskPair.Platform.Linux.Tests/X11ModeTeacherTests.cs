@@ -136,4 +136,61 @@ public class X11ModeTeacherTests
         (await x11.TeachAsync(Output("HDMI-1"), new DisplayMode(100000, 600), CancellationToken.None)).Succeeded.ShouldBeFalse();
         xrandr.Calls.ShouldBeEmpty();
     }
+
+    /// <summary>
+    /// Below what <see cref="X11DisplayModes"/> lists, a size could be made but never chosen: it would sit in xrandr's
+    /// list while the viewer heard that the display cannot show it.
+    /// </summary>
+    [Fact]
+    public async Task Nothing_is_taught_below_the_smallest_size_the_modes_list()
+    {
+        var xrandr = new FakeXrandr();
+        var teacher = new X11ModeTeacher(NullLogger.Instance, wayland: false, xrandr.Run);
+
+        (await teacher.TeachAsync(Output("HDMI-1"), new DisplayMode(600, 400), CancellationToken.None)).Succeeded.ShouldBeFalse();
+        teacher.Limits.Contains(640, 480).ShouldBeTrue();
+        xrandr.Calls.ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// A window being resized asks for a size at every pause. Each size the output leaves comes off it at once, and out
+    /// of the server when no other output has it, rather than piling up until the last viewer goes.
+    /// </summary>
+    [Fact]
+    public async Task A_size_an_output_has_left_is_taken_back_at_once()
+    {
+        var xrandr = new FakeXrandr();
+        var teacher = new X11ModeTeacher(NullLogger.Instance, wayland: false, xrandr.Run);
+        await teacher.TeachAsync(Output("HDMI-1"), new DisplayMode(1000, 600), CancellationToken.None);
+        await teacher.TeachAsync(Output("DP-2"), new DisplayMode(1000, 600), CancellationToken.None);
+        xrandr.Calls.Clear();
+
+        await teacher.ForgetAsync(Output("HDMI-1"), new DisplayMode(1000, 600), CancellationToken.None);
+        xrandr.Calls.ShouldBe(["--delmode HDMI-1 deskpair-1000x600"], customMessage: "DP-2 still has it");
+
+        xrandr.Calls.Clear();
+        await teacher.ForgetAsync(Output("DP-2"), new DisplayMode(1000, 600), CancellationToken.None);
+        xrandr.Calls.ShouldBe(["--delmode DP-2 deskpair-1000x600", "--rmmode deskpair-1000x600"]);
+
+        xrandr.Calls.Clear();
+        await teacher.ForgetAsync(Output("DP-2"), new DisplayMode(1000, 600), CancellationToken.None);
+        await teacher.ForgetTaughtModesAsync(CancellationToken.None);
+        xrandr.Calls.ShouldBeEmpty("nothing is left to take back");
+    }
+
+    [Fact]
+    public async Task A_size_that_would_not_come_off_is_kept_for_the_end()
+    {
+        var xrandr = new FakeXrandr();
+        var teacher = new X11ModeTeacher(NullLogger.Instance, wayland: false, xrandr.Run);
+        await teacher.TeachAsync(Output("HDMI-1"), new DisplayMode(1000, 600), CancellationToken.None);
+        xrandr.Failures["--delmode"] = "X Error of failed request:  BadAccess";
+
+        await teacher.ForgetAsync(Output("HDMI-1"), new DisplayMode(1000, 600), CancellationToken.None);
+        xrandr.Failures.Clear();
+        xrandr.Calls.Clear();
+        await teacher.ForgetTaughtModesAsync(CancellationToken.None);
+
+        xrandr.Calls.ShouldBe(["--delmode HDMI-1 deskpair-1000x600", "--rmmode deskpair-1000x600"]);
+    }
 }

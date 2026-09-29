@@ -299,9 +299,9 @@ Controller 端：解碼佇列 > 解碼 fps/2 → 透過 `SessionOptions.custom_f
 ### 6.4 由控制端改變被控端的螢幕解析度
 
 `DisplayInfo.modes[]` 是被控端顯示器**可切換的模式清單**（空 = 這台不能從遠端改：Wayland、DRM 常駐程式、RDP 主機、沒有 switcher 的平台），`original` 只在有人改過之後出現。
-控制端送 `Misc.display_resolution{display, resolution}`（`resolution` 未設 = 還原原始）；被控端 `HostMediaModule.SetResolutionAsync` 檢查鍵盤權限（只能看的人不能改別人的桌面）→
+控制端送 `Misc.display_resolution{display, resolution}`（`resolution` 未設 = 還原原始）；被控端 `HostMediaModule.SetResolutionAsync` 檢查鍵盤權限（只能看的人不能改別人的桌面）、排進 `DisplayChangeQueue`（6.4d）→
 `DisplayModeService.ChangeAsync`：只接受清單內的模式、**第一次改才記下原始值**（之後不論誰改幾次，還原都回到工作階段前的模式）、`IDisplayModeSwitcher.TrySetMode` 之後每 100 ms 讀
-`IDisplayEnumerator` 最多 2 s 確認描述子真的變了（逾時就試著還原並回報失敗）→ 重啟所有在跑的 `VideoService` 並對每個訂閱者 `Qos.ResetStream`（Windows 改一台的模式會移動其他螢幕的原點）→
+`IDisplayEnumerator` 最多 2 s 確認描述子真的變了（逾時就試著還原並回報失敗）→ 重啟位置或尺寸變了的螢幕的 `VideoService` 並對它們的訂閱者 `Qos.ResetStream`（Windows 改一台的模式會移動其他螢幕的原點）→
 對每個 `ConnRemote` session 廣播 `Misc.displays_changed{displays, current_display, changed}`；被拒時只對請求者送 `displays_changed{failure}`。多人連線：後寫者勝、所有人都被告知、只有一個原始值。
 最後一個遠端 session 關閉與引擎停止時 `RestoreAllAsync` 還原。被控端當掉無法由我們還原，靠平台不持久化：Windows `ChangeDisplaySettingsEx` 不帶 `CDS_UPDATEREGISTRY`（登入即自癒）、
 macOS `CGCompleteDisplayConfiguration(kCGConfigureForSession)`（登出即還原）、Linux `xrandr --output NAME --mode WxH`（X 重啟即忘）。
@@ -310,7 +310,7 @@ macOS `CGCompleteDisplayConfiguration(kCGConfigureForSession)`（登出即還原
 `X11DisplayModes`（libXrandr 列舉 output 的 mode 清單、xrandr 工具切換）。
 控制端：桌面工具列 Display 旁的解析度下拉（第 0 項「原始」，HiDPI 模式顯示成點數加倍率如 `1920×1080 (2x)`）、手機 SCREEN 面板的「解析度」列；每台電腦每個顯示器記住選過的模式
 （桌面 `DesktopConfig.PeerResolutions`、手機 `AppSettings.peerResolutions`，都是本機設定、不進通訊錄），重連登入後若主機仍提供且尚未在該模式就自動重套一次。
-沒有虛擬顯示器驅動就不能自由輸入寬高；那是之後的事。
+能教尺寸的螢幕另外宣告 `any_size`，可以要範圍內任何寬高，見 6.4d。
 
 **顯示器編號的不變式**：`DisplayDescriptor.Index` 就是它在 `GetDisplays()` 清單裡的位置。這個數字會走上每一個影像封包的 `display` 位元組、`SwitchDisplay`、`MouseEvent.Display`，
 而被控端全部用**位置**去解；列舉器若先配號再把主螢幕排到前面，被控端會把第 2 個螢幕編成「display 0」送出，控制端的組裝器卻被告知只收 stream 1，結果是黑畫面而不是例外。
@@ -382,6 +382,47 @@ F2 之後兩個擷取器若共用它，還會搶同一個「已取走」計數�
 **Linux 教尺寸**（G2）：`X11ModeTeacher`（`IArbitraryModeSink`）以 C# 算的 CVT-RB 時序（`Cvt`，逐字對 `cvt` 測過）`xrandr --newmode deskpair-WxH` ＋ `--addmode`，之後照一般改解析度流程；`RestoreAllAsync` 還原後先 `--delmode` 再 `--rmmode`。`X11DisplayModes` 切換時依該輸出上這個尺寸的模式**名字**下 `--mode`（xrandr 不依尺寸找）。只限 X11；Wayland 與 DRM daemon 不教。沒有 GPU 的機器用 Xorg＋dummy 驅動得到一個真 X 螢幕，見 `unattended-linux.md` I。
 **Windows 驅動**（G3，路線 A）：直接散布 VDD（MIT）官方、由 SignPath Foundation 簽的版本，`tools/fetch-vdd.ps1` 以網址＋SHA-256 釘死，`publish.ps1` 放進發佈目錄的 `vdd\`；來龍去脈與安裝細節見 `native/vdd/README.md`。
 `WindowsVirtualDisplays`（`IVirtualDisplayProvider`）：驅動只在裝置啟動時讀一次 `vdd_settings.xml`、`RELOAD_DRIVER` 不重讀，所以不用它的 pipe。安裝時照 nefcon／devcon 的做法建一個根列舉裝置（硬體 ID `MttVDD`），裝好驅動就 `CM_Disable_DevNode(PERSIST)`；要改螢幕數就**停用 → 寫檔 → 啟用**。每次啟用所有虛擬螢幕都會重插一次而且改名（`DISPLAY10` → `DISPLAY11`），所以移除拿掉的是最後一台、新增會讓其他虛擬螢幕的串流重啟一次，而已經接上的螢幕**不教新尺寸**（Windows 不實作 `IArbitraryModeSink`）；新增時要求的尺寸先寫進檔案，Windows 若記得別的尺寸，`HostMediaModule` 在新螢幕出現後照一般的改解析度流程設一次。哪些 `\\.\DISPLAYn` 是我們的：`EnumDisplayDevices` 的 adapter `DeviceID` 為 `MttVDD`。啟用／停用要系統管理員權限，所以只有服務的引擎能用，App 模式如實回報不可用；引擎當掉時裝置維持啟用，下一個引擎啟動時先停用。**不用 `SwDeviceCreate`**：它對 LocalSystem 一律回 `0x8007007E`（工作階段 0 或 1、任何裝置都一樣，2026-09-25 以服務的終端機實測）。安裝／移除是 `--install-virtual-display`／`--remove-virtual-display`（提權）：設定目錄 `%ProgramData%\Sunllo\DeskPair\vdd`（SYSTEM／Administrators 可寫、其他人可讀）、`VDDPATH` 指過去（已被別人指走就拒絕）、暫時信任發行者時 `SetupCopyOEMInf` 放進 driver store、裝置 instance ID 與 `oemNN.inf` 記在安裝紀錄；移除時 `DIF_REMOVE` 裝置、`SetupUninstallOEMInf`。
+
+### 6.4d 遠端解析度跟隨視窗（仿 Windows 遠端桌面，2026-09-29 起）
+
+目標是 RDP 的體驗：視窗多大，遠端桌面就是多大，永遠 1:1、不縮放。RDP 能即時變成任意尺寸，是因為它的顯示驅動是「遠端工作階段驅動」
+（`IDDCX_ADAPTER_FLAGS_REMOTE_SESSION_DRIVER`，才能用 `REMOTE_ALL_TARGET_MODES_MONITOR_COMPATIBLE` 與 `IddCxDisplayConfigUpdate`，只有 Windows 遠端桌面堆疊建立的裝置可以），
+而且 RDP 是獨立的工作階段。DeskPair 分享的是主控台：只能在主機給的模式裡挑，或在能教新尺寸的螢幕（目前只有 X11）上做到精準。Windows 的精準路線（自有 IddCx 驅動、私人工作階段螢幕）另有計畫，尚未開始。
+
+**協定**（只加欄位；不加新的 `Misc`，舊主機收到未知的 `Misc` 會關閉連線）：`DisplayInfo.any_size = 12`
+（`SizeRange{min_width, min_height, max_width, max_height, step}`，有這個欄位＝這台螢幕可以做出範圍內任何尺寸）、`MouseEvent.frame_width = 6`／`frame_height = 7`（座標所依據的畫面大小）。
+請求沿用 `Misc.display_resolution`。相容：舊控制端不看 `any_size`、不帶畫面大小，主機照舊把座標當成目前尺寸；舊主機不送 `any_size`，新控制端就在模式清單裡挑，並忽略畫面大小。
+
+**控制端 1:1 以實體像素為準**（`Controls/PictureLayout`，純函式）：Avalonia 以 DIP 排版，150% 的螢幕上一個單位是 1.5 個像素；原本畫面以「一個單位一個遠端像素」排，**連 1:1 都被放大 1.5 倍而模糊**。
+現在自然大小讓每個遠端像素佔整數個實體像素（200% 以下 1 個、200% 起 2 個，那些螢幕上的大小不變、但不再模糊），「縮放」只縮不放，左上角對齊像素邊界；剛好整數倍時以最近鄰繪製
+（`BitmapInterpolationMode.None`）。視窗搬到不同縮放的螢幕（`TopLevel.ScalingChanged`）時重新排版。排版時的捨入讓 1920 像素的視窗算成 1919.9999，所以接近整數就當整數，否則「剛好等於視窗」這個最重要的情況會被縮一點點而變模糊。
+
+**選尺寸**（`Core/Video/ResolutionFit`，純函式，桌面、PeerCli、日後手機共用）：視窗小於 64 px 不動；有 `any_size` → 視窗大小夾在範圍內、對齊 step（至少 2，編碼器要偶數）；
+否則在寬高都不超過視窗的模式中取面積最大、面積差 2% 內比形狀、再比 macOS 的 scale（最接近「讓主機介面看起來和本機一樣大」的倍率，平手取大的）；都放不下取最小的；
+目前的模式放得下、而新的只大不到 3% 就不換（實體螢幕每換一次模式會黑一下）；等於原始模式就送「還原」。
+
+**跟隨器**（`Core/Session/Controller/ResolutionFollower`，`TimeProvider`）：每個畫面一個（分頁、每個螢幕視窗），視窗停止變動 300 ms 後才問；同一時間只有一個請求在途，期間的變動等答覆後以最新尺寸再問；
+主機拒絕或 6 s 沒回答，同一個視窗大小不再問；別人改了這台螢幕（答覆的尺寸不是自己要的，或事後被改）就讓給對方，直到這個視窗再變大小；關掉開關、或分頁換到別的螢幕時，
+螢幕若仍是自己設的大小就送「還原」。狀態寫在工具列，跟隨器自己的拒絕不跳 toast。
+
+**主機**（`DisplayChangeQueue`）：改解析度與插拔虛擬螢幕原本在 session 迴圈裡同步做完，期間這個 viewer 的**滑鼠鍵盤全部卡住**（改一次要 1～2 s，插一台最多 5 s）。
+現在 `SetResolutionAsync` 只檢查權限、把螢幕編號換成名字，排進佇列就返回；單一工作者依序做、每次之後停 500 ms；同一個螢幕還沒開始的請求被後來的取代（最新者勝、保留原本的順位）；
+連線離開時丟掉它還沒開始的請求；最後一個 viewer 離開時先等進行中的那一個做完（`QuiesceAsync`）才還原，免得還原之後又被改掉。
+工作者在 `_topologyGate` 內套用並更新簽章，平台晚到的通知因此是回音；**只重啟位置或尺寸變了的螢幕的串流**（依編號比對前後的描述子；螢幕有增減時走原本的 `ApplyDisplaysAsync`）；
+要求的就是目前的模式時只回請求者、不重啟。`DescribeDisplays` 對能教尺寸的螢幕填 `any_size`（`DisplayModeService.MadeUpSizesFor`：教的範圍與編碼器上限 4096 取交集，step 至少 2），
+範圍外的請求不教、直接拒絕。`InputHandler` 看到畫面大小與螢幕目前的大小不同（切換中，或別人改了）就把座標換算過去；畫面剛好是螢幕轉 90° 的大小時不換算——那是 Windows 旋轉螢幕送出的未旋轉畫面，不是尺寸變了。
+
+**教過的尺寸隨離開隨收**：`IArbitraryModeSink.ForgetAsync`，螢幕換到別的模式後立刻 `--delmode`，沒有別的輸出用時再 `--rmmode` 上一個 `deskpair-WxH`；否則視窗每停一次就在 xrandr 清單留一個。
+`IArbitraryModeSink.Limits`（`TeachableSizes`）：`X11ModeTeacher` 的下限改為 640×480，與 `X11DisplayModes` 列出的下限一致，否則教得出來卻選不到。
+
+**設定與工具**：`DesktopConfig.MatchWindowResolution`（預設關：它會改被控端的解析度，那台螢幕前的人也看得到，實體螢幕每次會黑一下），設定頁「顯示」可改預設；連線工具列「符合視窗」開關，
+開著時「縮放」固定開、解析度下拉停用，不寫入也不重套 `PeerResolutions`。PeerCli：`:follow WxH[@S]`（每個 `:follow` 等於視窗被拉到那個大小）、`:follow off`、
+`:resburst WxH WxH …`、`:m X Y [FWxFH]`；顯示器行印出 `any size`。測試：`ResolutionFitTests`、`ResolutionFollowerTests`、`DisplayChangeQueueTests`、`PictureLayoutTests`、
+`MatchWindowTests`、整合測試 `FollowWindowTests`（合併連續請求、切換中滑鼠照常送達、只重啟變了的串流、無變更只回請求者、`any_size` 端到端、切換中最後一人離開仍會還原、跟隨器來回一輪）。
+
+**已知限制**：Windows（沒有 teacher）與 macOS 主機只能選最接近的模式；Wayland、DRM 常駐程式、RDP 主機不能改（開關顯示原因）；HiDPI 觀看端讓 Windows／X11 主機精準等於實體像素時，
+主機的介面會看起來比本機小（macOS 由 scale 規則處理）；手機與舊版不受惠。X11 對實體輸出也教 CVT-RB 時序：驅動不接受就回報失敗（工具列顯示原因），
+接受了但實體螢幕不支援時，那台螢幕前會顯示「超出範圍」，擷取的畫面不受影響。
 
 ### 6.4 檔案傳輸
 

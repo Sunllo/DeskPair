@@ -36,6 +36,9 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
     private SessionRecordingController? _recording;
     private DispatcherTimer? _recordingTimer;
 
+    /// <summary>Keeps the tab's display the size of the tab, while <see cref="IsFollowing"/>.</summary>
+    private readonly ResolutionFollower _follower;
+
     // ---- displays in windows of their own ----
 
     private readonly object _screensLock = new();
@@ -76,7 +79,10 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         : base(target, myId, config, logs)
     {
         RttText = string.Empty;
+        _follower = NewFollower();
+        _follower.StateChanged += () => Dispatcher.UIThread.Post(UpdateMatchWindowStatus);
         FitToWindow = config.FitToWindow;
+        MatchWindow = config.MatchWindowResolution;
         ShowRemoteCursor = config.ShowRemoteCursor;
         AudioEnabled = config.AudioEnabled;
         TranslateMode = config.KeyboardTranslateMode;
@@ -171,6 +177,25 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
     [ObservableProperty]
     public partial bool FitToWindow { get; set; }
 
+    /// <summary>
+    /// The viewer wants the remote display the size of its window, as a Windows remote desktop session is: shown 1:1,
+    /// sharp whatever the window. A wish: it is acted on (<see cref="IsFollowing"/>) while the display can be changed.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool MatchWindow { get; set; }
+
+    /// <summary>The tab's display is being kept the size of the tab. Fit and the resolution picker wait meanwhile.</summary>
+    [ObservableProperty]
+    public partial bool IsFollowing { get; set; }
+
+    /// <summary>The display shown in the tab can be changed from here: it has modes or takes any size, and the keyboard is allowed.</summary>
+    [ObservableProperty]
+    public partial bool CanMatchWindow { get; set; }
+
+    /// <summary>What following the window is doing, when there is something to say: resizing, refused, taken over.</summary>
+    [ObservableProperty]
+    public partial string MatchWindowStatus { get; set; } = string.Empty;
+
     [ObservableProperty]
     public partial bool ShowRemoteCursor { get; set; }
 
@@ -223,7 +248,92 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         view.MouseInput += e => _ = SendAsync(new Message { MouseEvent = e }, Core.Session.MessagePriority.Input);
         view.KeyInput += OnKey;
         view.RenderFailed += e => Log.LogError(e, "Rendering the remote frame failed");
+        view.FillingSizeChanged += ReportWindow;
+        ReportWindow();
     }
+
+    /// <summary>A follower for one of this session's pictures: it asks the host through this session.</summary>
+    internal ResolutionFollower NewFollower() => new(TimeProvider.System, (display, mode) =>
+        Session is { State: ControllerSessionState.Authorized } session
+            ? session.SetResolutionAsync(display, mode, Cts.Token).AsTask()
+            : Task.CompletedTask);
+
+    /// <summary>Tells the follower how much of the display the tab holds at 1:1. Reported whether or not it follows, so it knows at once.</summary>
+    private void ReportWindow()
+    {
+        if (_view is { } view)
+        {
+            (int width, int height, double uiScale) = view.FillingSize;
+            _follower.Window(width, height, uiScale);
+        }
+    }
+
+    /// <summary>
+    /// Starts or stops following to match what the viewer wants and what the host allows, for the tab and every display
+    /// window. <paramref name="again"/> starts over a follower already running: back after a dropped connection, the
+    /// host has put its screen back and remembers nothing of what this viewer set.
+    /// </summary>
+    private void ApplyFollowing(bool again = false)
+    {
+        bool authorized = Session is { State: ControllerSessionState.Authorized };
+        bool on = MatchWindow && CanMatchWindow && authorized;
+        if (on && (!IsFollowing || again))
+        {
+            IsFollowing = true;
+            FitToWindow = true;
+            _follower.Start(CurrentDisplay, InfoOf(CurrentDisplay));
+            ReportWindow();
+        }
+        else if (!on && IsFollowing)
+        {
+            IsFollowing = false;
+            _ = _follower.StopAsync();
+        }
+
+        foreach (RemoteScreenViewModel screen in ScreensSnapshot())
+        {
+            screen.Follow(MatchWindow && authorized && _keyboardAllowed && CanBeChanged(InfoOf(screen.DisplayIndex)), InfoOf(screen.DisplayIndex), again);
+        }
+
+        UpdateMatchWindowStatus();
+    }
+
+    /// <summary>Passes what the host said about its displays to every follower: an answer, somebody else's change, a new list.</summary>
+    private void NotifyFollowers(int changed = -1, string failure = "")
+    {
+        if (IsFollowing)
+        {
+            _follower.Heard(CurrentDisplay, InfoOf(CurrentDisplay), changed, failure);
+        }
+
+        foreach (RemoteScreenViewModel screen in ScreensSnapshot())
+        {
+            screen.Heard(InfoOf(screen.DisplayIndex), changed, failure);
+        }
+    }
+
+    /// <summary>A request of a follower's is waiting for its answer: a refusal now is its to report, not a toast's.</summary>
+    private bool FollowerWaiting() => (IsFollowing && _follower.IsWaiting) || ScreensSnapshot().Any(s => s.IsWaiting);
+
+    internal DisplayInfo? InfoOf(int display) => display >= 0 && display < _displayInfos.Count ? _displayInfos[display] : null;
+
+    internal static bool CanBeChanged(DisplayInfo? display) => display is not null && (display.AnySize is not null || display.Modes.Count > 0);
+
+    private void UpdateMatchWindowStatus() => MatchWindowStatus = FollowStatus(
+        MatchWindow && Session is { State: ControllerSessionState.Authorized }, CanMatchWindow, _follower);
+
+    /// <summary>The words for a follower's state; empty when all is as asked or nothing is being followed.</summary>
+    internal static string FollowStatus(bool wanted, bool possible, ResolutionFollower follower) =>
+        !wanted ? string.Empty
+        : !possible ? Strings.Get("session.matchWindow.unsupported")
+        : follower.State switch
+        {
+            FollowState.Waiting => Strings.Get("session.matchWindow.waiting"),
+            FollowState.Failed => Strings.Format("session.matchWindow.failed", follower.Failure.Length > 0 ? follower.Failure : Strings.Get("session.matchWindow.noAnswer")),
+            FollowState.Overridden => Strings.Get("session.matchWindow.overridden"),
+            FollowState.Unsupported => Strings.Get("session.matchWindow.unsupported"),
+            _ => string.Empty,
+        };
 
     protected override ControllerSessionOptions ConfigureOptions(ControllerSessionOptions options)
     {
@@ -242,7 +352,12 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
     {
         _view?.Focus();
         await ApplyOptionsAsync();
-        await ReapplySavedResolutionAsync();
+        ApplyFollowing(again: true);
+        if (!MatchWindow)
+        {
+            // Following the window decides the size itself; a remembered choice would only be undone by it.
+            await ReapplySavedResolutionAsync();
+        }
 
         // Back after a dropped connection: the display windows are still open, so ask for them again.
         if (_subscribing)
@@ -458,6 +573,7 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         RefreshWindowChoices();
         _focusDisplay = index;
         _ = SubscribeAsync();
+        ApplyFollowing();
     }
 
     /// <summary>The user closed a display window: that display stops streaming; the session carries on.</summary>
@@ -478,6 +594,11 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         lock (_screensLock)
         {
             removed = _screens.Remove(screen);
+        }
+
+        if (removed)
+        {
+            screen.StopFollowing();
         }
 
         if (removed && closeWindow)
@@ -643,11 +764,15 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
             ResolutionIndex = -1;
             ResolutionIndex = selected;
             CanChangeResolution = any && _keyboardAllowed;
+            CanMatchWindow = _keyboardAllowed && CanBeChanged(InfoOf(CurrentDisplay));
         }
         finally
         {
             _suppressOptions = was;
         }
+
+        ApplyFollowing();
+        NotifyFollowers();
     }
 
     /// <summary>A confirmed change of this viewer's own asking is remembered for next time; "original" forgets it.</summary>
@@ -731,6 +856,8 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
 
         _ = ApplyOptionsAsync();
     }
+
+    partial void OnMatchWindowChanged(bool value) => ApplyFollowing();
 
     partial void OnFitToWindowChanged(bool value)
     {
@@ -1024,6 +1151,13 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         _pendingVirtual = null;
         if (info.Failure.Length > 0)
         {
+            if (virtualRequest is null && _pendingResolution is null && FollowerWaiting())
+            {
+                // A follower's own request: it says so on the toolbar, where the window is, not in a toast.
+                NotifyFollowers(info.Changed, info.Failure);
+                return;
+            }
+
             string failed = virtualRequest switch
             {
                 true => "session.addDisplay.failed",
@@ -1044,6 +1178,7 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         _suppressOptions = true;
         PopulateDisplays(info.Displays, info.CurrentDisplay);
         _suppressOptions = false;
+        NotifyFollowers(info.Changed);
 
         // Asked for so that there is a second screen to look at: it opens where it can be dragged to one.
         if (virtualRequest == true && info.Changed >= 0 && info.Changed != CurrentDisplay)
@@ -1083,6 +1218,7 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         }
 
         await base.DisposeAsync();
+        _follower.Dispose();
         if (_audio is not null)
         {
             await _audio.DisposeAsync();
