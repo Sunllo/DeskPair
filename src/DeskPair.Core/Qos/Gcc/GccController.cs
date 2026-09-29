@@ -42,6 +42,9 @@ public sealed class GccController
     /// <summary>Probe results that raised the estimate (diagnostics).</summary>
     public long ProbesApplied { get; private set; }
 
+    /// <summary>The highest a probe result has raised the estimate to (diagnostics).</summary>
+    public double ProbedToBps { get; private set; }
+
     /// <summary>
     /// A probe cluster measured this capacity. Normally it only raises the estimate (a probe measuring less than we
     /// already send is usually noise). When the link could not carry the burst (<paramref name="saturated"/>), the
@@ -61,6 +64,7 @@ public sealed class GccController
         {
             _aimd.SetEstimate(capped);
             ProbesApplied++;
+            ProbedToBps = Math.Max(ProbedToBps, capped);
         }
         else if (saturated)
         {

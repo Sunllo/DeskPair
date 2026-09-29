@@ -79,8 +79,11 @@ public class BandwidthEstimationTests
         await Testbed.WaitUntilAsync(() => host.Sessions.Single().MediaChannel is { IsReady: true }, "UDP channel ready", 15_000);
 
         UdpMediaChannel channel = host.Sessions.Single().MediaChannel!;
-        // Without probing GCC would need about 8 s to grow from 6.5 to 11 Mb/s at 8 %/s.
-        await Testbed.WaitUntilAsync(() => channel.Gcc.TargetBps >= 9_000_000, "a probe raised the estimate", 4_000);
+        // Without probing GCC would need about 8 s to grow from 6.5 to 11 Mb/s at 8 %/s. What is waited for is a probe
+        // raising the estimate that far, which ramping never does, rather than the estimate getting there within 4 s:
+        // ramping alone reaches 9 Mb/s in about five, so the clock told the two apart by little, and a CI Mac too busy
+        // to send a probe at its rate once missed it. 20 s leaves room for a spoilt probe and the 15 s before the next.
+        await Testbed.WaitUntilAsync(() => channel.Gcc.ProbedToBps >= 9_000_000, "a probe raised the estimate", 20_000);
         bed.Logs.CreateLogger("test").LogInformation("probes {Probes}, last {Last}, gcc {Target:F1} Mb/s", channel.ProbesSent, channel.LastProbe, channel.Gcc.TargetBps / 1e6);
         channel.Gcc.ProbesApplied.ShouldBeGreaterThan(0);
 
