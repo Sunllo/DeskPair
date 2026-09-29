@@ -14,6 +14,14 @@ namespace DeskPair.Desktop.Tests;
 public class EngineHostTests
 {
     /// <summary>
+    /// How long an engine started or stopped on the thread pool gets to say so. The decision is taken at once; the
+    /// engine's own start waits for a pool thread, and a GitHub Windows runner sometimes stalls this test process
+    /// for seconds -- 5.03 s in one run and past a 5 s limit in the next, while unrelated tests there took seconds
+    /// that elsewhere take milliseconds. This bounds a hang without taking a slow machine for one.
+    /// </summary>
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+
+    /// <summary>
     /// Seen on a real machine: an installer's Restart Manager asked the app to end, the app's exit ran twice, and the
     /// second Dispose threw -- leaving the process on a crash dialog instead of letting the upgrade replace it.
     /// </summary>
@@ -61,7 +69,7 @@ public class EngineHostTests
 
         host.StartedEngine.ShouldBeTrue();
         host.Token.ShouldNotBeNull();
-        await engines.Started.WaitAsync(TimeSpan.FromSeconds(5));
+        await engines.Started.WaitAsync(Patience);
         moves.ShouldBe(1);
     }
 
@@ -105,14 +113,14 @@ public class EngineHostTests
             await host.CheckAsync();
         }
 
-        await engines.Started.WaitAsync(TimeSpan.FromSeconds(5));
+        await engines.Started.WaitAsync(Patience);
         running = true;
 
         (await host.CheckAsync()).ShouldBeTrue();
 
         host.StartedEngine.ShouldBeFalse();
         host.Token.ShouldBeNull("the links look for the service's token again");
-        await engines.Stopped.WaitAsync(TimeSpan.FromSeconds(5));
+        await engines.Stopped.WaitAsync(Patience);
     }
 
     /// <summary>Stands in for the engine: runs until cancelled, and says when it started and stopped.</summary>

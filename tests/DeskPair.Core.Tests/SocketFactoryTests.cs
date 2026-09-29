@@ -36,7 +36,14 @@ public sealed class SocketFactoryTests : IDisposable
     {
         // First connect from an ephemeral port, note it, then a second connect pinned to that same local
         // port must succeed — this is the reuse NAT detection relies on across its two probes.
+        //
+        // To another port, as NAT detection's second probe goes to another port of the server. Back to the same
+        // listener it was the same four-tuple as the connection just closed, which the stack may still hold: a CI Mac
+        // said "Address already in use" once, and a Mac refused 919 such connects in 1000 made without a pause.
+        // To another port, none of 1000.
         CancellationToken ct = _cts.Token;
+        using var other = new TcpListener(IPAddress.Loopback, 0);
+        other.Start();
         Task<TcpClient> accept1 = _listener.AcceptTcpClientAsync();
         int localPort;
         using (Socket first = await SocketFactory.ConnectReusableAsync(0, new IPEndPoint(IPAddress.Loopback, Port), ct))
@@ -45,8 +52,8 @@ public sealed class SocketFactoryTests : IDisposable
             localPort = SocketFactory.LocalPort(first);
         }
 
-        Task<TcpClient> accept2 = _listener.AcceptTcpClientAsync();
-        using Socket second = await SocketFactory.ConnectReusableAsync(localPort, new IPEndPoint(IPAddress.Loopback, Port), ct);
+        Task<TcpClient> accept2 = other.AcceptTcpClientAsync();
+        using Socket second = await SocketFactory.ConnectReusableAsync(localPort, (IPEndPoint)other.LocalEndpoint, ct);
         using TcpClient __ = await accept2;
 
         second.Connected.ShouldBeTrue();

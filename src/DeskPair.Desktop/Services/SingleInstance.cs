@@ -219,7 +219,9 @@ internal sealed class SingleInstance : IDisposable
             // The next instance is made before this one goes. On macOS and Linux every instance of a name shares one
             // listening socket, which closes with the last of them: this one going first closed it, and a launch
             // already waiting behind this one was dropped unheard -- told that nobody answered, it started a second
-            // DeskPair. Three launches in a row did that on a Mac every time.
+            // DeskPair. Three launches in a row did that on a Mac every time. And it is made before this launch is
+            // answered, so the next one never finds no instance: on Windows it waited for one, two seconds at most,
+            // and a stalled process (a GitHub runner, once) made none in time.
             bool listening = Renew(server);
             if (connected)
             {
