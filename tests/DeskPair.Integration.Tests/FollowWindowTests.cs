@@ -44,7 +44,13 @@ public class FollowWindowTests
         await session.SetResolutionAsync(0, Size(1234, 776));
 
         await Testbed.WaitUntilAsync(() => cb.LastFrameSize == (1234, 776), "frames at exactly the window's size", 15_000);
-        cb.DisplaysChanges[^1].Displays[0].Width.ShouldBe(1234);
+        // The display-change notice and the first frame at the new size come separately, and on a busy machine (a CI
+        // Mac) the frame can arrive first: wait for the notice as well instead of reading the list the moment the frame
+        // is in, which found it empty.
+        await Testbed.WaitUntilAsync(
+            () => cb.DisplaysChanges.Count > 0 && cb.DisplaysChanges[^1].Displays is { Count: > 0 } d && d[0].Width == 1234,
+            "the display change reported at the new size",
+            15_000);
 
         await session.CloseAsync("done");
         await Testbed.WaitUntilAsync(() => bed.Displays!.Displays[0].Width == 640 && bed.DisplayModes!.TaughtCount == 0, "restored and forgotten", 15_000);
