@@ -24,6 +24,12 @@
                    IsVisible="{Binding MatchWindowStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
       </StackPanel>
     </Border>
+    <!-- The session's connection status (latency, bitrate, path), shared from the owning session so a display
+         pulled out into its own window still shows how the link is doing. -->
+    <Border DockPanel.Dock="Bottom" Background="#161616" Padding="10,3" BorderBrush="#2A2A2A" BorderThickness="0,1,0,0"
+            IsVisible="{Binding Owner.RttText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <TextBlock Text="{Binding Owner.RttText}" Foreground="#9C9" FontSize="12" VerticalAlignment="Center" />
+    </Border>
     <ScrollViewer x:Name="DisplayScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
       <controls:RemoteDisplayView x:Name="Display" />
     </ScrollViewer>

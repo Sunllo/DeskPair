@@ -302,6 +302,7 @@ public sealed class HostSession
             CurrentDisplay = 0,
             Encoding = _runtime.EncodingProvider?.Invoke() ?? new SupportedEncoding(),
             MultiDisplay = _runtime.SupportsMultiDisplay,
+            Elevation = _runtime.SupportsElevation,
         };
         info.Displays.AddRange(_runtime.DescribeDisplays());
         info.Granted.AddRange(Context.Permissions.Granted);

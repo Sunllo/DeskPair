@@ -38,6 +38,7 @@ public sealed class SessionScope
         Misc.UnionOneofCase.MediaAnswer,
         Misc.UnionOneofCase.MediaReady,
         Misc.UnionOneofCase.MediaClose,
+        Misc.UnionOneofCase.ElevationRequest,
     ];
 
     public bool IsAllowed(HostSessionContext ctx, Message message)

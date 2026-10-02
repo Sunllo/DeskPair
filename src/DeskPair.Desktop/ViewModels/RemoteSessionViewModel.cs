@@ -29,6 +29,9 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
     private bool _suppressOptions;
     private readonly List<DisplayInfo> _displayInfos = [];
     private bool _keyboardAllowed = true;
+    private bool _hostElevation;
+    private SecureDesktop.Types.Kind _secureKind = SecureDesktop.Types.Kind.SdNone;
+    private SecureDesktop.Types.Elevation _elevation = SecureDesktop.Types.Elevation.ElNone;
     private DisplayResolution? _pendingResolution;
 
     /// <summary>A display asked to be added (true) or removed (false), until the host's answer arrives.</summary>
@@ -131,6 +134,16 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
     [ObservableProperty]
     public partial bool CanAddDisplays { get; set; }
 
+    /// <summary>
+    /// The host is showing a private session screen: adding a display beside it would turn the owner's screens back on,
+    /// so the host refuses it, and the button says why before it is pressed rather than after.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AddDisplayTip))]
+    public partial bool PrivateScreenOn { get; set; }
+
+    public string AddDisplayTip => Strings.Get(PrivateScreenOn ? "session.addDisplay.private" : "session.addDisplay");
+
     /// <summary>The tab shows a display that was added on request, and so can be taken away again.</summary>
     [ObservableProperty]
     public partial bool CurrentDisplayIsAdded { get; set; }
@@ -167,6 +180,32 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
     public partial string HostNotice { get; set; } = string.Empty;
 
     public bool HasHostNotice => HostNotice.Length > 0;
+
+    /// <summary>
+    /// The remote computer is showing a screen DeskPair cannot: a UAC prompt on the Windows secure desktop, or the
+    /// lock screen. The last picture stays where it is, out of date, and this banner says why over it -- the same
+    /// idea as a stall, except the host is not quiet, it is simply on a desktop the engine may not read.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSecureDesktopNotice))]
+    public partial string SecureDesktopNotice { get; set; } = string.Empty;
+
+    public bool HasSecureDesktopNotice => SecureDesktopNotice.Length > 0;
+
+    /// <summary>Where a request to see and drive the secure desktop stands, in words; empty when nobody has asked.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasElevationStatus))]
+    public partial string ElevationStatus { get; set; } = string.Empty;
+
+    public bool HasElevationStatus => ElevationStatus.Length > 0;
+
+    /// <summary>
+    /// Show the "ask to see the admin prompt" button: the host can raise a helper, this viewer may type, a secure
+    /// desktop is up, and nobody is already asking or elevated. The host still enforces all of this; the button
+    /// only offers what it will accept.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool CanRequestElevation { get; set; }
 
     [ObservableProperty]
     public partial int QualityIndex { get; set; }
@@ -530,7 +569,7 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
     /// </summary>
     internal void AddDisplay(int width, int height, IEnumerable<(int Width, int Height)> sizes)
     {
-        if (Session is not { State: ControllerSessionState.Authorized } session || !CanAddDisplays)
+        if (Session is not { State: ControllerSessionState.Authorized } session || !CanAddDisplays || PrivateScreenOn)
         {
             return;
         }
@@ -738,11 +777,13 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         _displayInfos.Clear();
         _displayInfos.AddRange(displays);
         HasNoDisplays = _displayInfos.Count == 0;
+        PrivateScreenOn = _displayInfos.Exists(d => d.SessionScreen);
         Displays.Clear();
         for (int i = 0; i < _displayInfos.Count; i++)
         {
             DisplayInfo d = _displayInfos[i];
-            Displays.Add($"{i + 1}: {d.Width}x{d.Height}{(d.Primary ? " *" : string.Empty)}{(d.VirtualDisplay ? " · " + Strings.Get("session.addedDisplay") : string.Empty)}");
+            string kind = d.SessionScreen ? " · " + Strings.Get("session.privateScreen") : d.VirtualDisplay ? " · " + Strings.Get("session.addedDisplay") : string.Empty;
+            Displays.Add($"{i + 1}: {d.Width}x{d.Height}{(d.Primary ? " *" : string.Empty)}{kind}");
         }
 
         // With display windows open the tab keeps its own display, found by name: the host's "current" is
@@ -940,6 +981,8 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         Dispatcher.UIThread.Post(() =>
         {
             CanAddDisplays = info.MultiDisplay && info.Platform == "Windows";
+            _hostElevation = info.Elevation;
+            UpdateElevation();
             _suppressOptions = true;
             PopulateDisplays(info.Displays, info.CurrentDisplay);
             _suppressOptions = false;
@@ -1222,6 +1265,48 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         }
     });
 
+    /// <summary>
+    /// The remote computer slipped onto a desktop the engine cannot read -- a UAC prompt on the secure desktop, or the
+    /// lock screen -- or came back off one. The picture froze on the last thing the engine saw; the banner says why.
+    /// </summary>
+    public override void OnSecureDesktop(SecureDesktop info) => Dispatcher.UIThread.Post(() =>
+    {
+        _secureKind = info.Kind;
+        _elevation = info.Elevation;
+        SecureDesktopNotice = info.Kind switch
+        {
+            SecureDesktop.Types.Kind.SdUac => Strings.Get("session.secureDesktop.uac"),
+            SecureDesktop.Types.Kind.SdLocked => Strings.Get("session.secureDesktop.locked"),
+            _ => string.Empty,
+        };
+        UpdateElevation();
+    });
+
+    /// <summary>Re-derives the elevation button and status from the host's capability, this viewer's keyboard permission and the state.</summary>
+    private void UpdateElevation()
+    {
+        ElevationStatus = _elevation switch
+        {
+            SecureDesktop.Types.Elevation.ElRequested => Strings.Get("session.elevation.requested"),
+            SecureDesktop.Types.Elevation.ElActive => Strings.Get("session.elevation.active"),
+            SecureDesktop.Types.Elevation.ElRefused => Strings.Get("session.elevation.refused"),
+            _ => string.Empty,
+        };
+
+        CanRequestElevation = _hostElevation && _keyboardAllowed
+            && _secureKind != SecureDesktop.Types.Kind.SdNone
+            && _elevation is SecureDesktop.Types.Elevation.ElNone or SecureDesktop.Types.Elevation.ElRefused;
+    }
+
+    [RelayCommand]
+    private async Task RequestElevationAsync()
+    {
+        if (Session is { } session)
+        {
+            await session.RequestElevationAsync();
+        }
+    }
+
     public override void OnPermission(PermissionInfo info)
     {
         base.OnPermission(info);
@@ -1234,6 +1319,7 @@ public partial class RemoteSessionViewModel : SessionViewModelBase
         {
             _keyboardAllowed = info.Enabled;
             PopulateResolutions();
+            UpdateElevation();
         });
     }
 

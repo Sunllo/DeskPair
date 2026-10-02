@@ -70,20 +70,20 @@ public class GccTests
     }
 
     [Fact]
-    public void Loss_based_estimate_grows_below_two_percent_holds_up_to_ten_and_drops_above()
+    public void Loss_based_estimate_grows_below_four_percent_holds_up_to_twenty_and_drops_above()
     {
         var loss = new LossBasedBwe(8_000_000, 8_000_000);
-        loss.Update(1, 99, 0, 8_000_000);
-        loss.EstimateBps.ShouldBe(8_000_000); // at the cap
+        loss.Update(2, 98, 0, 8_000_000);
+        loss.EstimateBps.ShouldBe(8_000_000); // 2% is under the 4% grow line, and it is at the cap
 
         loss = new LossBasedBwe(8_000_000, 30_000_000);
-        loss.Update(5, 95, 0, 8_000_000);
+        loss.Update(10, 90, 0, 8_000_000);
         double held = loss.EstimateBps;
-        loss.Update(5, 95, 1_000_000, 8_000_000);
-        loss.EstimateBps.ShouldBe(held);
+        loss.Update(10, 90, 1_000_000, 8_000_000);
+        loss.EstimateBps.ShouldBe(held); // 10% is in the 4-20% hold band
 
-        loss.Update(20, 80, 2_000_000, 8_000_000);
-        loss.EstimateBps.ShouldBe(8_000_000 * (1 - 0.5 * 0.2), 1);
+        loss.Update(40, 60, 2_000_000, 8_000_000);
+        loss.EstimateBps.ShouldBe(8_000_000 * (1 - 0.5 * 0.4), 1); // 40% is above the 20% drop line
     }
 
     [Fact]

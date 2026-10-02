@@ -79,6 +79,25 @@
                 <Border Height="170" IsVisible="{Binding ChatOpen}" Background="#F3F3F6" CornerRadius="8" Padding="4">
                   <views:ChatView DataContext="{Binding Chat}" Foreground="#222" />
                 </Border>
+                <!-- Asking to see and drive the secure desktop (a UAC prompt): the most consequential thing to
+                     say yes to here, so it gets its own box, and the person still completes the real UAC. -->
+                <Border IsVisible="{Binding IsElevationPending}" Background="#FFF4E0" BorderBrush="#E0B060" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,4,0,0">
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="{Binding ElevationText}" Foreground="#7A5A10" TextWrapping="Wrap" FontWeight="SemiBold" />
+                    <TextBlock Text="{loc:Loc cm.elevation.hint}" Foreground="#9A7A30" FontSize="12" TextWrapping="Wrap" />
+                    <!-- The "make it permanent" choice is easy to miss as a plain line of small text on this
+                         amber card, so it gets its own white, bordered box with bold text and a larger tick. -->
+                    <Border IsVisible="{Binding ElevationCanInstall}" Background="White" BorderBrush="#C9922E" BorderThickness="1.5" CornerRadius="6" Padding="8,6" Margin="0,2,0,0">
+                      <CheckBox IsChecked="{Binding ElevationPermanent}" Foreground="#5A3E0A" FontWeight="SemiBold" VerticalContentAlignment="Center">
+                        <TextBlock Text="{loc:Loc cm.elevation.permanent}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                      </CheckBox>
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Button Content="{loc:Loc cm.elevation.allow}" Command="{Binding AllowElevationCommand}" Background="#2E7CF6" Foreground="White" Padding="12,4" CornerRadius="6" />
+                      <Button Content="{loc:Loc cm.elevation.deny}" Command="{Binding DenyElevationCommand}" Background="#E8E8EC" Foreground="#333" Padding="12,4" CornerRadius="6" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </Border>
           </DataTemplate>

@@ -123,6 +123,16 @@ public interface IControllerCallbacks
     }
 
     /// <summary>
+    /// The host's engine is looking at a desktop it can neither show nor drive -- a UAC prompt on the Windows
+    /// secure desktop, or the lock / sign-in screen -- or is back on an ordinary one (<c>Kind</c> = SD_NONE).
+    /// The picture is frozen on the last thing the engine could see; the viewer says so rather than leaving a
+    /// dead-looking screen.
+    /// </summary>
+    void OnSecureDesktop(SecureDesktop info)
+    {
+    }
+
+    /// <summary>
     /// A terminal opened, produced output, ended or failed. Output is acknowledged to the host by the
     /// session as soon as this returns, so a slow consumer should keep its own buffer rather than block here.
     /// </summary>
@@ -616,6 +626,14 @@ public sealed class ControllerSession : IAsyncDisposable
                 _callbacks.OnRoundTrip(TimeSpan.FromMilliseconds(Math.Max(0, now - message.TestDelay.TimeMs)));
                 break;
             case Message.UnionOneofCase.TestDelay:
+                // The host sends these on a timer and carries its own latest measured round-trip in LastDelayMs.
+                // Surface it as the connection's latency so the controller can show a live status without having
+                // to run its own probe loop (the one-way path SendPingAsync offers is otherwise never driven).
+                if (message.TestDelay.LastDelayMs > 0)
+                {
+                    _callbacks.OnRoundTrip(TimeSpan.FromMilliseconds(message.TestDelay.LastDelayMs));
+                }
+
                 await SendAsync(new Message { TestDelay = new TestDelay { TimeMs = message.TestDelay.TimeMs, FromController = false, LastDelayMs = message.TestDelay.LastDelayMs } }, ct).ConfigureAwait(false);
                 break;
             case Message.UnionOneofCase.Misc:
@@ -693,6 +711,9 @@ public sealed class ControllerSession : IAsyncDisposable
                 break;
             case Misc.UnionOneofCase.CloseReason:
                 await CloseAsync($"peer: {misc.CloseReason.Reason}").ConfigureAwait(false);
+                break;
+            case Misc.UnionOneofCase.SecureDesktop:
+                _callbacks.OnSecureDesktop(misc.SecureDesktop);
                 break;
             case Misc.UnionOneofCase.MediaOffer:
                 await OnMediaOfferAsync(misc.MediaOffer, ct).ConfigureAwait(false);
@@ -1145,6 +1166,23 @@ public sealed class ControllerSession : IAsyncDisposable
 
     /// <summary>True when the host understands <see cref="SubscribeDisplaysAsync"/>; an older one ignores it.</summary>
     public bool HostSupportsMultiDisplay => PeerInfo?.MultiDisplay == true;
+
+    /// <summary>
+    /// True when the host can raise a helper so this viewer may see and drive the secure desktop (a UAC prompt).
+    /// Only Windows app-mode hosts set it; an older host, or the unattended SYSTEM engine, leaves it unset, and a
+    /// request must never be sent to one that has not, or it would close the session on the unknown message.
+    /// </summary>
+    public bool HostSupportsElevation => PeerInfo?.Elevation == true;
+
+    /// <summary>
+    /// Asks the host to raise a helper so this viewer can see and drive the secure desktop. Only sent to a host that
+    /// advertised the capability; the person at the host still allows it and completes the real UAC. The answer comes
+    /// back through <see cref="IControllerCallbacks.OnSecureDesktop"/> as the elevation state moves.
+    /// </summary>
+    public ValueTask RequestElevationAsync(CancellationToken ct = default) =>
+        HostSupportsElevation
+            ? SendAsync(new Message { Misc = new Misc { ElevationRequest = true } }, ct)
+            : ValueTask.CompletedTask;
 
     /// <summary>
     /// Asks for every display in <paramref name="displays"/> at once, with <paramref name="focus"/> the one that has

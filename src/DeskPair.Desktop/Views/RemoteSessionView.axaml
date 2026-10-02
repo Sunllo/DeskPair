@@ -20,7 +20,8 @@
           <Button x:Name="DisplayWindowButton" Content="⧉" IsVisible="{Binding CanOpenDisplayWindows}" IsEnabled="{Binding HasWindowChoices}"
                   ToolTip.Tip="{loc:Loc session.openDisplayWindow}" />
           <!-- A display the host does not have, sized like the viewer's own screen; it opens in a window of its own. -->
-          <Button x:Name="AddDisplayButton" Content="＋" IsVisible="{Binding CanAddDisplays}" ToolTip.Tip="{loc:Loc session.addDisplay}" />
+          <Button x:Name="AddDisplayButton" Content="＋" IsVisible="{Binding CanAddDisplays}" IsEnabled="{Binding !PrivateScreenOn}"
+                  ToolTip.Tip="{Binding AddDisplayTip}" ToolTip.ShowOnDisabled="True" />
           <Button Content="{loc:Loc session.removeDisplay}" Command="{Binding RemoveDisplayCommand}" IsVisible="{Binding CurrentDisplayIsAdded}" />
           <ComboBox ItemsSource="{Binding Resolutions}" SelectedIndex="{Binding ResolutionIndex}" MinWidth="130"
                     IsVisible="{Binding CanChangeResolution}" IsEnabled="{Binding !IsFollowing}" ToolTip.Tip="{loc:Loc session.resolution}" />
@@ -52,9 +53,14 @@
                         Content="⏺" Foreground="#F05A5A" ToolTip.Tip="{loc:Loc session.record}" />
           <TextBlock Text="{Binding RecordingText}" VerticalAlignment="Center" Foreground="#E8C06A" />
           <Button Command="{Binding DisconnectCommand}" Content="{loc:Loc session.disconnect}" Background="#7A2E2E" />
-          <TextBlock Text="{Binding RttText}" VerticalAlignment="Center" Foreground="#9C9" Margin="12,0,0,0" />
         </StackPanel>
       </ScrollViewer>
+    </Border>
+    <!-- Connection status on a line of its own, so it is always visible: in the toolbar it sat past the right edge
+         and the horizontal scrollbar, where a user never found it. -->
+    <Border DockPanel.Dock="Bottom" Background="#161616" Padding="10,3" BorderBrush="#2A2A2A" BorderThickness="0,1,0,0"
+            IsVisible="{Binding RttText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <TextBlock Text="{Binding RttText}" Foreground="#9C9" FontSize="12" VerticalAlignment="Center" />
     </Border>
     <Grid>
       <Grid.ColumnDefinitions>
@@ -79,6 +85,20 @@
           <ProgressBar IsIndeterminate="True" Width="70" Height="4" VerticalAlignment="Center" />
           <TextBlock Text="{loc:Loc session.stalled}" Foreground="#F0C8C8" VerticalAlignment="Center" FontWeight="SemiBold" />
           <TextBlock Text="{loc:Loc session.stalledHint}" Foreground="#A89090" VerticalAlignment="Center" FontSize="12" />
+        </StackPanel>
+      </Border>
+      <!-- The remote computer is on a desktop DeskPair cannot read: a UAC prompt on the secure desktop, or the
+           lock screen. The last picture stays put, out of date, and this says why over it. -->
+      <Border Grid.ColumnSpan="2" IsVisible="{Binding HasSecureDesktopNotice}" VerticalAlignment="Top" HorizontalAlignment="Center"
+              Background="#E62A2410" BorderBrush="#7A6A3A" BorderThickness="1" CornerRadius="0,0,8,8" Padding="16,9"
+              BoxShadow="0 4 16 0 #66000000">
+        <StackPanel Orientation="Horizontal" Spacing="12" MaxWidth="660">
+          <StackPanel Spacing="2" VerticalAlignment="Center">
+            <TextBlock Text="{Binding SecureDesktopNotice}" Foreground="#F0E0C0" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ElevationStatus}" IsVisible="{Binding HasElevationStatus}" Foreground="#C8B890" FontSize="12" TextWrapping="Wrap" />
+          </StackPanel>
+          <Button Content="{loc:Loc session.elevation.request}" IsVisible="{Binding CanRequestElevation}"
+                  Command="{Binding RequestElevationCommand}" VerticalAlignment="Center" />
         </StackPanel>
       </Border>
       <!-- A host with no screen: the session is fine, there is just nothing to draw. When the host said why (a

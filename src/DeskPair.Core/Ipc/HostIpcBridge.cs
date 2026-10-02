@@ -27,6 +27,7 @@ public sealed class HostIpcBridge : IIpcHostBridge, IConnectionApprover
     private HostConfig _applied;
     private readonly ILogger _log;
     private readonly ConcurrentDictionary<int, TaskCompletionSource<ApprovalDecision>> _approvals = new();
+    private readonly ConcurrentDictionary<int, TaskCompletionSource<ElevationDecision>> _elevations = new();
     private HostRuntime? _runtime;
     private IpcServer? _server;
 
@@ -203,6 +204,16 @@ public sealed class HostIpcBridge : IIpcHostBridge, IConnectionApprover
                 }
 
                 return null;
+            case IpcMessage.UnionOneofCase.ElevationDecision:
+                // As with ApprovalDecision: only the connection manager answers, keeping the most security-relevant
+                // prompt in the one window the person is looking at.
+                if (client.Role == IpcRoles.ConnectionManager
+                    && _elevations.TryRemove(request.ElevationDecision.ConnId, out TaskCompletionSource<ElevationDecision>? elev))
+                {
+                    elev.TrySetResult(request.ElevationDecision);
+                }
+
+                return null;
             case IpcMessage.UnionOneofCase.PermissionChange:
                 FindSession(request.PermissionChange.ConnId)?.Context.Permissions.SetOverride(request.PermissionChange.Permission, request.PermissionChange.Enabled);
                 return null;
@@ -293,6 +304,12 @@ public sealed class HostIpcBridge : IIpcHostBridge, IConnectionApprover
             {
                 kv.Value.TrySetResult(new ApprovalDecision { ConnId = kv.Key, Accept = false });
             }
+
+            // And pending elevations: no window to say yes in means no.
+            foreach (KeyValuePair<int, TaskCompletionSource<ElevationDecision>> kv in _elevations)
+            {
+                kv.Value.TrySetResult(new ElevationDecision { ConnId = kv.Key, Allow = false });
+            }
         }
     }
 
@@ -361,6 +378,54 @@ public sealed class HostIpcBridge : IIpcHostBridge, IConnectionApprover
         finally
         {
             _approvals.TryRemove(summary.ConnectionId, out _);
+        }
+    }
+
+    /// <summary>
+    /// Asks the person at the host whether to let a viewer see and drive the secure desktop, the same way a
+    /// connection is approved. Wired to <see cref="Services.HostMediaModule.ElevationApprover"/>. No window to ask
+    /// in means no, exactly as a connection with no connection manager is rejected.
+    /// </summary>
+    public async Task<Services.ElevationChoice> RequestElevationAsync(Services.ElevationAsk ask, CancellationToken ct)
+    {
+        if (_server is null)
+        {
+            return default;
+        }
+
+        if (!_server.HasClient(IpcRoles.ConnectionManager) && !await EnsureConnectionManagerAsync(ct).ConfigureAwait(false))
+        {
+            _log.LogWarning("Elevation for connection {Id} needs the person at the host, but no connection manager is running; refusing", ask.ConnectionId);
+            return default;
+        }
+
+        // Phase 3's permanent-for-listed-devices offer: only where the machine has a permanent password (so the
+        // unattended service can be installed), and the prompt says whether this device is already on the allowlist.
+        bool canInstall = _runtime?.Passwords.HasPermanentPassword ?? false;
+        bool listed = _applied.AllowedPeers.Any(entry => entry == "id:" + ask.PeerId);
+
+        var tcs = new TaskCompletionSource<ElevationDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _elevations[ask.ConnectionId] = tcs;
+        try
+        {
+            await _server.BroadcastAsync(new IpcMessage
+            {
+                ElevationRequest = new ElevationRequest
+                {
+                    ConnId = ask.ConnectionId,
+                    PeerId = ask.PeerId,
+                    PeerName = ask.PeerName,
+                    Listed = listed,
+                    CanInstall = canInstall,
+                },
+            }, ct: ct).ConfigureAwait(false); // every UI sees it; only the connection manager may answer
+            using CancellationTokenRegistration reg = ct.Register(() => tcs.TrySetCanceled(ct));
+            ElevationDecision decision = await tcs.Task.ConfigureAwait(false);
+            return new Services.ElevationChoice(decision.Allow, decision.Permanent);
+        }
+        finally
+        {
+            _elevations.TryRemove(ask.ConnectionId, out _);
         }
     }
 

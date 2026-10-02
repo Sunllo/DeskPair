@@ -29,6 +29,9 @@ public static class Program
             AppRole.InstallVirtualDisplay => RunVirtualDisplaySetup(args, console, install: true),
             AppRole.RemoveVirtualDisplay => RunVirtualDisplaySetup(args, console, install: false),
             AppRole.RemoveSystemChanges => RunRemoveSystemChanges(args),
+            AppRole.Elevate => RunElevate(args),
+            AppRole.HelperLaunch => RunHelperLaunch(args),
+            AppRole.SessionHelper => RunSessionHelper(args),
             AppRole.Update => RunUpdate(args),
             AppRole.Version => Print(App.Version),
             AppRole.Help => Usage(),
@@ -49,6 +52,9 @@ public static class Program
         "--install-virtual-display" => AppRole.InstallVirtualDisplay,
         "--remove-virtual-display" => AppRole.RemoveVirtualDisplay,
         "--remove-system-changes" => AppRole.RemoveSystemChanges,
+        "--elevate" => AppRole.Elevate,
+        "--helper-launch" => AppRole.HelperLaunch,
+        "--session-helper" => AppRole.SessionHelper,
         "--update" => AppRole.Update,
         "--version" => AppRole.Version,
         "--help" or "-h" or "-?" or "/?" => AppRole.Help,
@@ -358,6 +364,67 @@ public static class Program
 #endif
     }
 
+    // ---- secure-desktop elevation (Windows) ----
+
+    private static int RunElevate(string[] args)
+    {
+#if WINDOWS
+        if (args.Length < 3)
+        {
+            Console.Error.WriteLine("--elevate needs a pipe name and a token file");
+            return 2;
+        }
+
+        // The same elevated step may also set this device up for unattended access (phase 3): "--install-service
+        // --peer <id>" after the pipe and token.
+        string? permanentPeer = args.Contains("--install-service") ? ServerRole.Arg(args, "--peer") : null;
+        using ILoggerFactory logs = ElevationLogs();
+        return Engine.Elevation.ElevationRoles.RunElevate(args[1], args[2], permanentPeer, logs.CreateLogger("elevate"));
+#else
+        _ = args;
+        Console.Error.WriteLine("Elevation is a Windows feature.");
+        return 2;
+#endif
+    }
+
+    private static int RunHelperLaunch(string[] args)
+    {
+#if WINDOWS
+        if (args.Length < 4)
+        {
+            return 2;
+        }
+
+        using ILoggerFactory logs = ElevationLogs();
+        return Engine.Elevation.ElevationRoles.RunHelperLaunch(args[1], args[2], args[3], logs.CreateLogger("helper-launch"));
+#else
+        _ = args;
+        return 2;
+#endif
+    }
+
+    private static int RunSessionHelper(string[] args)
+    {
+#if WINDOWS
+        if (args.Length < 3)
+        {
+            return 2;
+        }
+
+        using ILoggerFactory logs = ElevationLogs();
+        return Engine.Elevation.ElevationRoles.RunSessionHelper(args[1], args[2], logs);
+#else
+        _ = args;
+        return 2;
+#endif
+    }
+
+#if WINDOWS
+    private static ILoggerFactory ElevationLogs() => LoggerFactory.Create(b => b
+        .AddProvider(new FileLoggerProvider(Path.Combine(ServerRole.DefaultDataDir(), "logs", "elevation.log")))
+        .SetMinimumLevel(LogLevel.Information));
+#endif
+
     private static int RunFirewall(string[] args, bool console, bool add)
     {
         using ILoggerFactory logs = LoggerFactory.Create(b => b
@@ -636,4 +703,10 @@ public enum AppRole
     Update,
     Version,
     Help,
+
+    // The secure-desktop elevation chain (Windows): the elevated launcher, the throwaway SYSTEM service it
+    // stands up, and the SYSTEM helper that service puts into the interactive session.
+    Elevate,
+    HelperLaunch,
+    SessionHelper,
 }

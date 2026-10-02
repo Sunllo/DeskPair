@@ -218,6 +218,17 @@ public partial class SecuritySettingsViewModel : SettingsSectionBase
     [ObservableProperty]
     public partial bool RefuseRelayed { get; set; }
 
+    /// <summary>
+    /// Windows, unattended only: while the host service runs, let only the devices in <see cref="AllowedPeers"/>
+    /// see and drive the secure desktop -- the administrator (UAC) prompt and the lock/sign-in screen. Any other
+    /// authorised connection gets the banner there, with no picture and no input accepted. Off (the default) means
+    /// every authorised connection sees it, which is how turning on "reachable while locked" by hand has always
+    /// worked. Set here so a trusted device can be granted it ahead of time, rather than only when a UAC appears
+    /// and somebody has to approve it at the connection manager.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool SecureDesktopForListedOnly { get; set; }
+
     /// <summary>What is in the list: addresses, ranges and ids, in the order they were added.</summary>
     public ObservableCollection<string> AllowedPeers { get; } = [];
 
@@ -260,6 +271,7 @@ public partial class SecuritySettingsViewModel : SettingsSectionBase
         TerminalConfirming = false;
         AllowlistEnabled = host?.AllowlistEnabled ?? false;
         RefuseRelayed = host?.RefuseRelayed ?? false;
+        SecureDesktopForListedOnly = host?.SecureDesktopForListedOnly ?? false;
         AllowedPeers.Clear();
         foreach (string entry in host?.AllowedPeers ?? [])
         {
@@ -298,6 +310,7 @@ public partial class SecuritySettingsViewModel : SettingsSectionBase
         AllowlistEnabled = AllowlistEnabled,
         AllowedPeers = AllowedPeers.ToList(),
         RefuseRelayed = RefuseRelayed,
+        SecureDesktopForListedOnly = SecureDesktopForListedOnly,
     };
 
     /// <summary>

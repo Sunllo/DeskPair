@@ -82,7 +82,14 @@ internal static class DesktopEngineLauncher
     /// Starts <c>--server</c> in the console session.
     /// </summary>
     /// <returns>The running engine, or null with the reason logged.</returns>
-    internal static Engine? Launch(uint session, ILogger log)
+    internal static Engine? Launch(uint session, ILogger log) => Launch(session, "--server", log);
+
+    /// <summary>
+    /// As <see cref="Launch(uint, ILogger)"/>, but running the program with <paramref name="arguments"/> instead of
+    /// <c>--server</c>. The elevation helper uses this to put <c>--session-helper</c> into the interactive session as
+    /// SYSTEM, reusing the same proven token-borrow and CreateProcessAsUser path the unattended engine takes.
+    /// </summary>
+    internal static Engine? Launch(uint session, string arguments, ILogger log)
     {
         nint token = BorrowWinlogonToken(session, log);
         if (token == 0)
@@ -112,7 +119,7 @@ internal static class DesktopEngineLauncher
                 // Three buffers this side owns. The command line in particular must be writable memory of
                 // our own: CreateProcess is documented to modify it in place.
                 nint desktopName = Marshal.StringToHGlobalUni(Desktop);
-                nint commandLine = Marshal.StringToHGlobalUni("\"" + exe + "\" --server");
+                nint commandLine = Marshal.StringToHGlobalUni("\"" + exe + "\" " + arguments);
                 nint workingDirectory = Marshal.StringToHGlobalUni(Path.GetDirectoryName(exe) ?? string.Empty);
                 try
                 {

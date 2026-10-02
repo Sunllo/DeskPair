@@ -109,6 +109,24 @@ message ApprovalDecision {
   repeated sunllo.messages.Permission granted = 3;
 }
 
+// Engine -> UI: a viewer asked to see and drive the secure desktop (a UAC prompt). The connection manager asks
+// the person at the host whether to allow it; if they do, the app raises the helper (which shows the real UAC
+// they still complete). listed / can_install carry the Phase 3 permanent-access offer.
+message ElevationRequest {
+  int32 conn_id = 1;
+  string peer_id = 2;
+  string peer_name = 3;
+  bool listed = 4;        // the viewer is already in this host's allowlist (Phase 3)
+  bool can_install = 5;   // this host has a permanent password, so "always allow listed devices" can install the service (Phase 3)
+}
+
+// UI -> engine: the person at the host's answer.
+message ElevationDecision {
+  int32 conn_id = 1;
+  bool allow = 2;
+  bool permanent = 3;     // also install unattended access for listed devices (Phase 3)
+}
+
 message ConnectionClosed {
   int32 conn_id = 1;
   string reason = 2;
@@ -234,5 +252,7 @@ message IpcMessage {
     DesktopSharingRequest desktop_sharing_request = 32;
     DesktopSharingState desktop_sharing_state = 33;
     IpcRefused refused = 34;
+    ElevationRequest elevation_request = 35;
+    ElevationDecision elevation_decision = 36;
   }
 }

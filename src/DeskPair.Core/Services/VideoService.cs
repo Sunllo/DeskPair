@@ -72,7 +72,7 @@ public sealed class VideoService : PublisherService
     public const double MaxFrameRateCompensation = 2.5;
 
     /// <summary>Hard ceiling for what is asked of the encoder (compensation included); above this H.264 levels and hardware rate control stop behaving.</summary>
-    public const int MaxEncoderBitrateKbps = 200_000;
+    public const int MaxEncoderBitrateKbps = 2_000_000;
     private static readonly TimeSpan BitrateDecreaseInterval = TimeSpan.FromMilliseconds(250);
     /// <summary>Lossless refinement (and small lossless patches) start only after the video stream has been quiet this long.</summary>
     public static readonly TimeSpan RefinementQuietTime = TimeSpan.FromMilliseconds(500);
@@ -133,6 +133,13 @@ public sealed class VideoService : PublisherService
     /// strikes the failed codec off so that no stream tries it again.
     /// </summary>
     public Func<AbstractCodec, AbstractCodec?>? CodecFailed { get; set; }
+
+    /// <summary>
+    /// A per-viewer gate: returns false for a connection that must not receive frames right now. The host sets it
+    /// for the "secure desktop for listed devices only" policy -- while the input desktop is the secure one, a
+    /// device not allowed to see it is sent nothing and keeps the last ordinary picture, with the banner over it.
+    /// </summary>
+    public Func<int, bool>? FrameGate { get; init; }
 
     /// <summary>The same restart after the display changed size: the loop re-reads the descriptor and builds an encoder to match.</summary>
     public Task RestartForDisplayChangeAsync() => RestartAsync();
@@ -891,6 +898,11 @@ public sealed class VideoService : PublisherService
         int delivered = 0;
         List<int> dropped = BroadcastVideo(new Message { TileUpdate = update }, subscribers, s =>
         {
+            if (FrameGate is { } gate && !gate(s.ConnectionId))
+            {
+                return false;
+            }
+
             if (!s.SupportsLosslessTiles || _qos.IsCongested(s.ConnectionId, Display.Index))
             {
                 return false;
@@ -963,6 +975,12 @@ public sealed class VideoService : PublisherService
 
         List<int> dropped = BroadcastVideo(frame, SubscriberSnapshot(), s =>
         {
+            // Not allowed to see what is on screen right now (the secure desktop, for a device the policy keeps out).
+            if (FrameGate is { } gate && !gate(s.ConnectionId))
+            {
+                return false;
+            }
+
             // A viewer waiting for a keyframe cannot use a delta; a congested viewer gets nothing until it acks.
             if (!packet.IsKeyFrame && waiting.Contains(s.ConnectionId))
             {

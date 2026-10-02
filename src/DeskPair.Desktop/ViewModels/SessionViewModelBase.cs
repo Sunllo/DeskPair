@@ -324,6 +324,10 @@ public abstract partial class SessionViewModelBase : ObservableObject, IControll
     {
     }
 
+    public virtual void OnSecureDesktop(SecureDesktop info)
+    {
+    }
+
     public virtual void OnClosed(string reason) => Dispatcher.UIThread.Post(() =>
     {
         IsStalled = false;

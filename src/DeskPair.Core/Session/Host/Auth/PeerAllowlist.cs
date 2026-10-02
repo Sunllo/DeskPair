@@ -117,6 +117,13 @@ public sealed class PeerAllowlist
         return _ids.Count > 0 || Matches(address);
     }
 
+    /// <summary>
+    /// Whether this peer id is one the list names explicitly, whatever <see cref="Enabled"/> says. The
+    /// "secure desktop for listed devices only" policy asks this: it turns the id list on for the secure desktop
+    /// even on a host whose ordinary connections are gated by the password rather than the list.
+    /// </summary>
+    public bool Lists(string? peerId) => !string.IsNullOrEmpty(peerId) && _ids.Contains(peerId);
+
     /// <summary>The answer, once the peer has said who it is.</summary>
     public bool Allows(IPAddress? address, string? peerId)
     {

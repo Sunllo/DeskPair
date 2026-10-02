@@ -196,10 +196,19 @@ public static class HostServiceInstaller
     }
 
     /// <summary>
-    /// Registers the service against this executable and starts it. Needs administrator rights.
+    /// Registers the service against this executable and, unless <paramref name="startNow"/> is false, starts it.
+    /// Needs administrator rights.
+    ///
+    /// <paramref name="startNow"/> is false for the "make a device permanent" flow: a connection is being served
+    /// right now by the app's own engine (with a temporary helper on the secure desktop), and starting the service
+    /// here would stand a second engine up beside it -- two engines sharing the data directory take the same
+    /// identity, want the same direct-access port and race for the same pipe, and <see cref="EngineHost"/> would
+    /// hand the engine over mid-connection, dropping it. So the service is registered auto-start and left stopped;
+    /// it takes over cleanly at the next restart, when the app's engine is gone. It still comes up on its own after
+    /// a reboot, which is what "unattended" means.
     /// </summary>
     /// <returns>A process exit code: 0 installed, 2 refused or failed.</returns>
-    public static int Install(string dataDir, ILogger log)
+    public static int Install(string dataDir, ILogger log, bool startNow = true)
     {
         string exe = Environment.ProcessPath ?? string.Empty;
         if (exe.Length == 0)
@@ -250,6 +259,14 @@ public static class HostServiceInstaller
                 int error = Marshal.GetLastPInvokeError();
                 if (error == Advapi32.ErrorServiceExists)
                 {
+                    if (!startNow)
+                    {
+                        // Already registered; leave its state alone. Deferred means "do not start a second engine
+                        // now" -- a running service keeps running, a stopped one takes over at the next restart.
+                        log.LogInformation("The {Service} service is already installed; it takes over at the next restart", ServiceName);
+                        return 0;
+                    }
+
                     // Already registered, which is not the same as already working: a service left
                     // stopped by a previous run would be reported as installed and do nothing.
                     return StartExisting(manager, log);
@@ -271,6 +288,14 @@ public static class HostServiceInstaller
                 Describe(service, log);
                 RestartOnFailure(service, log);
                 AllowSoftwareSas(allow: true, log);
+                if (!startNow)
+                {
+                    // Registered auto-start but deliberately not started: the app's engine is serving a connection
+                    // right now, and the service takes over at the next restart rather than fighting it.
+                    log.LogInformation("The {Service} service is installed; it takes over at the next restart", ServiceName);
+                    return 0;
+                }
+
                 if (!Advapi32.StartService(service, 0, 0))
                 {
                     return Refuse(log, "start the service");

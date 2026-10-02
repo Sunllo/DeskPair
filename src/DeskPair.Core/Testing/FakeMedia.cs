@@ -42,6 +42,72 @@ public sealed class FakeDisplayEnumerator : IDisplayEnumerator
     public void Raise() => DisplaysChanged?.Invoke(this, EventArgs.Empty);
 }
 
+/// <summary>A secure-desktop monitor a test drives by hand: every poll answers whatever <see cref="Kind"/> is set to.</summary>
+public sealed class FakeSecureDesktopMonitor : ISecureDesktopMonitor
+{
+    private int _kind = (int)SecureDesktopKind.None;
+    private int _onSecure = -1; // -1 follows Kind; 0/1 is explicit.
+
+    /// <summary>What the next poll answers. Set from any thread; the host polls it from a timer thread.</summary>
+    public SecureDesktopKind Kind
+    {
+        get => (SecureDesktopKind)Volatile.Read(ref _kind);
+        set => Volatile.Write(ref _kind, (int)value);
+    }
+
+    /// <summary>
+    /// Whether the input desktop is a secure one. Left unset it follows <see cref="Kind"/> (a UAC/lock kind is on a
+    /// secure desktop); set it to model a SYSTEM engine, where the kind is None but the desktop is still secure.
+    /// </summary>
+    public bool? OnSecureDesktop
+    {
+        get { int v = Volatile.Read(ref _onSecure); return v < 0 ? null : v != 0; }
+        set => Volatile.Write(ref _onSecure, value is null ? -1 : value.Value ? 1 : 0);
+    }
+
+    public SecureDesktopState Poll()
+    {
+        SecureDesktopKind kind = Kind;
+        return new SecureDesktopState(kind, OnSecureDesktop ?? kind != SecureDesktopKind.None);
+    }
+}
+
+/// <summary>An elevator a test drives by hand: <see cref="ElevateAsync"/> succeeds or fails by <see cref="Succeed"/>.</summary>
+public sealed class FakeSessionElevator : ISessionElevator
+{
+    /// <summary>Whether raising the helper reports success (as if the person completed the real UAC).</summary>
+    public bool Succeed { get; set; } = true;
+
+    public int Raised { get; private set; }
+    public int Lowered { get; private set; }
+    public bool IsElevated { get; private set; }
+
+    /// <summary>The last request's permanent flag and peer id, so a test can assert what was asked.</summary>
+    public bool LastPermanent { get; private set; }
+    public string? LastPeerId { get; private set; }
+
+    public event Action? Ended;
+
+    public Task<bool> ElevateAsync(bool permanent, string? peerId, CancellationToken ct)
+    {
+        Raised++;
+        LastPermanent = permanent;
+        LastPeerId = peerId;
+        IsElevated = Succeed;
+        return Task.FromResult(Succeed);
+    }
+
+    public Task LowerAsync()
+    {
+        Lowered++;
+        IsElevated = false;
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Test hook: pretend the helper died on its own.</summary>
+    public void RaiseEnded() => Ended?.Invoke();
+}
+
 /// <summary>
 /// A display that can be switched between a few sizes. Setting a mode rewrites the enumerator's descriptor,
 /// so the capture loop and <c>DescribeDisplays</c> see the new size the way they would on a real machine.

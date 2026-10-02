@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using DeskPair.Core.Config;
 using DeskPair.Desktop.Services;
 using DeskPair.Desktop.ViewModels.Settings;
 
@@ -53,5 +54,24 @@ public class SecuritySettingsViewModelTests
 
         await vm.ClearPermanentPasswordCommand.ExecuteAsync(null);
         vm.Notice.ShouldContain("not connected");
+    }
+
+    /// <summary>
+    /// The "listed devices may see the secure desktop" policy is a plain saved setting, so a device can be granted
+    /// the UAC and lock screens ahead of time rather than only when a prompt appears. It must survive the
+    /// load/apply round-trip the settings page uses, or the checkbox would read one thing and save another.
+    /// </summary>
+    [Fact]
+    public void The_listed_only_secure_desktop_policy_loads_and_applies()
+    {
+        SecuritySettingsViewModel vm = Create();
+
+        vm.Load(new DesktopConfig(), new HostConfig { SecureDesktopForListedOnly = true });
+        vm.SecureDesktopForListedOnly.ShouldBeTrue("it reflects what was stored");
+        vm.Apply(new HostConfig()).SecureDesktopForListedOnly.ShouldBeTrue("and writes it back");
+
+        vm.Load(new DesktopConfig(), new HostConfig { SecureDesktopForListedOnly = false });
+        vm.SecureDesktopForListedOnly.ShouldBeFalse("off by default, so the old behaviour is unchanged");
+        vm.Apply(new HostConfig { SecureDesktopForListedOnly = true }).SecureDesktopForListedOnly.ShouldBeFalse();
     }
 }

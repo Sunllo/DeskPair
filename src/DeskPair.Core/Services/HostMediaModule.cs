@@ -28,7 +28,15 @@ public sealed record HostPlatform(
     IVirtualDisplayProvider? VirtualDisplays = null,
     IArbitraryModeSink? ModeTeacher = null,
     IDisplaySession? DisplaySession = null,
-    ISessionScreen? SessionScreen = null);
+    ISessionScreen? SessionScreen = null,
+    ISecureDesktopMonitor? SecureDesktop = null,
+    ISessionElevator? Elevator = null);
+
+/// <summary>What a viewer's request to see and drive the secure desktop tells the person at the host.</summary>
+public readonly record struct ElevationAsk(int ConnectionId, string PeerId, string PeerName);
+
+/// <summary>The person at the host's answer: whether to allow it, and (Phase 3) whether to make it permanent for listed devices.</summary>
+public readonly record struct ElevationChoice(bool Allow, bool Permanent);
 
 /// <summary>
 /// Wires the publisher services into a <see cref="HostRuntime"/>: subscribes remote-control sessions to
@@ -44,6 +52,9 @@ public sealed class HostMediaModule : IAsyncDisposable
     /// few configurations before it settles; acting on the first would restart every stream several times.
     /// </summary>
     public static readonly TimeSpan DisplayChangeSettle = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>How often the host checks whether it has slipped onto a desktop it cannot read (a UAC prompt, the lock screen).</summary>
+    private static readonly TimeSpan SecureDesktopPoll = TimeSpan.FromMilliseconds(500);
 
     private readonly HostPlatform _platform;
     private readonly TimeProvider _time;
@@ -73,6 +84,21 @@ public sealed class HostMediaModule : IAsyncDisposable
     private readonly DisplayChangeQueue _changes;
     private HostRuntime? _runtime;
     private ITimer? _displayChangeTimer;
+    private ITimer? _secureDesktopTimer;
+
+    /// <summary>The last secure-desktop state told to viewers; only a change is worth another message.</summary>
+    private SecureDesktopKind _secureDesktop = SecureDesktopKind.None;
+
+    /// <summary>Whether the input desktop is a secure one, by name -- true even for a SYSTEM engine that can read it
+    /// (where <see cref="_secureDesktop"/> stays None). Drives the listed-only policy, not the banner. Volatile:
+    /// the video threads read it per frame to gate who the secure desktop reaches.</summary>
+    private volatile bool _onSecureDesktop;
+
+    /// <summary>Where a viewer's request to see and drive the secure desktop stands, told to viewers with the kind.</summary>
+    private SecureDesktop.Types.Elevation _elevation = SecureDesktop.Types.Elevation.ElNone;
+
+    /// <summary>An elevation request is being handled right now; a second one waits rather than racing the first.</summary>
+    private bool _elevating;
     private string _topology = string.Empty;
     private IReadOnlyList<DisplayDescriptor> _topologyDisplays = [];
     private readonly CursorService _cursor;
@@ -138,6 +164,14 @@ public sealed class HostMediaModule : IAsyncDisposable
     /// </summary>
     public bool AllowSessionScreen { get; set; }
 
+    /// <summary>
+    /// Asks the person at the host whether to let a viewer see and drive the secure desktop (a UAC prompt), the way
+    /// the connection prompt asks whether to let someone in. Returns their choice; a request is refused if this is
+    /// unset. Wired by the app to the connection-manager UI; the actual raising of the helper is
+    /// <see cref="HostPlatform.Elevator"/>, and the person there still completes the real UAC themselves.
+    /// </summary>
+    public Func<ElevationAsk, CancellationToken, Task<ElevationChoice>>? ElevationApprover { get; set; }
+
     /// <summary>How long after the session screen opened a display coming back is still its own doing, not somebody's at the computer.</summary>
     private static readonly TimeSpan SessionScreenSettle = TimeSpan.FromSeconds(2);
 
@@ -202,6 +236,11 @@ public sealed class HostMediaModule : IAsyncDisposable
     {
         _runtime = runtime;
         runtime.SupportsMultiDisplay = true;
+        if (_platform.Elevator is { } elevator)
+        {
+            runtime.SupportsElevation = true;
+            elevator.Ended += OnElevatorEnded;
+        }
         _topologyDisplays = _platform.Displays.GetDisplays();
         _topology = Signature(_topologyDisplays);
         _platform.Displays.DisplaysChanged += OnDisplaysChanged;
@@ -209,6 +248,11 @@ public sealed class HostMediaModule : IAsyncDisposable
         {
             shared.Closed += OnDisplaySessionClosed;
             shared.Reopenable += OnDisplaySessionReopenable;
+        }
+
+        if (_platform.SecureDesktop is not null)
+        {
+            _secureDesktopTimer = _time.CreateTimer(_ => PollSecureDesktop(), null, SecureDesktopPoll, SecureDesktopPoll);
         }
 
         runtime.DisplayProvider = DescribeDisplays;
@@ -537,6 +581,15 @@ public sealed class HostMediaModule : IAsyncDisposable
         {
             _clipboard.Subscribe(ctx);
         }
+
+        // A viewer joining while a UAC prompt or the lock screen is already up hears about it too, not only the
+        // viewers who were connected when it appeared -- and under the listed-only policy, a device that may not
+        // see it is told so on arrival rather than being shown it.
+        SecureDesktop payload = PayloadFor(ctx);
+        if (payload.Kind != SecureDesktop.Types.Kind.SdNone || payload.Elevation != SecureDesktop.Types.Elevation.ElNone)
+        {
+            await ctx.SendAsync(new Message { Misc = new Misc { SecureDesktop = payload } }, MessagePriority.Control, ct).ConfigureAwait(false);
+        }
     }
 
     private void OnPermissionChanged(HostSessionContext ctx, Permission permission, bool enabled)
@@ -607,6 +660,20 @@ public sealed class HostMediaModule : IAsyncDisposable
                 // The owner's screens come back before anything else is put back: they are what the person there sees.
                 await CloseSessionScreenAsync(CancellationToken.None).ConfigureAwait(false);
             }
+
+            bool wasElevated;
+            lock (_lock)
+            {
+                wasElevated = _elevation != SecureDesktop.Types.Elevation.ElNone;
+                _elevation = SecureDesktop.Types.Elevation.ElNone;
+                _elevating = false;
+            }
+
+            if (wasElevated)
+            {
+                // No viewer left to show the secure desktop to: the helper stands down with everything else.
+                await LowerElevationAsync().ConfigureAwait(false);
+            }
         }
         else
         {
@@ -673,6 +740,7 @@ public sealed class HostMediaModule : IAsyncDisposable
                 {
                     Codec = CodecNegotiation.Choose(Encodable(), [ViewerOf(joining)], Codec),
                     RefreshDisplay = index => _platform.Displays.GetDisplays().FirstOrDefault(d => d.Index == index),
+                    FrameGate = MaySeeFrameNow,
                 };
                 VideoService created = v;
                 v.CodecFailed = failed => NextCodec(created, failed);
@@ -685,6 +753,22 @@ public sealed class HostMediaModule : IAsyncDisposable
 
     private static CodecNegotiation.Viewer ViewerOf(IServiceSubscriber subscriber) =>
         new(subscriber.DecodableCodecs, subscriber.PreferredCodec);
+
+    /// <summary>
+    /// The video gate for the "secure desktop for listed devices only" policy, called per frame per viewer. Off the
+    /// secure desktop everyone is served; on it, only a device allowed to see it is -- the rest keep the last
+    /// ordinary picture (the lookup only runs during a secure desktop, which is brief).
+    /// </summary>
+    private bool MaySeeFrameNow(int connectionId)
+    {
+        if (!_onSecureDesktop || _runtime is not { } runtime)
+        {
+            return true;
+        }
+
+        HostSession? session = runtime.Sessions.FirstOrDefault(s => s.Context.ConnectionId == connectionId);
+        return session is null || runtime.MaySeeSecureDesktop(session.Context.Peer.Id);
+    }
 
     /// <summary>The codec every current subscriber of this stream can read, preferring what the host asked for.</summary>
     private Platform.Abstractions.Codec.VideoCodec Choose(VideoService video) => CodecNegotiation.Choose(
@@ -1522,6 +1606,229 @@ public sealed class HostMediaModule : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Timer thread: is the engine looking at a desktop it cannot read (a UAC prompt or the lock screen)? Only
+    /// a change from what viewers were last told is worth a message; the SYSTEM engine can read the secure
+    /// desktop and its monitor always answers <see cref="SecureDesktopKind.None"/>, so it never sends one.
+    /// </summary>
+    private void PollSecureDesktop()
+    {
+        if (_platform.SecureDesktop is not { } monitor)
+        {
+            return;
+        }
+
+        SecureDesktopState state;
+        try
+        {
+            state = monitor.Poll();
+        }
+        catch (Exception e)
+        {
+            _log.LogDebug(e, "Could not read the secure-desktop state");
+            return;
+        }
+
+        SecureDesktopKind kind = state.Kind;
+        bool changed;
+        lock (_lock)
+        {
+            changed = kind != _secureDesktop || state.OnSecureDesktop != _onSecureDesktop;
+            _secureDesktop = kind;
+            // Kept for the listed-only policy: a SYSTEM engine can read the secure desktop (Kind stays None) but
+            // still must not show it to, or take input from, a device that is not allowed to see it.
+            _onSecureDesktop = state.OnSecureDesktop;
+        }
+
+        // Share it with the input handler, which drops a not-allowed device's input while the secure desktop is up.
+        if (_runtime is { } runtime)
+        {
+            runtime.OnSecureDesktop = state.OnSecureDesktop;
+        }
+
+        // Note: a helper that is up stays up for the connection ("elevated for this connection", lowered when the
+        // connection ends in DisposeAsync or the helper dies in OnElevatorEnded). We deliberately do NOT lower here
+        // just because the desktop is momentarily ordinary again: raising the helper takes several seconds (allow,
+        // the real UAC, the throwaway service), during which the desktop flaps back to None between prompts, and
+        // lowering on that transient tore the helper down a few hundred ms after it came up -- so the secure
+        // desktop the viewer asked to see was never actually served. The monitor's kind still drives the banner.
+        if (changed)
+        {
+            _log.LogInformation("The desktop the engine can read is now {Kind}", kind);
+            _ = BroadcastSecureDesktopAsync(CancellationToken.None);
+        }
+    }
+
+    /// <summary>
+    /// A viewer asked to see and drive the secure desktop (a UAC prompt). The host asks the person there; if they
+    /// allow it and complete the real UAC, a helper is raised for the session. Nothing here clicks the UAC for
+    /// them, and a host with no elevator (the SYSTEM engine, or any non-Windows host) never gets the request.
+    /// </summary>
+    public async Task RequestElevationAsync(HostSessionContext context, CancellationToken ct)
+    {
+        if (_platform.Elevator is not { } elevator)
+        {
+            // The capability gates the request, so a well-behaved viewer never reaches here; ignore rather than close.
+            return;
+        }
+
+        if (!context.Permissions.Has(Permission.PermKeyboard))
+        {
+            _log.LogInformation("Session {Id} asked to elevate without keyboard permission; refused", context.ConnectionId);
+            return;
+        }
+
+        lock (_lock)
+        {
+            if (_elevating || _elevation == SecureDesktop.Types.Elevation.ElActive)
+            {
+                return; // one at a time, and not again once a helper is already up
+            }
+
+            _elevating = true;
+            _elevation = SecureDesktop.Types.Elevation.ElRequested;
+        }
+
+        await BroadcastSecureDesktopAsync(ct).ConfigureAwait(false);
+
+        SecureDesktop.Types.Elevation outcome = SecureDesktop.Types.Elevation.ElRefused;
+        try
+        {
+            ElevationChoice choice = ElevationApprover is { } approver
+                ? await approver(new ElevationAsk(context.ConnectionId, context.Peer.Id, context.Peer.Name), ct).ConfigureAwait(false)
+                : default;
+
+            if (choice.Allow && await elevator.ElevateAsync(choice.Permanent, context.Peer.Id, ct).ConfigureAwait(false))
+            {
+                outcome = SecureDesktop.Types.Elevation.ElActive;
+                // The helper is now driving the secure desktop; rebuild every stream so its capturers come from it.
+                await RestartStreamsForNewGeometryAsync().ConfigureAwait(false);
+            }
+        }
+        catch (Exception e)
+        {
+            _log.LogWarning(e, "Could not raise the elevation helper");
+            outcome = SecureDesktop.Types.Elevation.ElRefused;
+        }
+        finally
+        {
+            lock (_lock)
+            {
+                _elevation = outcome;
+                _elevating = false;
+            }
+        }
+
+        await BroadcastSecureDesktopAsync(ct).ConfigureAwait(false);
+    }
+
+    private async Task LowerElevationAsync()
+    {
+        if (_platform.Elevator is { } elevator)
+        {
+            try
+            {
+                await elevator.LowerAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _log.LogWarning(e, "Could not stand the elevation helper down");
+            }
+        }
+    }
+
+    /// <summary>The helper went away on its own (it crashed, or the pipe broke): the session is no longer elevated.</summary>
+    private void OnElevatorEnded()
+    {
+        bool wasElevated;
+        lock (_lock)
+        {
+            wasElevated = _elevation != SecureDesktop.Types.Elevation.ElNone;
+            _elevation = SecureDesktop.Types.Elevation.ElNone;
+            _elevating = false;
+        }
+
+        if (wasElevated)
+        {
+            _log.LogInformation("The elevation helper went away; the session is no longer elevated");
+            _ = RevertElevationAsync();
+        }
+    }
+
+    private async Task RevertElevationAsync()
+    {
+        try
+        {
+            // The proxy capturers report the desktop switching when the link dies, which restarts the streams onto
+            // the local desktop by itself; the restart here covers a stream that had none in flight, and the
+            // broadcast tells the viewers the elevation ended.
+            await RestartStreamsForNewGeometryAsync().ConfigureAwait(false);
+            await BroadcastSecureDesktopAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            _log.LogWarning(e, "Could not revert after the elevation helper went away");
+        }
+    }
+
+    private async Task BroadcastSecureDesktopAsync(CancellationToken ct)
+    {
+        if (_runtime is null)
+        {
+            return;
+        }
+
+        foreach (HostSession session in _runtime.Sessions)
+        {
+            HostSessionContext ctx = session.Context;
+            if (ctx.ConnType != ConnType.ConnRemote || ctx.State != HostSessionState.Authorized)
+            {
+                continue;
+            }
+
+            try
+            {
+                await ctx.SendAsync(new Message { Misc = new Misc { SecureDesktop = PayloadFor(ctx) } }, MessagePriority.Control, ct).ConfigureAwait(false);
+            }
+            catch (Exception e) when (e is IOException or ObjectDisposedException or OperationCanceledException)
+            {
+                // A session on its way out; it will not need the news.
+            }
+        }
+    }
+
+    /// <summary>
+    /// What to tell this one viewer about the secure desktop. Usually the engine's own state, but under the
+    /// "listed devices only" policy a device that may not see the secure desktop is told there is a UAC it cannot
+    /// see (the banner) rather than being shown it -- even when the SYSTEM engine itself can read it.
+    /// </summary>
+    private SecureDesktop PayloadFor(HostSessionContext ctx)
+    {
+        SecureDesktopKind kind;
+        SecureDesktop.Types.Elevation elevation;
+        bool onSecure;
+        lock (_lock)
+        {
+            kind = _secureDesktop;
+            elevation = _elevation;
+            onSecure = _onSecureDesktop;
+        }
+
+        if (onSecure && _runtime is { } runtime && !runtime.MaySeeSecureDesktop(ctx.Peer.Id))
+        {
+            return new SecureDesktop { Kind = SecureDesktop.Types.Kind.SdUac, Elevation = SecureDesktop.Types.Elevation.ElNone };
+        }
+
+        return new SecureDesktop { Kind = ToWire(kind), Elevation = elevation };
+    }
+
+    private static SecureDesktop.Types.Kind ToWire(SecureDesktopKind kind) => kind switch
+    {
+        SecureDesktopKind.Uac => SecureDesktop.Types.Kind.SdUac,
+        SecureDesktopKind.Locked => SecureDesktop.Types.Kind.SdLocked,
+        _ => SecureDesktop.Types.Kind.SdNone,
+    };
+
     public async ValueTask DisposeAsync()
     {
         await _changes.DisposeAsync().ConfigureAwait(false);
@@ -1533,13 +1840,24 @@ public sealed class HostMediaModule : IAsyncDisposable
             await shared.CloseAsync().ConfigureAwait(false);
         }
         ITimer? timer;
+        ITimer? secureTimer;
         lock (_lock)
         {
             timer = _displayChangeTimer;
             _displayChangeTimer = null;
+            secureTimer = _secureDesktopTimer;
+            _secureDesktopTimer = null;
         }
 
         timer?.Dispose();
+        secureTimer?.Dispose();
+
+        if (_platform.Elevator is { } elevator)
+        {
+            elevator.Ended -= OnElevatorEnded;
+        }
+
+        await LowerElevationAsync().ConfigureAwait(false);
 
         if (_platform.SessionScreen is { IsOpen: true } sessionScreen)
         {

@@ -393,20 +393,33 @@ public sealed record PlatformServices(HostPlatform Host, ISecretStore SecretStor
     {
         var displays = new Platform.Windows.Capture.WindowsDisplayEnumerator();
         var virtualDisplays = new Platform.Windows.Capture.WindowsVirtualDisplays(dataDir, logs.CreateLogger("vdd"));
+
+        // Capture, input and cursor are wrapped so they can be switched to a raised SYSTEM helper for the secure
+        // desktop. The elevator that raises it is given only in app mode; the SYSTEM service reads the secure
+        // desktop itself, so it gets no elevator and the wrappers stay transparent.
+        var capturers = new Elevation.SwitchableScreenCapturerFactory(new Platform.Windows.Capture.WindowsScreenCapturerFactory(displays, logs));
+        var injector = new Elevation.SwitchableInputInjector(new Platform.Windows.Input.WindowsInputInjector(logs.CreateLogger("input")));
+        var cursor = new Elevation.SwitchableCursorProvider(new Platform.Windows.Input.WindowsCursorProvider());
+        Platform.Abstractions.Capture.ISessionElevator? elevator = System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem
+            ? null
+            : new Elevation.WindowsSessionElevator(capturers, injector, cursor, dataDir, logs.CreateLogger("elevation"));
+
         var host = new HostPlatform(
             displays,
-            new Platform.Windows.Capture.WindowsScreenCapturerFactory(displays, logs),
+            capturers,
             new FallbackVideoEncoderFactory(
                 new Platform.Windows.Codec.MfVideoEncoderFactory(logs),
                 new Codec.OpenH264.OpenH264EncoderFactory(logs),
                 new Codec.Vpx.VpxVideoEncoderFactory(logs)),
-            new Platform.Windows.Input.WindowsInputInjector(logs.CreateLogger("input")),
-            new Platform.Windows.Input.WindowsCursorProvider(),
+            injector,
+            cursor,
             device => new Platform.Windows.Audio.WasapiAudioCapture(logs.CreateLogger("audio"), device),
             new Platform.Windows.Clipboard.WindowsClipboard(logs.CreateLogger("clipboard")),
             new Platform.Windows.Capture.WindowsDisplayModes(virtualDisplays),
             virtualDisplays,
-            SessionScreen: virtualDisplays);
+            SessionScreen: virtualDisplays,
+            SecureDesktop: new Platform.Windows.Capture.WindowsSecureDesktopMonitor(logs.CreateLogger("secure-desktop")),
+            Elevator: elevator);
         return new PlatformServices(host, WindowsStore(dataDir), new Platform.Windows.Security.WindowsMachineIdProvider(), new Platform.Windows.Terminal.WindowsTerminalHost(logs.CreateLogger("terminal")));
     }
 #endif

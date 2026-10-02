@@ -125,6 +125,12 @@ public static class IpcAuthorities
         // screen, and it is asked of them on it. The answer is for the caller's own account only.
         [IpcMessage.UnionOneofCase.DesktopSharingRequest] = IpcAuthority.Owner,
         [IpcMessage.UnionOneofCase.DesktopSharingState] = IpcAuthority.Owner,
+
+        // Whether a viewer may see and drive the secure desktop (a UAC prompt), and whether to make it permanent
+        // for listed devices. The most security-relevant thing the person at the machine is ever asked, so the
+        // prompt goes only to them and only they may answer it.
+        [IpcMessage.UnionOneofCase.ElevationRequest] = IpcAuthority.Owner,
+        [IpcMessage.UnionOneofCase.ElevationDecision] = IpcAuthority.Owner,
     };
 
     /// <summary>Who must be asking. Anything unlisted is treated as <see cref="IpcAuthority.Owner"/>.</summary>

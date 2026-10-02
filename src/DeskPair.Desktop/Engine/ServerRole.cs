@@ -104,6 +104,9 @@ public static class ServerRole
         };
         bridge.TerminalIdentity = terminals.DescribeIdentity;
         bridge.DesktopSharing = platform.Host.DisplaySession as Platform.Abstractions.Capture.IDesktopSharingConsent;
+        // A viewer's request to see and drive the secure desktop is put to the person at the host, like a
+        // connection is. Only meaningful where the platform gave the engine an elevator (Windows, app mode).
+        media.ElevationApprover = bridge.RequestElevationAsync;
         var handlers = new List<ISessionHandler<HostSessionContext>>(media.Handlers) { files, terminals };
         string version = typeof(ServerRole).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
         await using var runtime = new HostRuntime(config.ToPeerSettings(version, directory.Rendezvous, directory.PublicKey), identity, passwords, config.ToPolicy(), bridge, logs, extraHandlers: handlers)
@@ -274,6 +277,12 @@ public static class ServerRole
         Core.Session.Host.Auth.PeerAllowlist list = config.BuildAllowlist(out IReadOnlyList<string> rejected);
         runtime.Allowlist = list;
         runtime.RefuseRelayed = config.RefuseRelayed;
+
+        // The "secure desktop for listed devices only" policy keeps its own id list, built straight from
+        // AllowedPeers and always on for the id check, so it still names the allowed devices on a host whose
+        // ordinary connections are let in by the password rather than the allowlist.
+        runtime.SecureDesktopForListedOnly = config.SecureDesktopForListedOnly;
+        runtime.SecureDesktopList = Core.Session.Host.Auth.PeerAllowlist.Create(true, config.AllowedPeers, out _);
 
         if (rejected.Count > 0)
         {

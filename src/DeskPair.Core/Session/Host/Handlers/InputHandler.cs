@@ -47,6 +47,13 @@ public sealed class InputHandler : ISessionHandler<HostSessionContext>
             return ValueTask.CompletedTask;
         }
 
+        // The secure desktop for listed devices only: while a UAC or the lock screen is up, a device that is not
+        // allowed to see it must not drive it blind either, so its clicks and keystrokes are dropped.
+        if (context.Runtime.OnSecureDesktop && !context.Runtime.MaySeeSecureDesktop(context.Peer.Id))
+        {
+            return ValueTask.CompletedTask;
+        }
+
         lock (_lock)
         {
             _lastInput[context.ConnectionId] = _time.GetUtcNow();

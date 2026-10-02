@@ -17,7 +17,9 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
-## Desktop, unreleased
+## 0.5.0 — 2026-10-03
+
+Desktop only; the phones stay at 0.4.0.
 
 ### Added
 
@@ -40,6 +42,28 @@ The servers only; no app changes.
   session. They come back when the viewer turns Match window off or the last viewer leaves; Win+P at the computer
   brings them back at once, and if DeskPair stops meanwhile the driver brings them back within five seconds. Off by
   default.
+- **The viewer is told when the remote Windows computer shows a screen DeskPair cannot** -- a UAC (administrator)
+  prompt on the secure desktop, or the lock / sign-in screen. Without unattended access the app engine may not read
+  those, so the picture froze on the last thing it saw with no explanation; now a banner over the picture says which
+  it is, in the viewer's language, and clears when the computer is back on an ordinary desktop. The unattended SYSTEM
+  engine reads the secure desktop itself, so it never shows the banner.
+- **A viewer can ask to see and drive that UAC prompt, without unattended access** (Windows). The viewer presses a
+  button on the banner; the person at the remote computer is asked "&lt;device&gt; wants to see and control the
+  administrator window -- allow?" and, if they allow it, **completes the real Windows UAC themselves** -- nothing
+  clicks it for them and no UAC is bypassed. The connection is not dropped: a SYSTEM helper is raised for the length
+  of the session (the way RustDesk's portable service works) and captures and drives the secure desktop on the
+  engine's behalf, standing down the moment the prompt closes, the pipe breaks or the session ends. The helper is
+  launched by a throwaway system service that deletes itself, and the engine and helper authenticate each other over
+  a local, restricted pipe. Off unless the viewer asks and the person there allows; the banner says where the request
+  stands, in ten languages.
+- **That approval can be made permanent for a trusted device** (Windows). At the prompt the person can tick "always
+  allow listed devices": in the same UAC that raises the helper, the device is added to the allowed list, a "listed
+  devices only" secure-desktop policy is turned on, and the unattended service is installed. The service is installed
+  but not started, so the connection in progress stays on the temporary helper and is never dropped -- it takes over
+  at the next restart, after which a listed device sees and drives the UAC prompt and the lock / sign-in screen with
+  nobody at the computer, while any other connection gets the banner there and no picture or input. It can also be
+  set before a prompt ever appears: Settings > Security has "only listed devices may see the administrator (UAC) and
+  lock screens", so a device can be trusted ahead of time.
 
 ### Fixed
 

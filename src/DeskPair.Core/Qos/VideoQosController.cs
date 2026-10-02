@@ -34,17 +34,35 @@ public sealed class VideoQosController
     /// <summary>Bits per pixel a moving picture needs to stay sharp at 4:2:0 (measured on real drags).</summary>
     public const double MotionBitsPerPixel = 0.35;
 
+    /// <summary>
+    /// How far above the measured need the bitrate ceiling is allowed to reach, so a fat direct path (a LAN, fibre)
+    /// is not held to the "just sharp enough" rate and can go near-lossless. It only lifts the cap; GCC and the
+    /// balanced table still decide the actual rate on an ordinary link, so a thin path is unaffected.
+    /// </summary>
+    public const double CeilingHeadroom = 10.0;
+
     /// <summary>Nothing above this is asked of a link or an encoder, whatever the picture size.</summary>
-    public const int AbsoluteMaxKbps = 200_000;
+    public const int AbsoluteMaxKbps = 2_000_000;
+
+    // Congestion thresholds are set at twice the measured "starts to hurt" points: the controller is deliberately
+    // half as sensitive, so a transient hiccup on a direct path does not cut quality -- it takes sustained, real
+    // congestion (twice the delay, twice the loss) to make it back off. GoodDelay (when to raise again) is left
+    // where it is, so recovery stays as quick as before.
     /// <summary>Queueing delay (round trip above the recent minimum) that counts as congestion.</summary>
-    public static readonly TimeSpan CongestedDelay = TimeSpan.FromMilliseconds(100);
+    public static readonly TimeSpan CongestedDelay = TimeSpan.FromMilliseconds(200);
     /// <summary>Queueing delay under which the link is considered to have headroom.</summary>
     public static readonly TimeSpan GoodDelay = TimeSpan.FromMilliseconds(40);
     /// <summary>Absolute round trip beyond which the link is treated as congested whatever its baseline.</summary>
-    public static readonly TimeSpan PathologicalDelay = TimeSpan.FromMilliseconds(300);
+    public static readonly TimeSpan PathologicalDelay = TimeSpan.FromMilliseconds(600);
 
     /// <summary>A round trip this long is treated as severe -- once it has lasted <see cref="SevereFor"/>.</summary>
-    public static readonly TimeSpan SevereDelay = TimeSpan.FromSeconds(1);
+    public static readonly TimeSpan SevereDelay = TimeSpan.FromSeconds(2);
+
+    /// <summary>Packet loss (fraction) that counts as congestion -- half as sensitive as the measured 5% starting point.</summary>
+    public const double CongestionLoss = 0.10;
+
+    /// <summary>Packet loss (fraction) that is treated as a bad link -- half as sensitive as the measured 10% point.</summary>
+    public const double SevereLoss = 0.20;
 
     /// <summary>
     /// How long severe samples must keep coming before the link is judged, rather than the viewer. A phone
@@ -291,7 +309,7 @@ public sealed class VideoQosController
         }
     }
 
-    /// <summary>Packet loss the viewer measured before FEC on the UDP channel (fraction); loss above 5% counts as congestion.</summary>
+    /// <summary>Packet loss the viewer measured before FEC on the UDP channel (fraction); loss above <see cref="CongestionLoss"/> counts as congestion.</summary>
     public void ReportLoss(int connectionId, double fraction)
     {
         lock (_lock)
@@ -683,12 +701,14 @@ public sealed class VideoQosController
 
     /// <summary>
     /// Highest bitrate worth spending on a picture (probing and GCC stop here): pixels x frame rate x
-    /// <see cref="MotionBitsPerPixel"/>. The constant comes from a measured WAN session where 2560x1440 window drags
-    /// looked right at about 172 KB per frame, i.e. 0.35 bits per pixel; scaling by pixels and frame rate keeps the
-    /// same standard at every resolution and frame rate (1080p30 about 22 Mb/s, 1440p30 about 39, 1440p60 about 77).
+    /// <see cref="MotionBitsPerPixel"/> x <see cref="CeilingHeadroom"/>. The 0.35 bits/pixel comes from a measured WAN
+    /// session where 2560x1440 window drags looked right at about 172 KB per frame; the x10 headroom lets a fat direct
+    /// path go far sharper than "just enough" without changing what a thin link (bound by GCC or the table) gets.
+    /// With the headroom: 1080p30 about 218 Mb/s, 1440p30 about 387, 1440p60 about 774, 4K60 about 1742, all under the
+    /// 2 Gb/s clamp; only very large pictures at very high frame rates hit it.
     /// </summary>
         public static int MaxBitrateKbps(int width, int height, int fps) =>
-        (int)Math.Clamp((double)width * height * Math.Clamp(fps, MinFps, MaxFps) * MotionBitsPerPixel / 1000, 1_000, AbsoluteMaxKbps);
+        (int)Math.Clamp((double)width * height * Math.Clamp(fps, MinFps, MaxFps) * MotionBitsPerPixel * CeilingHeadroom / 1000, 1_000, AbsoluteMaxKbps);
 
     private static void Apply(User u, SessionOptions options)
     {
@@ -732,7 +752,7 @@ public sealed class VideoQosController
             {
                 // GCC owns the bitrate on this path; only give up frame rate once it has nothing left to give.
                 bool atFloor = gcc <= 1_200_000;
-                if (atFloor && (queueing > CongestedDelay || avg > PathologicalDelay || u.Loss > 0.10))
+                if (atFloor && (queueing > CongestedDelay || avg > PathologicalDelay || u.Loss > SevereLoss))
                 {
                     anyCongested = true;
                     u.GoodStreak = 0;
@@ -745,7 +765,7 @@ public sealed class VideoQosController
                 continue;
             }
 
-            if (queueing > CongestedDelay || avg > PathologicalDelay || u.Loss > 0.05)
+            if (queueing > CongestedDelay || avg > PathologicalDelay || u.Loss > CongestionLoss)
             {
                 anyCongested = true;
                 u.GoodStreak = 0;
@@ -917,8 +937,8 @@ public sealed class VideoQosController
 
         double worstLoss = _users.Values.Count == 0 ? 0 : _users.Values.Max(u => u.Loss);
         LinkTier measured = !anySamples ? LinkTier.Fair
-            : worstRtt > PathologicalDelay || overLimit || worstLoss > 0.10 ? LinkTier.Poor
-            : worstLoss > 0.05 ? LinkTier.Fair
+            : worstRtt > PathologicalDelay || overLimit || worstLoss > SevereLoss ? LinkTier.Poor
+            : worstLoss > CongestionLoss ? LinkTier.Fair
             : worstQueueing < TimeSpan.FromMilliseconds(15) && worstExcess <= 1 && _ratio >= MaxRatio ? LinkTier.Excellent
             : worstQueueing < GoodDelay && worstExcess <= 2 ? LinkTier.Good
             : worstQueueing < TimeSpan.FromMilliseconds(120) ? LinkTier.Fair

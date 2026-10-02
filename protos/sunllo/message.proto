@@ -235,6 +235,11 @@ message PeerInfo {
   // The host understands display_subscription: a viewer may watch several of its displays at once.
   // An older host never sets it, and ignores the message it does not know.
   bool multi_display = 9;
+  // The host can raise a temporary helper so this viewer can see and drive the Windows secure desktop (a UAC
+  // prompt), if the person at the host allows it and completes the UAC there. Set only by a Windows host in
+  // app mode that has an elevator; the unattended SYSTEM engine reads the secure desktop itself and leaves it
+  // unset. A viewer sends elevation_request only to a host that set this, so an older host never hears of it.
+  bool elevation = 10;
 }
 
 // ---- video ----
@@ -848,6 +853,30 @@ message MessageBox {
   string text = 3;
 }
 
+// Host -> controller: the host's engine is looking at a desktop it can neither show nor drive -- the
+// Windows secure desktop a UAC / consent prompt is drawn on, or the lock / sign-in screen. The picture is
+// frozen on the last thing the engine could see; this says so, rather than leaving the viewer at a dead
+// screen with no explanation. SD_NONE clears it. An older viewer never knew the field and ignores it. The
+// unattended SYSTEM engine can read the secure desktop, so it never reports anything but SD_NONE.
+message SecureDesktop {
+  enum Kind {
+    SD_NONE = 0;    // an ordinary desktop again
+    SD_UAC = 1;     // an administrator (UAC) prompt on the secure desktop
+    SD_LOCKED = 2;  // the lock or sign-in screen
+  }
+  // Where a viewer's request to see and drive the secure desktop stands. Only ever anything but EL_NONE on a
+  // host that advertised PeerInfo.elevation, and only after the person at the host acts: no program clicks the
+  // UAC "Yes" for them.
+  enum Elevation {
+    EL_NONE = 0;       // not elevated, and nobody is asking
+    EL_REQUESTED = 1;  // a viewer asked; waiting for the person at the host to allow it and complete the UAC
+    EL_ACTIVE = 2;     // a helper is now showing and driving the secure desktop for this session
+    EL_REFUSED = 3;    // the person at the host did not allow it, or the UAC was dismissed
+  }
+  Kind kind = 1;
+  Elevation elevation = 2;
+}
+
 message Misc {
   oneof union {
     ChatMessage chat = 1;
@@ -869,6 +898,12 @@ message Misc {
     DisplaysChanged displays_changed = 17;
     DisplaySubscription display_subscription = 18;
     VirtualDisplayRequest virtual_display_request = 19;
+    SecureDesktop secure_desktop = 20;
+    // Controller -> host: please raise a helper so I can see and drive the secure desktop (a UAC prompt). Only
+    // sent to a host that advertised PeerInfo.elevation, and only acted on after the person at the host allows
+    // it and completes the UAC there. Requires keyboard permission. An older host would close the session on an
+    // unknown Misc, which is why the capability gates it.
+    bool elevation_request = 21;
   }
 }
 

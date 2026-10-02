@@ -98,6 +98,28 @@ public sealed partial class CmConnection : ObservableObject
     [ObservableProperty]
     public partial bool ChatOpen { get; set; }
 
+    /// <summary>This connection has asked to see and drive the secure desktop (a UAC prompt) and is waiting for the person here.</summary>
+    [ObservableProperty]
+    public partial bool IsElevationPending { get; set; }
+
+    /// <summary>The words of the elevation prompt, naming the device that asked.</summary>
+    [ObservableProperty]
+    public partial string ElevationText { get; set; } = string.Empty;
+
+    /// <summary>Phase 3: this host can offer "always allow listed devices" (it has a permanent password and the device is listed).</summary>
+    [ObservableProperty]
+    public partial bool ElevationCanInstall { get; set; }
+
+    /// <summary>Phase 3: the person ticked "always allow listed devices" in the elevation prompt.</summary>
+    [ObservableProperty]
+    public partial bool ElevationPermanent { get; set; }
+
+    [RelayCommand]
+    private Task AllowElevationAsync() => _owner.DecideElevationAsync(this, allow: true);
+
+    [RelayCommand]
+    private Task DenyElevationAsync() => _owner.DecideElevationAsync(this, allow: false);
+
     public string Header => PeerName.Length > 0 ? $"{PeerName} ({PeerId})" : PeerId.Length > 0 ? PeerId : Address;
 
     public string PeerIdSpaced => PeerId.Length == 9 ? $"{PeerId[..3]} {PeerId[3..6]} {PeerId[6..]}" : PeerId;
@@ -184,6 +206,20 @@ public partial class ConnectionManagerViewModel : ObservableObject
         {
             Remove(c.ConnId);
         }
+    }
+
+    /// <summary>
+    /// The person here allows or refuses a request to see and drive the secure desktop. Allowing raises the
+    /// helper, which shows the real UAC they still complete; the connection stays either way, so a refusal only
+    /// clears the prompt.
+    /// </summary>
+    public async Task DecideElevationAsync(CmConnection c, bool allow)
+    {
+        c.IsElevationPending = false;
+        await _host.SendAsync(new IpcMessage
+        {
+            ElevationDecision = new ElevationDecision { ConnId = c.ConnId, Allow = allow, Permanent = allow && c.ElevationPermanent },
+        });
     }
 
     /// <summary>
@@ -315,6 +351,16 @@ public partial class ConnectionManagerViewModel : ObservableObject
                     r.PeerId);
                 IsCollapsed = false;
                 ApprovalRequested?.Invoke(p);
+                break;
+            case IpcMessage.UnionOneofCase.ElevationRequest:
+                ElevationRequest e = m.ElevationRequest;
+                CmConnection ec = GetOrAdd(e.ConnId);
+                ec.ElevationText = Strings.Format("cm.elevation.wants", e.PeerName.Length > 0 ? e.PeerName : e.PeerId.Length > 0 ? e.PeerId : "?");
+                ec.ElevationCanInstall = e.CanInstall;
+                ec.ElevationPermanent = false;
+                ec.IsElevationPending = true;
+                IsCollapsed = false;
+                ApprovalRequested?.Invoke(ec);
                 break;
             case IpcMessage.UnionOneofCase.ConnectionClosed:
                 Remove(m.ConnectionClosed.ConnId);

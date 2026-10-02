@@ -36,11 +36,11 @@ public class VideoQosControllerTests
     {
         (VideoQosController qos, FakeTimeProvider time) = Create();
         qos.AddUser(1);
-        Report(qos, time, 1, 400, 4);
+        Report(qos, time, 1, 800, 4);
         qos.Ratio.ShouldBeLessThan(1.0);
         qos.Fps.ShouldBe(VideoQosController.DefaultFps);
 
-        Report(qos, time, 1, 400, 40);
+        Report(qos, time, 1, 800, 40);
         qos.Ratio.ShouldBe(VideoQosController.MinRatio);
         qos.Fps.ShouldBeLessThan(VideoQosController.DefaultFps);
         qos.Fps.ShouldBeGreaterThanOrEqualTo(VideoQosController.MinFps);
@@ -206,13 +206,13 @@ public class VideoQosControllerTests
         qos.TargetBitrateKbps(2560, 1440).ShouldBe(9000);
         qos.BandwidthEstimateBps.ShouldBe(9_000_000);
 
-        qos.ReportBandwidth(1, 80_000_000);
+        qos.ReportBandwidth(1, 1_000_000_000);
         qos.TargetBitrateKbps(2560, 1440).ShouldBe(VideoQosController.MaxBitrateKbps(2560, 1440, qos.Fps));
-        // pixels x fps x 0.35 bits: the standard is the same at every size and frame rate.
-        VideoQosController.MaxBitrateKbps(2560, 1440, 60).ShouldBeInRange(76_000, 78_000);
-        VideoQosController.MaxBitrateKbps(2560, 1440, 30).ShouldBeInRange(38_000, 39_500);
-        VideoQosController.MaxBitrateKbps(1920, 1080, 30).ShouldBeInRange(21_000, 22_500);
-        VideoQosController.MaxBitrateKbps(3840, 2160, 60).ShouldBeInRange(170_000, 178_000);
+        // pixels x fps x 0.35 bits x 10 headroom: the standard is the same at every size and frame rate.
+        VideoQosController.MaxBitrateKbps(2560, 1440, 60).ShouldBeInRange(760_000, 785_000);
+        VideoQosController.MaxBitrateKbps(2560, 1440, 30).ShouldBeInRange(380_000, 393_000);
+        VideoQosController.MaxBitrateKbps(1920, 1080, 30).ShouldBeInRange(210_000, 225_000);
+        VideoQosController.MaxBitrateKbps(3840, 2160, 60).ShouldBeInRange(1_720_000, 1_760_000);
         VideoQosController.MaxBitrateKbps(3840, 2160, 120).ShouldBe(VideoQosController.AbsoluteMaxKbps); // clamped
 
         qos.UpdateOptions(1, new SessionOptions { ImageQuality = ImageQuality.IqLow });

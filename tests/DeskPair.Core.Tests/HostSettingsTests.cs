@@ -23,10 +23,14 @@ public class HostSettingsTests
             ForceRelay = true,
             ApprovalTimeoutSeconds = 45,
             AllowPasswordInClickMode = false,
+            SecureDesktopForListedOnly = true,
         };
 
         HostConfig back = HostConfig.FromJson(config.ToJson());
         back.ShouldBe(config);
+
+        // A file written before the setting existed reads it as off, not on.
+        HostConfig.FromJson("""{"rendezvousServer":"example:21116"}""").SecureDesktopForListedOnly.ShouldBeFalse();
 
         // A file written by an older build has none of these keys.
         HostConfig legacy = HostConfig.FromJson("""{"rendezvousServer":"example:21116"}""");
@@ -76,6 +80,7 @@ public class HostSettingsTests
     [InlineData("MaxDisplaysPerViewer", false)]
     [InlineData("MaxConcurrentStreams", false)]
     [InlineData("AllowVirtualDisplay", false)]
+    [InlineData("SecureDesktopForListedOnly", false)]
     public void Only_transport_settings_need_the_engine_restarted(string field, bool expected)
     {
         var before = new HostConfig();
@@ -99,6 +104,7 @@ public class HostSettingsTests
             "MaxDisplaysPerViewer" => before with { MaxDisplaysPerViewer = 3 },
             "MaxConcurrentStreams" => before with { MaxConcurrentStreams = 6 },
             "AllowVirtualDisplay" => before with { AllowVirtualDisplay = true },
+            "SecureDesktopForListedOnly" => before with { SecureDesktopForListedOnly = true },
             "DeviceName" => before with { DeviceName = "Reception PC" },
             _ => throw new ArgumentException($"no case for {field}", nameof(field)),
         };

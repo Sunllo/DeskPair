@@ -14,7 +14,7 @@ public sealed class VideoControlHandler : ISessionHandler<HostSessionContext>
     }
 
     public IEnumerable<Misc.UnionOneofCase> HandlesMisc =>
-        [Misc.UnionOneofCase.RefreshVideo, Misc.UnionOneofCase.VideoAck, Misc.UnionOneofCase.SwitchDisplay, Misc.UnionOneofCase.DisplaySubscription, Misc.UnionOneofCase.DisplayResolution, Misc.UnionOneofCase.VirtualDisplayRequest];
+        [Misc.UnionOneofCase.RefreshVideo, Misc.UnionOneofCase.VideoAck, Misc.UnionOneofCase.SwitchDisplay, Misc.UnionOneofCase.DisplaySubscription, Misc.UnionOneofCase.DisplayResolution, Misc.UnionOneofCase.VirtualDisplayRequest, Misc.UnionOneofCase.ElevationRequest];
 
     public async ValueTask HandleAsync(HostSessionContext context, Message message, CancellationToken ct)
     {
@@ -39,6 +39,9 @@ public sealed class VideoControlHandler : ISessionHandler<HostSessionContext>
                 break;
             case Misc.UnionOneofCase.DisplayResolution:
                 await _media.SetResolutionAsync(context, misc.DisplayResolution, ct).ConfigureAwait(false);
+                break;
+            case Misc.UnionOneofCase.ElevationRequest:
+                await _media.RequestElevationAsync(context, ct).ConfigureAwait(false);
                 break;
         }
     }

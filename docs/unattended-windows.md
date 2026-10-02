@@ -339,3 +339,35 @@ case 檢查完整性。身分不看 hello 裡的角色、也不看權杖檔，�
 - **還要實機驗的**：`--remove-virtual-display` 與 MSI 移除後，`pnputil /enum-drivers` 沒有 `deskpairdisplay.inf`、裝置管理員（含隱藏裝置）沒有「DeskPair virtual displays」、
   `%ProgramData%\Sunllo\DeskPair\idd` 不見了；以 Artifact Signing 簽的正式版在乾淨的 Windows 11 上安裝不跳框、「受信任的發行者」裡沒有留下我們的憑證；ARM64；
   私人螢幕在真的實體螢幕（會休眠、會重新同步的那種）與多螢幕的電腦上：關閉時每台都回到原本的位置與解析度。
+
+## H App 模式下讓觀看端看到並操作 UAC（不裝服務的無縫臨時提權）
+
+前面整份講的是**裝服務**的無人值守。這一節是另一條路：**沒裝服務**時，被控端跳出 UAC，觀看端本來只會凍結（見開頭）。
+現在觀看端可以請求提權，被控端的人**親自允許並親自按下真正的 UAC**，連線不斷。**不做任何 UAC 繞過**：沒有程式能代按那個「是」。
+
+### H1 形狀（像 RustDesk 可攜服務）
+App 模式的引擎以登入使用者身分執行，讀不到 secure desktop。提權時另起一個 **SYSTEM 權限的小程式**（`--session-helper`）放進**互動工作階段**，
+由它代為擷取與注入 secure desktop，引擎透過一條本機管道跟它講話；連線與畫面串流照舊，只是擷取／輸入／游標的來源換成小程式。安全桌面一關就收回。
+
+### H2 為什麼要三個角色
+系統管理員本身**沒有 `SeAssignPrimaryTokenPrivilege`**，不能自己 `CreateProcessAsUser` 把程序放進工作階段；只有 SYSTEM 能。所以：
+1. `--elevate`（runas 提權，被控端的人按 UAC）：用 SCM 建一個**用完即刪的 LocalSystem 服務**、啟動它、等它停、刪掉。
+2. `--helper-launch`（那個服務，SYSTEM／工作階段 0）：沿用 §A2 那套已驗證的 `DesktopEngineLauncher`（借 winlogon 權杖 `CreateProcessAsUser`）把 `--session-helper` 放進互動工作階段，然後自己停下。
+3. `--session-helper`（SYSTEM／互動工作階段，secure desktop 就在這）：連回引擎的管道、證明持有 token、開始服務。
+
+這條路完全重用 §A2 已在 VM 驗證過的 SYSTEM 啟動碼，而不是自己玩權杖模擬。
+
+### H3 管道與 token（雙向認證）
+引擎是管道伺服器，ACL 只給引擎的使用者 SID 與 SYSTEM。token 是每次隨機的 256 位元，**不放命令列**（中間那個 runas 的 `--elevate` 是同一使用者、High IL，
+同使用者的程式讀得到它的命令列），改寫進一個一次性檔案（用完就刪），只把**檔案路徑**傳下去。連上後雙方各發一個 nonce、各以 token 對對方的 nonce 做 HMAC，
+兩邊都驗過才算數——同一使用者的程式就算知道管道名，沒有 token 也驅動不了 SYSTEM 小程式，引擎也不會跟不是自己起的小程式講話。
+（殘留風險：token 檔在那短短一段時間裡同使用者的程式讀得到；ACL 擋掉別的使用者，檔案用完即刪，小程式安全桌面一關就收掉，已是同使用者本就能做很多事的前提下的合理取捨。）
+
+### H4 引擎端的切換與收回
+`Switchable{ScreenCapturerFactory,InputInjector,CursorProvider}` 平常走本機實作，小程式接上後改走它；切換時重啟所有串流讓擷取器重建成小程式的代理。
+收回（安全桌面關閉、管道斷、連線結束、或小程式死掉）：代理擷取器回報「桌面切換」讓引擎重建成本機擷取器，並通知觀看端不再提權。SYSTEM 服務讀得到 secure desktop，
+本來就不需要這條路，所以服務模式不給 elevator，那組 `Switchable*` 就是透明的直通。
+
+### H5 還沒做／要 VM 驗
+階段 3（清單內設備永久自動，用 `HostConfig.AllowedPeers`；SYSTEM 引擎逐連線閘門 secure desktop 畫面與輸入）還沒做。
+整條原生路徑（runas→SCM→小程式、GDI 擷取 secure desktop、注入「是」、切換、收回）在斷線工作階段無法驗證，一定要在 Win10/11 VM 以 App 模式實測，清單見 `docs/open-items.md` 第 13 項。

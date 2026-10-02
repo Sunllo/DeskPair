@@ -51,6 +51,26 @@ public class AddedDisplayTests
         Told("Windows", multi: true, current: 0, false, true).CurrentDisplayIsAdded.ShouldBeFalse("a real display cannot be removed from here");
     }
 
+    /// <summary>
+    /// A display added beside the host's private screen would turn the owner's screens back on, and the host refuses it:
+    /// the button is off while the private screen is up and says why, in the viewer's language, before it is pressed.
+    /// </summary>
+    [AvaloniaFact]
+    public void Beside_a_private_screen_no_display_is_offered_and_the_button_says_why()
+    {
+        var vm = new RemoteSessionViewModel("123456789", "me", new DesktopConfig(), NullLoggerFactory.Instance);
+        var info = new PeerInfo { Hostname = "Office", Platform = "Windows", MultiDisplay = true };
+        info.Displays.Add(new DisplayInfo { Width = 1500, Height = 850, Name = "DISPLAY39", Primary = true, SessionScreen = true });
+        vm.OnPeerInfo(info);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.PrivateScreenOn.ShouldBeTrue();
+        vm.AddDisplayTip.ShouldBe(Strings.Get("session.addDisplay.private"));
+        vm.Displays[0].ShouldEndWith(Strings.Get("session.privateScreen"));
+
+        Told("Windows", multi: true).AddDisplayTip.ShouldBe(Strings.Get("session.addDisplay"));
+    }
+
     [AvaloniaFact]
     public void The_owner_decides_in_the_display_settings()
     {

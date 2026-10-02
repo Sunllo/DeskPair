@@ -96,6 +96,25 @@ public sealed class HostRuntime : IAsyncDisposable
     /// </summary>
     public PeerAllowlist Allowlist { get; set; } = PeerAllowlist.Off;
 
+    /// <summary>
+    /// The "secure desktop for listed devices only" policy (<see cref="Config.HostConfig.SecureDesktopForListedOnly"/>):
+    /// when on, only a device named in <see cref="SecureDesktopList"/> is shown and allowed to drive the secure
+    /// desktop; others get the banner. It is separate from <see cref="Allowlist"/>, which decides who may connect at
+    /// all -- this one leaves the password free to let anyone in, but keeps the UAC to the devices that were allowed.
+    /// </summary>
+    public bool SecureDesktopForListedOnly { get; set; }
+
+    /// <summary>The devices allowed to see the secure desktop under the policy above; built from AllowedPeers and
+    /// always "on" for the id check, regardless of whether <see cref="Allowlist"/> gates ordinary connections.</summary>
+    public PeerAllowlist SecureDesktopList { get; set; } = PeerAllowlist.Off;
+
+    /// <summary>Whether this peer may see and drive the secure desktop, by the policy above.</summary>
+    public bool MaySeeSecureDesktop(string? peerId) => !SecureDesktopForListedOnly || SecureDesktopList.Lists(peerId);
+
+    /// <summary>Whether the input desktop is a secure one right now, published by the media module's poll so the
+    /// input handler can drop a not-allowed device's keystrokes and clicks while a UAC or the lock screen is up.</summary>
+    public volatile bool OnSecureDesktop;
+
     /// <summary>Refuse relayed connections outright; see <see cref="Config.HostConfig.RefuseRelayed"/>.</summary>
     public bool RefuseRelayed { get; set; }
     public MessageDispatcher<HostSessionContext> Dispatcher { get; }
@@ -143,6 +162,9 @@ public sealed class HostRuntime : IAsyncDisposable
 
     /// <summary>A media module that understands display subscriptions is attached; told to viewers as <c>PeerInfo.multi_display</c>.</summary>
     public bool SupportsMultiDisplay { get; set; }
+
+    /// <summary>The host can raise a helper so a viewer may see and drive the secure desktop (a UAC prompt); told to viewers as <c>PeerInfo.elevation</c>.</summary>
+    public bool SupportsElevation { get; set; }
 
     /// <summary>Round-trip measurements from TestDelay probes, per connection (feeds QoS).</summary>
     public Action<int, TimeSpan>? RoundTripReported { get; set; }

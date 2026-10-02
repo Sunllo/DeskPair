@@ -205,6 +205,12 @@
         <TextBlock Text="{loc:Loc settings.allowlistNoRelayHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap" />
       </StackPanel>
 
+      <!-- Windows: grant listed devices the secure desktop (UAC, lock/sign-in) ahead of time, not only at a prompt. -->
+      <StackPanel IsVisible="{Binding IsWindows}" Margin="0,10,0,0">
+        <CheckBox IsChecked="{Binding SecureDesktopForListedOnly}" Content="{loc:Loc settings.secureDesktopListed}" />
+        <TextBlock Text="{loc:Loc settings.secureDesktopListedHint}" Classes="hint" Margin="26,0,0,0" TextWrapping="Wrap" />
+      </StackPanel>
+
       <TextBlock Text="{loc:Loc settings.knownHosts}" Classes="section" Margin="0,14,0,0" />
       <TextBlock Text="{loc:Loc settings.knownHostsHint}" Classes="hint" TextWrapping="Wrap" />
       <TextBlock Text="{loc:Loc settings.noKnownHosts}" Foreground="#666" IsVisible="{Binding !HasKnownHosts}" />

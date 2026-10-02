@@ -13,7 +13,7 @@ internal sealed class GdiScreenCapturer : IDisposable
 {
     private readonly WindowsDisplayEnumerator.WindowsDisplay _display;
     private readonly ILogger _log;
-    private readonly nint _screenDc;
+    private nint _screenDc;
     private readonly nint _memoryDc;
     private readonly nint _bitmap;
     private readonly nint _oldBitmap;
@@ -24,6 +24,7 @@ internal sealed class GdiScreenCapturer : IDisposable
     private bool _havePrevious;
     private bool _reportedFailure;
     private nint _attachedDesktop;
+    private string? _attachedDesktopName;
 
     public GdiScreenCapturer(WindowsDisplayEnumerator.WindowsDisplay display, ILogger log)
     {
@@ -77,8 +78,63 @@ internal sealed class GdiScreenCapturer : IDisposable
         }
 
         _attachedDesktop = desktop;
+
+        // The screen DC is bound to the desktop its thread was on when it was created. After SetThreadDesktop
+        // moves us to the secure (UAC) or lock desktop, a BitBlt from the old DC succeeds but comes back black --
+        // it is still reading the desktop we left. Make a fresh DC now that the thread is on the desktop taking
+        // input, so the retry BitBlt reads what is actually on screen. (A GDI DC is desktop-scoped; a compatible
+        // memory DC is not, so only this one is recreated.)
+        nint fresh = Gdi32.CreateDC(_display.DeviceName, null, null, 0);
+        if (fresh != 0)
+        {
+            if (_screenDc != 0)
+            {
+                Gdi32.DeleteDC(_screenDc);
+            }
+
+            _screenDc = fresh;
+        }
+
+        _attachedDesktopName = DesktopName(desktop);
         _log.LogInformation("{Device}: capture moved to the desktop taking input", _display.DeviceName);
         return true;
+    }
+
+    /// <summary>
+    /// Once we have followed the input onto a particular desktop (the secure/UAC desktop, say), the only sign
+    /// that it has switched back is the input desktop's name changing: a BitBlt from the desktop we were left on
+    /// still succeeds, it just comes back black, so the failed-BitBlt path never fires. Watching the name lets us
+    /// report the switch so the caller rebuilds the capturer on the desktop now taking input -- which is also how
+    /// DXGI gets a turn again once an ordinary desktop is back.
+    /// </summary>
+    private bool InputDesktopChanged()
+    {
+        nint current = User32.OpenInputDesktop(0, 0, User32.GENERIC_ALL);
+        if (current == 0)
+        {
+            // The input desktop is one we may not open from here any more: it changed to something we are not on.
+            return true;
+        }
+
+        try
+        {
+            string? name = DesktopName(current);
+            return name is not null && _attachedDesktopName is not null
+                && !string.Equals(name, _attachedDesktopName, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            User32.CloseDesktop(current);
+        }
+    }
+
+    private static unsafe string? DesktopName(nint desktop)
+    {
+        const int UOI_NAME = 2;
+        byte* buffer = stackalloc byte[256];
+        return User32.GetUserObjectInformation(desktop, UOI_NAME, buffer, 256, out _) == 0
+            ? null
+            : new string((char*)buffer);
     }
 
     /// <summary>
@@ -115,6 +171,13 @@ internal sealed class GdiScreenCapturer : IDisposable
     {
         try
         {
+            // Following the input desktop is one-way through the failed-BitBlt path below, so a switch back to an
+            // ordinary desktop (the UAC dialog was answered, the machine unlocked) would otherwise show as black.
+            if (_attachedDesktop != 0 && InputDesktopChanged())
+            {
+                return ValueTask.FromResult(CaptureResult.Switched);
+            }
+
             // The monitor DC is already positioned at this display's origin.
             if (Gdi32.BitBlt(_memoryDc, 0, 0, _width, _height, _screenDc, 0, 0, Gdi32.SRCCOPY | Gdi32.CAPTUREBLT) == 0
                 && !(AttachToInputDesktop()

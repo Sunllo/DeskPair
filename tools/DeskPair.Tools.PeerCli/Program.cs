@@ -666,6 +666,24 @@ namespace DeskPair.Tools.PeerCli
 
         public void OnStalled(bool stalled) => Console.WriteLine(stalled ? "*** STALLED: waiting for the host..." : "*** RECOVERED: host is responding again");
 
+        public void OnSecureDesktop(SecureDesktop info)
+        {
+            string kind = info.Kind switch
+            {
+                SecureDesktop.Types.Kind.SdUac => "a UAC prompt DeskPair cannot show or click",
+                SecureDesktop.Types.Kind.SdLocked => "locked; its sign-in screen cannot be shown",
+                _ => "an ordinary desktop",
+            };
+            string elevation = info.Elevation switch
+            {
+                SecureDesktop.Types.Elevation.ElRequested => " [elevation requested; waiting for the person there]",
+                SecureDesktop.Types.Elevation.ElActive => " [elevated; the helper is showing and driving it]",
+                SecureDesktop.Types.Elevation.ElRefused => " [elevation refused]",
+                _ => string.Empty,
+            };
+            Console.WriteLine($"*** Secure desktop: the host is on {kind}{elevation}");
+        }
+
         public void OnClosed(string reason) => Console.WriteLine($"*** Closed: {reason}");
 
         private readonly Dictionary<int, System.Text.StringBuilder> _terminalText = new();
@@ -729,6 +747,8 @@ namespace DeskPair.Tools.PeerCli
     ///                                            to take the others), or unplug one
     ///   refresh [N]           ask for a keyframe of display N (default the current one): a still desk sends nothing
     ///   res WxH[@S] | res original   change the current display's resolution (S = scale, e.g. 3840x2160@2)
+    ///   elevate               ask a Windows app-mode host to let this viewer see and drive the secure desktop (a UAC
+    ///                         prompt); the person at the host still allows it and completes the real UAC
     ///   clip TEXT             put TEXT on this side's clipboard (controller -> host)
     ///   save PATH.png [N]     write the next picture (of display N) to a file. Against a real host pass
     ///                         --frame-stats: the default fake decoder cannot read real video, so pictures come only
@@ -968,6 +988,18 @@ namespace DeskPair.Tools.PeerCli
                     }
                     case "follow":
                         await FollowAsync(arg.Trim(), ct);
+                        break;
+                    case "elevate":
+                        if (!session.HostSupportsElevation)
+                        {
+                            Console.WriteLine("*** This host cannot raise a secure-desktop helper (not a Windows app-mode host); ignoring");
+                        }
+                        else
+                        {
+                            await session.RequestElevationAsync(ct);
+                            Console.WriteLine("*** Asked the host to let this viewer see and drive the secure desktop; watch for the elevation state");
+                        }
+
                         break;
                     case "resburst":
                     {

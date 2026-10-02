@@ -477,8 +477,10 @@ public sealed class UdpMediaChannel : IAsyncDisposable
             }
 
             // Idle (application-limited) and healthy: check whether the link could take more than we have proven.
+            // Loss up to 4% (twice the usual gate) still probes -- FEC repairs it, so a little loss should not stop
+            // the estimate from climbing on a direct path.
             bool appLimited = (_gcc.AckedBps ?? 0) < 0.5 * target;
-            if (now >= _nextProbeAt && appLimited && _gcc.State != BandwidthUsage.Overusing && _gcc.LossFraction < 0.02)
+            if (now >= _nextProbeAt && appLimited && _gcc.State != BandwidthUsage.Overusing && _gcc.LossFraction < 0.04)
             {
                 SendProbe(Math.Min(_ceilingBps, 2 * target), initial: false, now);
             }

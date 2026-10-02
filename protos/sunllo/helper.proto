@@ -1,0 +1,122 @@
+// The engine (app mode, the signed-in user) and a SYSTEM helper it raised to see and drive the Windows secure
+// desktop (a UAC prompt) talk over one local, ACL'd, token-authenticated named pipe. Frames, input and cursor
+// all ride it -- there is no shared memory, because the secure desktop barely changes and a frame only crosses
+// when it does. Everything here is local to one machine and never leaves it.
+syntax = "proto3";
+
+package sunllo.helper;
+
+option csharp_namespace = "DeskPair.Protocol.Helper";
+
+// Both directions on connect: each side proves it holds the shared one-time token, so a same-user process that
+// somehow learned the pipe name still cannot drive the SYSTEM helper. proof = HMAC-SHA256(token, peer's nonce).
+message HelperHello {
+  int32 protocol = 1;
+  bytes nonce = 2;
+  bytes proof = 3;   // over the OTHER side's nonce; empty in the first hello, set in the reply
+}
+
+// engine -> helper: capture this display.
+message CreateCapturer {
+  int32 id = 1;        // the engine's handle for this capturer
+  int32 display = 2;   // display index as the helper enumerates them
+  bool prefer_gpu = 3;
+}
+
+message DisposeCapturer {
+  int32 id = 1;
+}
+
+// helper -> engine: one captured frame, top-down BGRA. Sent only when the picture changed.
+message HelperFrame {
+  int32 id = 1;
+  uint32 seq = 2;
+  int32 width = 3;
+  int32 height = 4;
+  int32 stride = 5;
+  bytes bgra = 6;
+}
+
+// helper -> engine: the desktop under this capturer switched (e.g. the UAC closed); the engine rebuilds the stream.
+message HelperSwitched {
+  int32 id = 1;
+}
+
+// helper -> engine: the displays as SYSTEM sees them, sent once after the handshake.
+message HelperDisplay {
+  int32 index = 1;
+  string name = 2;
+  int32 x = 3;
+  int32 y = 4;
+  int32 width = 5;
+  int32 height = 6;
+  double scale = 7;
+  bool primary = 8;
+}
+message HelperDisplays {
+  repeated HelperDisplay displays = 1;
+}
+
+// engine -> helper: inject a mouse event (fields mirror the platform's MouseInput + VirtualScreenRect).
+message HelperMouse {
+  int32 action = 1;      // MouseAction
+  int32 buttons = 2;     // MouseButtons flags
+  int32 x = 3;
+  int32 y = 4;
+  int32 wheel = 5;
+  int32 vs_x = 6;        // virtual-screen rect the point is in
+  int32 vs_y = 7;
+  int32 vs_w = 8;
+  int32 vs_h = 9;
+}
+
+// engine -> helper: inject a key event (fields mirror the platform's KeyInput).
+message HelperKey {
+  int32 mode = 1;        // KeyInputMode
+  bool down = 2;
+  uint32 code = 3;
+  int32 control = 4;     // ControlKey
+  string text = 5;
+}
+
+message HelperLockKeys {
+  bool caps_lock = 1;
+  bool num_lock = 2;
+  bool scroll_lock = 3;
+}
+
+// helper -> engine: the cursor.
+message HelperCursorShape {
+  uint64 id = 1;
+  int32 hot_x = 2;
+  int32 hot_y = 3;
+  int32 width = 4;
+  int32 height = 5;
+  bytes bgra = 6;
+}
+message HelperCursorPos {
+  int32 x = 1;
+  int32 y = 2;
+}
+message HelperCursorId {
+  uint64 id = 1;
+}
+
+message HelperMessage {
+  oneof union {
+    HelperHello hello = 1;
+    CreateCapturer create = 2;
+    DisposeCapturer dispose = 3;
+    HelperFrame frame = 4;
+    HelperSwitched switched = 5;
+    HelperDisplays displays = 6;
+    HelperMouse mouse = 7;
+    HelperKey key = 8;
+    HelperLockKeys lock_keys = 9;
+    HelperCursorShape cursor_shape = 10;
+    HelperCursorPos cursor_pos = 11;
+    HelperCursorId cursor_id = 12;
+    bool release_all = 13;   // engine -> helper: release every held key and button
+    bool stop = 14;          // engine -> helper: stand down and exit
+  }
+}

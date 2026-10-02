@@ -62,6 +62,20 @@ public sealed class Testbed : IAsyncDisposable
     /// <summary>Displays that open for the first viewer and close after the last, when the host was started with them.</summary>
     public FakeDisplaySession? DisplaySession { get; private set; }
 
+    /// <summary>The fake secure-desktop monitor, present only when the host was started with one; a test drives its <c>Kind</c>.</summary>
+    public FakeSecureDesktopMonitor? SecureDesktop { get; private set; }
+
+    /// <summary>The fake elevator, present only when the host was started with one; a test drives its <c>Succeed</c>.</summary>
+    public FakeSessionElevator? Elevator { get; private set; }
+
+    /// <summary>What the (test) person at the host answers an elevation request; the asks are recorded in <see cref="ElevationAsks"/>.</summary>
+    public bool ApproveElevation { get; set; } = true;
+
+    /// <summary>Whether the (test) person also ticks "make this device permanent" when approving an elevation.</summary>
+    public bool ElevationPermanent { get; set; }
+
+    public List<ElevationAsk> ElevationAsks { get; } = [];
+
     /// <summary>Set by <see cref="StartHostAsync"/> when media is enabled.</summary>
     public HostMediaModule? Media { get; private set; }
     public FakeInputInjector? Injector { get; private set; }
@@ -248,7 +262,7 @@ public sealed class Testbed : IAsyncDisposable
         DeskPair.Platform.Abstractions.Codec.IVideoEncoderFactory? encoders = null, HostPlatform? platform = null,
         PeerSettings? settings = null, DeskPair.Platform.Abstractions.Codec.VideoCodec? codec = null,
         DeskPair.Platform.Abstractions.Terminal.ITerminalHost? terminal = null, bool virtualDisplays = false, bool displaySession = false,
-        bool sessionScreen = false)
+        bool sessionScreen = false, bool secureDesktop = false, bool elevation = false)
     {
         string dir = Path.Combine(Path.GetTempPath(), "sunllo-test-" + Guid.NewGuid().ToString("N"));
         _tempDirs.Add(dir);
@@ -274,6 +288,8 @@ public sealed class Testbed : IAsyncDisposable
             VirtualDisplays = new FakeVirtualDisplays(Displays, DisplayModes);
             SessionScreen = new FakeSessionScreen(Displays, DisplayModes);
             DisplaySession = displaySession ? new FakeDisplaySession(Displays, displays) : null;
+            SecureDesktop = secureDesktop ? new FakeSecureDesktopMonitor() : null;
+            Elevator = elevation ? new FakeSessionElevator() : null;
             platform = new HostPlatform(
                 Displays,
                 Capturers,
@@ -286,8 +302,23 @@ public sealed class Testbed : IAsyncDisposable
                 VirtualDisplays,
                 VirtualDisplays,
                 DisplaySession,
-                SessionScreen);
+                SessionScreen,
+                SecureDesktop,
+                Elevator);
             module = new HostMediaModule(platform, Logs) { Codec = codec, AllowVirtualDisplays = virtualDisplays, AllowSessionScreen = sessionScreen };
+            if (Elevator is not null)
+            {
+                module.ElevationApprover = (ask, ct) =>
+                {
+                    lock (ElevationAsks)
+                    {
+                        ElevationAsks.Add(ask);
+                    }
+
+                    return Task.FromResult(new ElevationChoice(ApproveElevation, ElevationPermanent));
+                };
+            }
+
             Media = module;
             _disposables.Add(module);
         }
@@ -494,6 +525,7 @@ public sealed class TestCallbacks : IControllerCallbacks
 
     public List<DisplaySubscription> DisplaySubscriptions { get; } = [];
     public List<DisplaysChanged> DisplaysChanges { get; } = [];
+    public List<SecureDesktop> SecureDesktops { get; } = [];
 
     public List<TerminalResponse> Terminal { get; } = [];
 
@@ -549,6 +581,14 @@ public sealed class TestCallbacks : IControllerCallbacks
         lock (_lock)
         {
             Permissions.Add(info);
+        }
+    }
+
+    public void OnSecureDesktop(SecureDesktop info)
+    {
+        lock (_lock)
+        {
+            SecureDesktops.Add(info);
         }
     }
 

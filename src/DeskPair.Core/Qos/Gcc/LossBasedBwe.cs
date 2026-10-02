@@ -1,8 +1,10 @@
 namespace DeskPair.Core.Qos.Gcc;
 
 /// <summary>
-/// GCC's loss-based limit: below 2 % loss it may grow (8 %/s), between 2 and 10 % it holds, above 10 % it drops to
-/// rate × (1 − loss/2). It only ever caps the delay-based estimate.
+/// GCC's loss-based limit: below 4 % loss it may grow (8 %/s), between 4 and 20 % it holds, above 20 % it drops to
+/// rate × (1 − loss/2). It only ever caps the delay-based estimate. The 4 % / 20 % thresholds are twice the usual
+/// GCC 2 % / 10 %, so the estimate is half as quick to stop growing or to be cut -- FEC already repairs the packets
+/// these fractions count, so on a direct path this keeps the bitrate up instead of collapsing on a little loss.
 /// </summary>
 public sealed class LossBasedBwe
 {
@@ -56,11 +58,11 @@ public sealed class LossBasedBwe
         double dt = _lastUpdateUs < 0 ? 0 : Math.Min((nowUs - _lastUpdateUs) / 1_000_000.0, 1.0);
         _lastUpdateUs = nowUs;
 
-        if (LossFraction < 0.02)
+        if (LossFraction < 0.04)
         {
             EstimateBps = Math.Min(MaxBps, EstimateBps * Math.Pow(1.08, dt));
         }
-        else if (LossFraction > 0.10)
+        else if (LossFraction > 0.20)
         {
             if (_lastDecreaseUs < 0 || nowUs - _lastDecreaseUs >= MinDecreaseIntervalUs)
             {

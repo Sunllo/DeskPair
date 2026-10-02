@@ -122,6 +122,14 @@ public sealed record HostConfig
     public bool PrivateSessionScreen { get; init; }
 
     /// <summary>
+    /// While the unattended service runs, let devices in <see cref="AllowedPeers"/> see and drive the secure desktop
+    /// (a UAC prompt, the lock screen) with nobody at the machine, and withhold it from everyone else. Set when the
+    /// person ticks "always allow listed devices" in the elevation prompt; the person opening "reachable while locked"
+    /// in settings themselves leaves it off, and that switch stays for all connections as before. Windows service only.
+    /// </summary>
+    public bool SecureDesktopForListedOnly { get; init; }
+
+    /// <summary>
     /// Absolute directories that file transfer is confined to. Empty (the default) means unrestricted: a peer
     /// with file permission may reach any path the host process can. When set, a peer may only list, read or
     /// write paths inside one of these roots and everything else is refused; traversal is resolved first, so
