@@ -26,7 +26,11 @@ jobs:
       # that wait for a thread or measure a kernel failed by seconds -- a different one most runs. A test still
       # running after five minutes (the slowest take under a minute) ends its test run and is named in the log. No
       # dump: it would only fill the artifact.
-      - run: dotnet test DeskPair.slnx --no-build -c Release -m:1 --logger "trx" --results-directory TestResults --blame-hang-timeout 5min --blame-hang-dump-type none
+      # The macOS runner leaves out the tests that measure bandwidth through a simulated link over wall-clock time
+      # (BandwidthEstimationTests, trait TimingSensitive): starved of its few cores it cannot keep that link's timing,
+      # and failed one of them on four runs in five with the product behaving correctly for the link it was shown.
+      # They still run on the other two runners, which keep time, and on a Mac by hand.
+      - run: dotnet test DeskPair.slnx --no-build -c Release -m:1 --logger "trx" --results-directory TestResults --blame-hang-timeout 5min --blame-hang-dump-type none ${{ matrix.os == 'macos-latest' && '--filter "Category!=TimingSensitive"' || '' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

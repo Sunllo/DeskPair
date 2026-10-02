@@ -15,8 +15,19 @@ public sealed class TimingSensitiveCollection
     public const string Name = "Timing-sensitive";
 }
 
-/// <summary>GCC bandwidth estimation end to end: host, UDP channel and a simulated bottleneck in front of the viewer.</summary>
+/// <summary>
+/// GCC bandwidth estimation end to end: host, UDP channel and a simulated bottleneck in front of the viewer.
+///
+/// These measure wall-clock behaviour through a link simulated by a thread, so they need a machine that keeps time.
+/// GitHub's shared macOS runner does not, reliably: starved of its few cores for a few seconds, the simulated link's
+/// delivery thread falls behind, the viewer sees packets arrive late and spread out, and GCC does what it should on
+/// a link like that -- backs off -- while the test waits for the capacity the link was configured with. Its failure
+/// message now says so ("measured 8.3 (41/41, saturated)" with the probe sent on time, then the estimate falling).
+/// CI therefore runs them on the Windows and Linux runners only (the "TimingSensitive" trait, filtered in ci.yml);
+/// the code under test is the same on every platform, and they run on a Mac by hand.
+/// </summary>
 [Collection(TimingSensitiveCollection.Name)]
+[Trait("Category", "TimingSensitive")]
 public class BandwidthEstimationTests
 {
     [Fact]
