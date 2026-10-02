@@ -97,7 +97,9 @@ function Set-Signature([string[]]$Files) {
 }
 
 # ---- build each architecture ---------------------------------------------------------------------------
-$driverDate = (Get-Date).ToString("MM/dd/yyyy", [Globalization.CultureInfo]::InvariantCulture)
+# UTC, not local time: Inf2Cat refuses a DriverVer later than today in UTC as "postdated", so a build made between
+# local midnight and UTC midnight east of Greenwich -- 00:00 to 08:00 in Taipei -- failed to make its catalog.
+$driverDate = [DateTime]::UtcNow.ToString("MM/dd/yyyy", [Globalization.CultureInfo]::InvariantCulture)
 foreach ($arch in $Architectures) {
     $rid = "win-$arch"
     $out = Join-Path $source "out\$rid"

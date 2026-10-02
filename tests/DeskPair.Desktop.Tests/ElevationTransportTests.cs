@@ -52,7 +52,10 @@ public class ElevationTransportTests
         // to FlushFileBuffers, which blocks until the peer drains the write. The handshake has both ends write
         // their nonce before either reads, so a per-write flush made each side wait on the other -- a deadlock
         // that hung the SYSTEM helper and the engine. This runs the handshake over an actual pipe pair.
-        string name = "deskpair-test-" + Guid.NewGuid().ToString("N");
+        // Short on purpose: on macOS and Linux a .NET named pipe is a Unix domain socket under $TMPDIR, and macOS caps
+        // that whole path at 104 characters -- the GitHub macOS runner's TMPDIR alone is about 50, and a 46-character
+        // name ran past the limit before the test could start.
+        string name = "dp-" + Guid.NewGuid().ToString("N")[..12];
         await using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous, 64 * 1024, 64 * 1024);
         await using var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, System.IO.Pipes.PipeOptions.Asynchronous);
 
