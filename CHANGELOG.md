@@ -17,7 +17,9 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
-## Desktop, unreleased
+## 0.5.1 — 2026-10-03
+
+Desktop only; the phones stay at 0.4.0.
 
 ### Fixed
 
