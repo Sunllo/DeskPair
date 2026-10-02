@@ -84,7 +84,17 @@ public class BandwidthEstimationTests
         // ramping alone reaches 9 Mb/s in about five, so the clock told the two apart by little, and a CI Mac too busy
         // to send a probe at its rate once missed it. This stream is never idle (the fake encoder fills its bitrate), and
         // only an idle stream is probed after start-up: a spoilt start-up probe is what the start-up retries are for.
-        await Testbed.WaitUntilAsync(() => channel.Gcc.ProbedToBps >= 9_000_000, "a probe raised the estimate", 20_000);
+        try
+        {
+            await Testbed.WaitUntilAsync(() => channel.Gcc.ProbedToBps >= 9_000_000, "a probe raised the estimate", 20_000);
+        }
+        catch (TimeoutException e)
+        {
+            // CI keeps no log of the run, and this failed on the macOS runner without a word of why: say what the probes did.
+            throw new TimeoutException(
+                $"{e.Message} Probes sent {channel.ProbesSent}, set aside as sent too slowly {channel.ProbesSenderLimited}; gcc {channel.Gcc.TargetBps / 1e6:F1} Mb/s, probed to {channel.Gcc.ProbedToBps / 1e6:F1}. Probes: {channel.ProbeHistory}",
+                e);
+        }
         bed.Logs.CreateLogger("test").LogInformation("probes {Probes}, last {Last}, gcc {Target:F1} Mb/s", channel.ProbesSent, channel.LastProbe, channel.Gcc.TargetBps / 1e6);
         channel.Gcc.ProbesApplied.ShouldBeGreaterThan(0);
 

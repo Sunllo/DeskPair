@@ -37,6 +37,7 @@ public sealed class UdpMediaChannel : IAsyncDisposable
 
     /// <summary>How many times the start-up probe is tried, a second apart, before it waits like any other.</summary>
     private const int StartUpProbeAttempts = 3;
+    private const int ProbeHistoryLength = 8;
     private static readonly TimeSpan StartUpProbeRetry = TimeSpan.FromSeconds(1);
     /// <summary>Default probe ceiling until the host tells the channel what the picture can use.</summary>
     public const double DefaultCeilingBps = 80_000_000;
@@ -79,6 +80,8 @@ public sealed class UdpMediaChannel : IAsyncDisposable
     private long _nextProbeAt;
     private bool _initialProbeDone;
     private int _startUpProbeFailures;
+    private readonly Queue<string> _probeHistory = new();
+    private string _lastProbe = "none";
     private double _ceilingBps = DefaultCeilingBps;
     private bool _ceilingKnown;
     private long _readyAt;
@@ -175,7 +178,41 @@ public sealed class UdpMediaChannel : IAsyncDisposable
     /// <summary>Host side: probe clusters sent and the last probe outcome (diagnostics).</summary>
     public long ProbesSent => _sender.ProbesSent;
 
-    public string LastProbe { get; private set; } = "none";
+    public string LastProbe
+    {
+        get => _lastProbe;
+        private set
+        {
+            _lastProbe = value;
+            lock (_probeHistory)
+            {
+                if (_probeHistory.Count == ProbeHistoryLength)
+                {
+                    _probeHistory.Dequeue();
+                }
+
+                _probeHistory.Enqueue(value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Host side: the last few probe outcomes, oldest first (diagnostics -- CI keeps no log of a run, so a test that
+    /// fails on a busy runner can put this in its failure and say what the probes did).
+    /// </summary>
+    public string ProbeHistory
+    {
+        get
+        {
+            lock (_probeHistory)
+            {
+                return string.Join(" | ", _probeHistory);
+            }
+        }
+    }
+
+    /// <summary>Host side: probe clusters this machine was too busy to send at their rate, and so did not use (diagnostics).</summary>
+    public long ProbesSenderLimited { get; private set; }
 
     /// <summary>Host side: raised on the receive thread after each arrival report with the new GCC target (bits per second).</summary>
     public event Action<double>? BandwidthEstimated;
@@ -538,6 +575,21 @@ public sealed class UdpMediaChannel : IAsyncDisposable
 
             double? estimate = ProbeBitrateEstimator.Estimate(_probeResults, probe.Count);
             int received = _probeResults.Count;
+            if (SentRateBps(probe) is { } sentBps && LeftTooSlowlyToMeasure(probe.RateBps, probe.Count, sentBps, received, estimate))
+            {
+                // Taken as the link, such a probe cut a busy host's estimate to what its own pacer had managed, and with
+                // the stream busy from then on nothing probed again (reproduced by spreading a 13 Mb/s probe over three
+                // times its 30 ms: "measured 4.2 (41/41, saturated)", the estimate cut to 4.2 Mb/s, no further probe).
+                // It is not used, and counts as failed, so a start-up probe is tried again a second later.
+                _probe = null;
+                _probeResults.Clear();
+                ProbesSenderLimited++;
+                LastProbe = $"{probe.RateBps / 1e6:F1} Mb/s left this machine at only {sentBps / 1e6:F1} (too busy to send it on time); not used";
+                _log.LogInformation("Media probe {Id}: {Result}", probe.Id, LastProbe);
+                ProbeFailed(probe, now);
+                return _gcc.TargetBps;
+            }
+
             // The link could not carry the burst (it dropped part of it, or delivered it well below the probe rate):
             // the measurement is what it really carries, so it may bring the estimate down as well as up.
             bool saturated = received < probe.Count * 0.8 || estimate < 0.7 * probe.RateBps;
@@ -735,6 +787,35 @@ public sealed class UdpMediaChannel : IAsyncDisposable
         }
 
         _lastSend = _time.GetTimestamp();
+    }
+
+    /// <summary>
+    /// Whether a probe cluster says nothing about the link because this machine never sent it at its rate. One too busy
+    /// to run the pacer on time sends the burst late and spread out; all of it then arrives, slowly, and the slow arrival
+    /// measures this machine rather than the link. That is the case when it left at under 70 % of its rate (the same
+    /// share that marks a probe the link could not carry) and the link kept up with what did leave: most of it arrived,
+    /// at no less than 80 % of the rate it was sent at. When the link fell behind even the slower send, what arrived is
+    /// still the link's limit and is used as before.
+    /// </summary>
+    internal static bool LeftTooSlowlyToMeasure(double probeRateBps, int count, double sentBps, int received, double? arrivedBps) =>
+        sentBps < 0.7 * probeRateBps && received >= count * 0.8 && arrivedBps is { } arrived && arrived >= 0.8 * sentBps;
+
+    /// <summary>
+    /// The rate a probe cluster actually left at, from the pacer's own timestamps for its first and last packets and
+    /// reckoned as <see cref="SendProbe"/> plans it (count packets over the span); null when either slot has since been
+    /// reused or the cluster has not all left.
+    /// </summary>
+    private double? SentRateBps(ProbeCluster probe)
+    {
+        int first = (int)(probe.FirstSeq % SentRing);
+        int last = (int)(probe.LastSeq % SentRing);
+        if (_sentSeq[first] != probe.FirstSeq || _sentSeq[last] != probe.LastSeq)
+        {
+            return null;
+        }
+
+        double seconds = _time.GetElapsedTime(_sentAt[first], _sentAt[last]).TotalSeconds;
+        return seconds > 0 ? probe.Count * ProtocolConstants.MaxUdpDatagramBytes * 8 / seconds : null;
     }
 
     private void RecordSent(ulong packetSeq, long timestamp, int size, bool onPath)

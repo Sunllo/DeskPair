@@ -17,6 +17,16 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## Desktop, unreleased
+
+### Fixed
+
+- A host busy at the moment a session began could take its own slowness for the network's: its first bandwidth probe
+  left late and spread out, all of it arrived but slowly, and the picture's bitrate was cut to what the host had
+  managed to send -- then grew back by a few per cent a second for as long as the screen kept changing, since a busy
+  stream is not probed again. A probe that left the host at well under its rate is now set aside and tried again a
+  second later; one the network itself could not carry still lowers the bitrate as before.
+
 ## 0.5.0 — 2026-10-03
 
 Desktop only; the phones stay at 0.4.0.
