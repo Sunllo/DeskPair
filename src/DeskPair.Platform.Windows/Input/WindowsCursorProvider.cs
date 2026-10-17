@@ -85,32 +85,7 @@ public sealed class WindowsCursorProvider : ICursorProvider
                     byte[] bgra = new byte[width * height * 4];
                     if (monochrome)
                     {
-                        // Top half = AND mask, bottom half = XOR mask. Transparent where AND=1 & XOR=0,
-                        // black where AND=0 & XOR=0, white where AND=0 & XOR=1, inverted (drawn as black outline) where AND=1 & XOR=1.
-                        for (int y = 0; y < height; y++)
-                        {
-                            for (int x = 0; x < width; x++)
-                            {
-                                int and = maskBits[(y * width + x) * 4];
-                                int xor = maskBits[((y + height) * width + x) * 4];
-                                int o = (y * width + x) * 4;
-                                if (and != 0 && xor == 0)
-                                {
-                                    continue; // transparent
-                                }
-
-                                byte v = (byte)(xor != 0 ? 255 : 0);
-                                if (and != 0 && xor != 0)
-                                {
-                                    v = 0;
-                                }
-
-                                bgra[o] = v;
-                                bgra[o + 1] = v;
-                                bgra[o + 2] = v;
-                                bgra[o + 3] = 255;
-                            }
-                        }
+                        MonochromeToBgra(maskBits, width, height, bgra);
                     }
                     else
                     {
@@ -159,6 +134,66 @@ public sealed class WindowsCursorProvider : ICursorProvider
         finally
         {
             User32.DestroyIcon(icon);
+        }
+    }
+
+    /// <summary>
+    /// A monochrome cursor as BGRA. <paramref name="maskBits"/> is the cursor's mask bitmap read as 32-bit pixels, the
+    /// AND plane on top of the XOR plane (so twice <paramref name="height"/> rows). Transparent where AND=1 and XOR=0,
+    /// black where both are 0, white where AND=0 and XOR=1.
+    ///
+    /// Where both are 1 Windows inverts whatever is under the pixel -- the text I-beam is drawn entirely that way, so
+    /// it reads black over a page and white over a dark editor. A viewer paints a bitmap and cannot invert, and this
+    /// used to paint those pixels black: right over a light background and invisible over a dark one, which is where
+    /// most people type. They are white now, with a one-pixel black edge into the transparent pixels around them, which
+    /// is how an inverting cursor is usually stood in for; it shows on either background.
+    /// </summary>
+    internal static void MonochromeToBgra(byte[] maskBits, int width, int height, byte[] bgra)
+    {
+        bool[] inverted = new bool[width * height];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int i = y * width + x;
+                int and = maskBits[i * 4];
+                int xor = maskBits[(i + width * height) * 4];
+                if (and != 0 && xor == 0)
+                {
+                    continue; // transparent
+                }
+
+                inverted[i] = and != 0 && xor != 0;
+                byte v = (byte)(xor != 0 ? 255 : 0);
+                int o = i * 4;
+                bgra[o] = v;
+                bgra[o + 1] = v;
+                bgra[o + 2] = v;
+                bgra[o + 3] = 255;
+            }
+        }
+
+        // The edge: a transparent pixel next to an inverted one (left, right, above or below) turns black.
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int i = y * width + x;
+                if (bgra[i * 4 + 3] != 0)
+                {
+                    continue; // already drawn
+                }
+
+                bool edge = (x > 0 && inverted[i - 1]) || (x + 1 < width && inverted[i + 1])
+                    || (y > 0 && inverted[i - width]) || (y + 1 < height && inverted[i + width]);
+                if (edge)
+                {
+                    bgra[i * 4] = 0;
+                    bgra[i * 4 + 1] = 0;
+                    bgra[i * 4 + 2] = 0;
+                    bgra[i * 4 + 3] = 255;
+                }
+            }
         }
     }
 

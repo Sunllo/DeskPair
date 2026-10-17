@@ -17,6 +17,15 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## Desktop, unreleased
+
+### Fixed
+
+- The text cursor (the I-beam) from a Windows host showed as solid black, so over a dark editor it all but
+  disappeared. Windows draws it by inverting whatever is underneath, which a viewer painting a bitmap cannot do;
+  those pixels are now white with a one-pixel black edge, the usual stand-in, so the cursor shows over light and dark
+  backgrounds alike. The arrow and other coloured cursors are unchanged.
+
 ## 0.5.1 — 2026-10-03
 
 Desktop only; the phones stay at 0.4.0.
