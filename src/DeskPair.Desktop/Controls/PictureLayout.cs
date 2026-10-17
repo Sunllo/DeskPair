@@ -9,8 +9,9 @@ namespace DeskPair.Desktop.Controls;
 /// picture used to be laid out one unit per remote pixel, so on such a screen even "1:1" reached the glass
 /// stretched by half and blurred with it. Here the natural size gives every remote pixel a whole number of
 /// screen pixels -- one below 200 %, two from 200 % (the size the picture had before on those screens, now
-/// without the blur) -- Fit only ever shrinks from there, and the picture's corner sits on a pixel boundary.
-/// Pure, so the arithmetic is tested without a window.
+/// without the blur) -- and the picture's corner sits on a pixel boundary. Fit scales the picture either way to
+/// the largest size the control holds, as Remote Desktop does: a whole multiple is copied pixel for pixel, any
+/// other factor is smoothed. Pure, so the arithmetic is tested without a window.
 /// </summary>
 public readonly record struct PictureLayout(Rect Destination, double ScreenPixelsPerRemotePixel)
 {
@@ -22,8 +23,8 @@ public readonly record struct PictureLayout(Rect Destination, double ScreenPixel
 
     /// <summary>
     /// The picture's place in a control of <paramref name="bounds"/> units on a screen scaled by
-    /// <paramref name="scaling"/>. Fit centres it and shrinks it when it does not fit; otherwise it sits at its
-    /// natural size in the corner, for a scroller to move.
+    /// <paramref name="scaling"/>. Fit centres it and scales it, up or down, to the largest size the control holds;
+    /// otherwise it sits at its natural size in the corner, for a scroller to move.
     /// </summary>
     public static PictureLayout Compute(Size bounds, double scaling, int remoteWidth, int remoteHeight, bool fit)
     {
@@ -37,7 +38,7 @@ public readonly record struct PictureLayout(Rect Destination, double ScreenPixel
         double boundsWidth = WholeIfNear(bounds.Width * s), boundsHeight = WholeIfNear(bounds.Height * s);
         if (fit)
         {
-            pixels = Math.Min(pixels, Math.Min(boundsWidth / remoteWidth, boundsHeight / remoteHeight));
+            pixels = Math.Min(boundsWidth / remoteWidth, boundsHeight / remoteHeight);
             if (!(pixels > 0))
             {
                 return default;

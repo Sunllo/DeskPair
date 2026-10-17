@@ -21,6 +21,13 @@ The servers only; no app changes.
 
 Desktop only; the phones stay at 0.4.0.
 
+### Changed
+
+- **Fit scales up as well as down.** With Fit on, a remote screen smaller than the window used to stay at 1:1
+  with black around it; it now fills the window like a Remote Desktop session does. A whole multiple (a 1280×720
+  screen in a 2560×1440 window) is still copied pixel for pixel; any other factor is smoothed. Fit off still shows
+  the screen at 1:1 with scroll bars.
+
 ### Fixed
 
 - The text cursor (the I-beam) from a Windows host showed as solid black, so over a dark editor it all but

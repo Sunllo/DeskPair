@@ -42,24 +42,48 @@ public sealed class PictureLayoutTests
     }
 
     [Fact]
-    public void Fit_never_enlarges_and_centres_on_a_pixel_boundary()
+    public void Fit_enlarges_a_picture_smaller_than_the_window()
     {
-        // A 1280x720 window at 150 % is 1920x1080 pixels: a 1600x900 picture fits and stays 1:1, centred.
+        // A 1280x720 window at 150 % is 1920x1080 pixels: a 1600x900 picture is scaled up by 1.2 to fill it.
         PictureLayout layout = PictureLayout.Compute(new Size(1280, 720), 1.5, 1600, 900, fit: true);
 
-        Pixels(layout.Destination, 1.5).ShouldBe((160, 90, 1600, 900));
+        Pixels(layout.Destination, 1.5).ShouldBe((0, 0, 1920, 1080));
+        layout.ScreenPixelsPerRemotePixel.ShouldBe(1.2, 1e-9);
+        layout.IsWhole.ShouldBeFalse("a fractional enlargement is smoothed");
+    }
+
+    [Fact]
+    public void Fit_to_a_whole_multiple_is_drawn_pixel_for_pixel()
+    {
+        // 1280x720 in a window of 2560x1440 pixels: every remote pixel becomes a 2x2 block, copied, not smoothed.
+        PictureLayout layout = PictureLayout.Compute(new Size(2560, 1440), 1.0, 1280, 720, fit: true);
+
+        Pixels(layout.Destination, 1.0).ShouldBe((0, 0, 2560, 1440));
+        layout.ScreenPixelsPerRemotePixel.ShouldBe(2);
         layout.IsWhole.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Fit_keeps_the_aspect_ratio_and_centres_on_a_pixel_boundary()
+    {
+        // 1920x1080 in a window of 2560x1440 pixels that is a little too tall for 16:9: width governs, bars above and below.
+        PictureLayout layout = PictureLayout.Compute(new Size(2560, 1500), 1.0, 1920, 1080, fit: true);
+
+        Pixels(layout.Destination, 1.0).ShouldBe((0, 30, 2560, 1440));
+        layout.ScreenPixelsPerRemotePixel.ShouldBe(4.0 / 3, 1e-9);
     }
 
     /// <summary>An odd margin is split with the extra pixel on the far side, never by putting the picture between pixels.</summary>
     [Fact]
     public void An_odd_margin_does_not_put_the_picture_between_pixels()
     {
-        PictureLayout layout = PictureLayout.Compute(new Size(1001 / 1.25, 700 / 1.25), 1.25, 800, 600, fit: true);
+        // A 1000x701-pixel window holds a 1000x600 picture at 1:1 with 101 spare pixels: 50 above, 51 below.
+        PictureLayout layout = PictureLayout.Compute(new Size(1000 / 1.25, 701 / 1.25), 1.25, 1000, 600, fit: true);
 
         (double x, double y, _, _) = Pixels(layout.Destination, 1.25);
-        x.ShouldBe(100);
+        x.ShouldBe(0);
         y.ShouldBe(50);
+        layout.IsWhole.ShouldBeTrue();
     }
 
     [Fact]
