@@ -60,6 +60,9 @@ Windows Installer 沒有「一個套件內含多種語言」的格式，常見�
 - **App 內更新**：安裝版會下載清單裡同架構的 `.msi`，跟其他下載一樣先驗簽章清單與 SHA-256，然後由 `update.cmd`
   等 App 結束、執行 `msiexec /i <msi> /passive /norestart`（Windows 會要求系統管理員同意），最後重新開啟 App。
   使用者拒絕同意時，舊版照樣重新開啟。msiexec 的紀錄留在 `%TEMP%\deskpair-update\install.log`。
+- **接手服務**：換好檔案之後、重新啟動服務之前，以 LocalSystem 執行 `DeskPair.exe --adopt-service`：無人值守服務是對著
+  「開啟當時正在跑的那個 `DeskPair.exe`」註冊的（可能是 zip 解壓的資料夾），這一步把它改成剛裝好的這一份；沒有服務就什麼都不做，
+  失敗只記在 `service.log`、不讓安裝失敗。
 - **移除**：刪檔案之前，以 LocalSystem 執行 `DeskPair.exe --remove-system-changes`，拆掉 App 在自己資料夾以外做的事：
   - 無人值守服務，以及它打開的「允許軟體送出 Ctrl+Alt+Del」原則
   - App 自己建的防火牆規則（`Sunllo DeskPair`）

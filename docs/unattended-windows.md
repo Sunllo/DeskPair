@@ -190,6 +190,12 @@ case 檢查完整性。身分不看 hello 裡的角色、也不看權杖檔，�
   0.4.4 起有 MSI（`packaging/windows/README.md`）：移除時它以 LocalSystem 執行 `--remove-system-changes`，
   拆掉服務、防火牆規則與虛擬顯示器驅動；升級時只在換檔案前停止服務、裝完再啟動，服務的註冊保留。
   要無人值守的機器應該用安裝版：服務執行的 `DeskPair.exe` 放在 Program Files，只有系統管理員能換。
+- 服務是對著「開啟當時正在跑的那個 `DeskPair.exe`」註冊的（zip 解壓的資料夾、測試版都有可能）。之後改裝 MSI、或 MSI 更新，
+  服務仍會啟動舊的那份：app 新、引擎舊，舊資料夾一刪就沒有引擎。所以 MSI 在換好檔案之後、重新啟動服務之前，以 LocalSystem 執行
+  `--adopt-service`（`HostServiceInstaller.Adopt`）：讀服務的命令列（`QueryServiceConfig`），執行檔不是自己就改成自己
+  （`ChangeServiceConfig`，只動命令列）；沒有服務就什麼都不做。`--install-service` 碰到已存在的服務也先做同一件事，
+  再視情況重啟。純函式 `ServiceBinaryPath` 負責比對（`ServiceBinaryPathTests`）。這是 2026-10-18 在開發機上發現的：
+  它的服務從 10 月 3 日起指向測試資料夾裡的 0.5.1，MSI 升到 0.5.2、0.5.3 都沒換到引擎。
 
 ## B 只有 Windows
 

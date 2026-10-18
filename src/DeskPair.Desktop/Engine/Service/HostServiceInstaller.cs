@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
+using DeskPair.Desktop.Services;
 using DeskPair.Platform.Abstractions.Security;
 using DeskPair.Platform.Windows.Security;
 
@@ -259,6 +260,13 @@ public static class HostServiceInstaller
                 int error = Marshal.GetLastPInvokeError();
                 if (error == Advapi32.ErrorServiceExists)
                 {
+                    // Registered, but possibly against another DeskPair.exe (the zip it was turned on from, a test
+                    // build): then it is pointed at this one first, or "install" would leave an older engine running.
+                    if (Repoint(manager, exe, log, restart: startNow) != 0)
+                    {
+                        return 2;
+                    }
+
                     if (!startNow)
                     {
                         // Already registered; leave its state alone. Deferred means "do not start a second engine
@@ -380,6 +388,147 @@ public static class HostServiceInstaller
         finally
         {
             Advapi32.CloseServiceHandle(manager);
+        }
+    }
+
+    /// <summary>
+    /// Points a registered service at this program when it runs another DeskPair.exe, for the installer to run
+    /// after it has put the files in place and before it starts the service again. A service that is not
+    /// registered is nothing to do; one that already runs this program is left alone. Never shows a window.
+    /// </summary>
+    /// <returns>A process exit code: 0 done or nothing to do, 2 failed.</returns>
+    public static int Adopt(ILogger log)
+    {
+        string exe = Environment.ProcessPath ?? string.Empty;
+        if (exe.Length == 0)
+        {
+            log.LogError("Could not determine the program path.");
+            return 2;
+        }
+
+        nint manager = Advapi32.OpenSCManager(null, null, Advapi32.ScManagerConnect);
+        if (manager == 0)
+        {
+            return Refuse(log, "open the service control manager");
+        }
+
+        try
+        {
+            // The installer stops the service before the files change and starts it afterwards; restarting it
+            // here as well would only race that. The config change takes effect at that start.
+            return Repoint(manager, exe, log, restart: false);
+        }
+        finally
+        {
+            Advapi32.CloseServiceHandle(manager);
+        }
+    }
+
+    /// <summary>
+    /// Makes the registered service run <paramref name="exe"/> if it runs something else; with
+    /// <paramref name="restart"/>, a service that was running the old program is stopped and started again so
+    /// that the engine serving people is the one just pointed at. Not registered counts as done.
+    /// </summary>
+    private static int Repoint(nint manager, string exe, ILogger log, bool restart)
+    {
+        nint service = Advapi32.OpenService(
+            manager,
+            ServiceName,
+            Advapi32.ServiceQueryConfig | Advapi32.ServiceChangeConfig | Advapi32.ServiceQueryStatus | Advapi32.ServiceStart | Advapi32.ServiceStop);
+        if (service == 0)
+        {
+            int error = Marshal.GetLastPInvokeError();
+            if (error == Advapi32.ErrorServiceDoesNotExist)
+            {
+                log.LogInformation("The {Service} service is not installed; nothing to point at this program", ServiceName);
+                return 0;
+            }
+
+            return Refuse(log, "open the service", error);
+        }
+
+        try
+        {
+            string? registered = RegisteredCommandLine(service, log);
+            if (registered is null)
+            {
+                return 2;
+            }
+
+            if (ServiceBinaryPath.Runs(registered, exe))
+            {
+                log.LogDebug("The {Service} service already runs {Exe}", ServiceName, exe);
+                return 0;
+            }
+
+            string binary = ServiceBinaryPath.For(exe);
+            if (!Advapi32.ChangeServiceConfig(
+                    service,
+                    Advapi32.ServiceNoChange,
+                    Advapi32.ServiceNoChange,
+                    Advapi32.ServiceNoChange,
+                    binary,
+                    null,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null))
+            {
+                return Refuse(log, "point the service at this program");
+            }
+
+            log.LogInformation("The {Service} service ran {Old}; it now runs {New}", ServiceName, ServiceBinaryPath.ExecutableOf(registered), exe);
+            if (!restart)
+            {
+                return 0;
+            }
+
+            var status = default(Advapi32.ServiceStatus);
+            if (Advapi32.QueryServiceStatus(service, ref status) && status.CurrentState != Advapi32.StateStopped)
+            {
+                Stop(service, log);
+                if (!Advapi32.StartService(service, 0, 0))
+                {
+                    return Refuse(log, "start the service with this program");
+                }
+
+                log.LogInformation("The {Service} service was restarted with this program", ServiceName);
+            }
+
+            return 0;
+        }
+        finally
+        {
+            Advapi32.CloseServiceHandle(service);
+        }
+    }
+
+    /// <summary>The command line the service is registered with, or null (logged) when it cannot be read.</summary>
+    private static string? RegisteredCommandLine(nint service, ILogger log)
+    {
+        if (Advapi32.QueryServiceConfig(service, 0, 0, out uint needed)
+            || Marshal.GetLastPInvokeError() != Advapi32.ErrorInsufficientBuffer || needed == 0)
+        {
+            Refuse(log, "read the service's configuration");
+            return null;
+        }
+
+        nint buffer = Marshal.AllocHGlobal((int)needed);
+        try
+        {
+            if (!Advapi32.QueryServiceConfig(service, buffer, needed, out _))
+            {
+                Refuse(log, "read the service's configuration");
+                return null;
+            }
+
+            var config = Marshal.PtrToStructure<Advapi32.QueryServiceConfigData>(buffer);
+            return Marshal.PtrToStringUni(config.BinaryPathName) ?? string.Empty;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
         }
     }
 

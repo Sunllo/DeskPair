@@ -29,6 +29,7 @@ public static class Program
             AppRole.InstallVirtualDisplay => RunVirtualDisplaySetup(args, console, install: true),
             AppRole.RemoveVirtualDisplay => RunVirtualDisplaySetup(args, console, install: false),
             AppRole.RemoveSystemChanges => RunRemoveSystemChanges(args),
+            AppRole.AdoptService => RunAdoptService(args),
             AppRole.Elevate => RunElevate(args),
             AppRole.HelperLaunch => RunHelperLaunch(args),
             AppRole.SessionHelper => RunSessionHelper(args),
@@ -52,6 +53,7 @@ public static class Program
         "--install-virtual-display" => AppRole.InstallVirtualDisplay,
         "--remove-virtual-display" => AppRole.RemoveVirtualDisplay,
         "--remove-system-changes" => AppRole.RemoveSystemChanges,
+        "--adopt-service" => AppRole.AdoptService,
         "--elevate" => AppRole.Elevate,
         "--helper-launch" => AppRole.HelperLaunch,
         "--session-helper" => AppRole.SessionHelper,
@@ -482,6 +484,28 @@ public static class Program
     /// cleaned up is not left half-uninstalled because one step was already done or would not go; the service log says
     /// which.
     /// </summary>
+    /// <summary>
+    /// For the Windows installer, after it has put the files in place: if the unattended-access service is
+    /// registered against some other DeskPair.exe, point it at this one. Runs as LocalSystem under msiexec, so it
+    /// never shows a window; a failure is logged where the service logs and the install goes on.
+    /// </summary>
+    private static int RunAdoptService(string[] args)
+    {
+#if WINDOWS
+        string dataDir = ServerRole.Arg(args, "--data") ?? ServerRole.DefaultDataDir();
+        using ILoggerFactory logs = LoggerFactory.Create(b => b
+            .AddSimpleConsole(o => o.SingleLine = true)
+            .AddProvider(new FileLoggerProvider(Path.Combine(dataDir, "logs", "service.log")))
+            .SetMinimumLevel(args.Contains("--verbose") ? LogLevel.Debug : LogLevel.Information));
+        ILogger log = logs.CreateLogger("install");
+        return Engine.Service.HostServiceInstaller.Adopt(log);
+#else
+        _ = args;
+        Console.Error.WriteLine("There is no Windows service to adopt here.");
+        return 2;
+#endif
+    }
+
     private static int RunRemoveSystemChanges(string[] args)
     {
 #if WINDOWS
@@ -623,6 +647,8 @@ public static class Program
               DeskPair --remove-virtual-display    remove that driver again
               DeskPair --remove-system-changes     remove the service, the firewall rules and that driver in one go
                                            (Windows, administrator; the installer runs it before removing DeskPair)
+              DeskPair --adopt-service      point a service registered from another copy of DeskPair at this one
+                                           (Windows, administrator; the installer runs it after putting the files in place)
               DeskPair --update             check the portal and, if a newer release is signed by the key this
                                            install trusts, download it, verify it and replace this program
                                            (exit 0: installed or already current; 3: newer but not installable)
@@ -698,6 +724,9 @@ public enum AppRole
 
     /// <summary>Undo everything outside the program's folder, for the Windows installer to run before it removes the program.</summary>
     RemoveSystemChanges,
+
+    /// <summary>Point a service registered against another DeskPair.exe at this one, for the Windows installer to run after it has put the files in place.</summary>
+    AdoptService,
 
     /// <summary>Check the portal and install a newer signed release, with no window: for a machine nobody sits at.</summary>
     Update,

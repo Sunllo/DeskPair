@@ -63,8 +63,15 @@
          whatever it cannot remove it logs and leaves, rather than fail the uninstall. -->
     <CustomAction Id="RemoveSystemChanges" FileRef="DeskPairExe" ExeCommand="--remove-system-changes"
                   Execute="deferred" Impersonate="no" Return="ignore" />
+    <!-- The service was registered against whichever DeskPair.exe the person was running when they turned unattended
+         access on: a copy unpacked from the zip, say. Once the files are in place, and before the service is started
+         again, this points it at the DeskPair.exe just installed; otherwise a newer app sits in front of an older
+         engine, and no engine at all once that other folder is deleted. Nothing to do when no service is registered. -->
+    <CustomAction Id="AdoptService" FileRef="DeskPairExe" ExeCommand="--adopt-service"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
     <InstallExecuteSequence>
       <Custom Action="RemoveSystemChanges" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="AdoptService" After="InstallFiles" Condition="DESKPAIR_SERVICE AND NOT REMOVE~=&quot;ALL&quot;" />
     </InstallExecuteSequence>
 
     <!-- The stock minimal wizard, less its licence page: the AGPL asks nobody to accept it in order to run the program

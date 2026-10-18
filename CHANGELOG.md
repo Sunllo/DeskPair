@@ -17,6 +17,16 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## Desktop, unreleased
+
+### Fixed
+
+- **A service registered from another copy of DeskPair now follows the installer.** Unattended access registers the
+  service against whichever `DeskPair.exe` was running at the time: a folder unpacked from the zip, say. Installing
+  the MSI afterwards, or updating it, left the service starting that old copy, so a newer app sat in front of an
+  older engine, and no engine at all once the folder was deleted. The installer now points the service at the
+  `DeskPair.exe` it just installed (`--adopt-service`), and turning unattended access on does the same.
+
 ## 0.5.3 — 2026-10-18
 
 Desktop only; the phones stay at 0.4.0.

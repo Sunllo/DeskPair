@@ -84,6 +84,52 @@ internal static partial class Advapi32
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool ChangeServiceConfig2(nint service, int infoLevel, nint info);
 
+    /// <summary>Leaves a numeric field of the configuration as it is (SERVICE_NO_CHANGE).</summary>
+    internal const uint ServiceNoChange = 0xFFFFFFFF;
+
+    /// <summary>
+    /// Changes the service's command line and nothing else: every other parameter is "no change" or null.
+    /// </summary>
+    [LibraryImport("advapi32.dll", EntryPoint = "ChangeServiceConfigW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool ChangeServiceConfig(
+        nint service,
+        uint serviceType,
+        uint startType,
+        uint errorControl,
+        string? binaryPath,
+        string? loadOrderGroup,
+        nint tagId,
+        string? dependencies,
+        string? serviceStartName,
+        string? password,
+        string? displayName);
+
+    /// <summary>
+    /// Reads the configuration into <paramref name="buffer"/> of <paramref name="size"/> bytes; with a buffer too
+    /// small it fails with ERROR_INSUFFICIENT_BUFFER and says in <paramref name="needed"/> how much it wants.
+    /// </summary>
+    [LibraryImport("advapi32.dll", EntryPoint = "QueryServiceConfigW", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool QueryServiceConfig(nint service, nint buffer, uint size, out uint needed);
+
+    internal const int ErrorInsufficientBuffer = 122;
+
+    /// <summary>QUERY_SERVICE_CONFIGW; the strings point into the buffer the structure was read into.</summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct QueryServiceConfigData
+    {
+        public uint ServiceType;
+        public uint StartType;
+        public uint ErrorControl;
+        public nint BinaryPathName;
+        public nint LoadOrderGroup;
+        public uint TagId;
+        public nint Dependencies;
+        public nint ServiceStartName;
+        public nint DisplayName;
+    }
+
     [LibraryImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool CloseServiceHandle(nint handle);
