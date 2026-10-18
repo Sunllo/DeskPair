@@ -17,6 +17,16 @@ The servers only; no app changes.
   with the moment the process started, so a lost report loses nothing and a restart is never read as a negative
   minute; the relays' own totals ride along on the health poll the rendezvous already makes.
 
+## 0.5.3 — 2026-10-18
+
+Desktop only; the phones stay at 0.4.0.
+
+### Fixed
+
+- **The text cursor from a Windows host still read as black in 0.5.2.** Its strokes are one pixel wide, and the black
+  edge drawn on all four sides made two black pixels for every white one. The edge is now a shadow to the right and
+  below only, so the stroke is white over a dark background and black over a light one, as the real cursor is.
+
 ## 0.5.2 — 2026-10-18
 
 Desktop only; the phones stay at 0.4.0.

@@ -33,7 +33,7 @@ public class MonochromeCursorTests
     }
 
     [Fact]
-    public void An_inverting_stroke_is_white_with_a_black_edge_so_it_shows_on_either_background()
+    public void An_inverting_stroke_is_white_with_a_black_shadow_so_it_shows_on_either_background()
     {
         // A one-pixel vertical stroke of inverting pixels (AND=1, XOR=1) in a transparent field: the I-beam's stem.
         string[] and = ["11111", "11111", "11111", "11111", "11111"];
@@ -43,12 +43,13 @@ public class MonochromeCursorTests
         WindowsCursorProvider.MonochromeToBgra(Mask(and, xor), 5, 5, bgra);
 
         Pixel(bgra, 5, 2, 2).ShouldBe(((byte)255, (byte)255, (byte)255, (byte)255), "the stroke itself is white");
-        Pixel(bgra, 5, 1, 2).ShouldBe(((byte)0, (byte)0, (byte)0, (byte)255), "left of it is a black edge");
-        Pixel(bgra, 5, 3, 2).ShouldBe(((byte)0, (byte)0, (byte)0, (byte)255), "right of it is a black edge");
-        Pixel(bgra, 5, 2, 0).ShouldBe(((byte)0, (byte)0, (byte)0, (byte)255), "and above and below");
-        Pixel(bgra, 5, 2, 4).ShouldBe(((byte)0, (byte)0, (byte)0, (byte)255));
+        Pixel(bgra, 5, 3, 2).ShouldBe(((byte)0, (byte)0, (byte)0, (byte)255), "right of it is the black shadow");
+        Pixel(bgra, 5, 2, 4).ShouldBe(((byte)0, (byte)0, (byte)0, (byte)255), "and below it");
+        Pixel(bgra, 5, 3, 4).ShouldBe(((byte)0, (byte)0, (byte)0, (byte)255), "including the corner, so the shadow has no gap");
+        Pixel(bgra, 5, 1, 2).A.ShouldBe((byte)0, "left of it stays transparent: a shadow on both sides read as a black cursor");
+        Pixel(bgra, 5, 2, 0).A.ShouldBe((byte)0, "so does above");
         Pixel(bgra, 5, 0, 0).A.ShouldBe((byte)0, "away from the stroke stays transparent");
-        Pixel(bgra, 5, 0, 2).A.ShouldBe((byte)0, "the edge is one pixel, not two");
+        Pixel(bgra, 5, 4, 2).A.ShouldBe((byte)0, "the shadow is one pixel, not two");
     }
 
     [Fact]
@@ -67,10 +68,10 @@ public class MonochromeCursorTests
     }
 
     [Fact]
-    public void The_edge_never_overwrites_a_drawn_pixel()
+    public void The_shadow_never_overwrites_a_drawn_pixel()
     {
-        // An inverting pixel beside a black one: the black pixel is the cursor's own, not an edge, and stays as it is;
-        // a white pixel beside it stays white too.
+        // An inverting pixel beside a black one: the black pixel is the cursor's own, not a shadow, and stays as it is;
+        // a white pixel to its right, where the shadow would fall, stays white too.
         string[] and = ["010"];
         string[] xor = ["011"];
         byte[] bgra = new byte[3 * 4];

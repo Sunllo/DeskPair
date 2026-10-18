@@ -145,8 +145,10 @@ public sealed class WindowsCursorProvider : ICursorProvider
     /// Where both are 1 Windows inverts whatever is under the pixel -- the text I-beam is drawn entirely that way, so
     /// it reads black over a page and white over a dark editor. A viewer paints a bitmap and cannot invert, and this
     /// used to paint those pixels black: right over a light background and invisible over a dark one, which is where
-    /// most people type. They are white now, with a one-pixel black edge into the transparent pixels around them, which
-    /// is how an inverting cursor is usually stood in for; it shows on either background.
+    /// most people type. They are white now, with a one-pixel black shadow to their right and below, into the transparent
+    /// pixels: the white shows over a dark background, the shadow over a light one. (0.5.2 drew a black edge on all four
+    /// sides; around the I-beam's one-pixel strokes that made two black pixels for every white one, and the cursor still
+    /// read as black. A shadow keeps the stroke two pixels wide, half of each colour.)
     /// </summary>
     internal static void MonochromeToBgra(byte[] maskBits, int width, int height, byte[] bgra)
     {
@@ -173,7 +175,7 @@ public sealed class WindowsCursorProvider : ICursorProvider
             }
         }
 
-        // The edge: a transparent pixel next to an inverted one (left, right, above or below) turns black.
+        // The shadow: a transparent pixel with an inverted one to its left, above it, or diagonally above-left turns black.
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -184,9 +186,8 @@ public sealed class WindowsCursorProvider : ICursorProvider
                     continue; // already drawn
                 }
 
-                bool edge = (x > 0 && inverted[i - 1]) || (x + 1 < width && inverted[i + 1])
-                    || (y > 0 && inverted[i - width]) || (y + 1 < height && inverted[i + width]);
-                if (edge)
+                bool shadow = (x > 0 && inverted[i - 1]) || (y > 0 && inverted[i - width]) || (x > 0 && y > 0 && inverted[i - width - 1]);
+                if (shadow)
                 {
                     bgra[i * 4] = 0;
                     bgra[i * 4 + 1] = 0;
